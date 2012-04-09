@@ -3,8 +3,8 @@
 ;; Copyright (C) 2012 Phil CM
 
 ;; Author: Phil CM <philippe.coatmeur@gmail.com>
-;; Keywords: mail wanderlust gnus mutt pine
-;; Version: 0.0.1
+;; Keywords: mail notification desktop
+;; Version: 0.0.2
 ;; Url: http://github.com/xaccrocheur/mail-bug.el
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -28,7 +28,12 @@
 
 ;; (require 'mail-bug)
 ;; (mail-bug-init)
-;; Fill in your ~/authinfo according to the book
+;; Fill in your ~/.authinfo.gpg according to the book, here's mine :
+
+;; machine mail.gandi.net login LOGIN port 993 password PASSWORD
+;; machine smtp.gmail.com login LOGIN port 587 password PASSWORD
+;; machine imap.gmail.com login LOGIN port 993 password PASSWORD
+
 ;; and use M-x customize-group "mail-bug" RET
 
 ;;; Code:
@@ -121,7 +126,7 @@ PNG works."
 (defcustom mail-bug-icon-one
   (when (image-type-available-p 'xpm)
     '(image :type xpm
-	    :file "~/.emacs.d/img/perso.xpm"
+	    :file "~/.emacs.d/lisp/mail-bug/greenbug.xpm"
 	    :ascent center))
   "Icon for the first account.
 Must be an XPM (use Gimp)."
@@ -130,7 +135,7 @@ Must be an XPM (use Gimp)."
 (defcustom mail-bug-icon-two
   (when (image-type-available-p 'xpm)
     '(image :type xpm
-	    :file "~/.emacs.d/img/adamweb.xpm"
+	    :file "~/.emacs.d/lisp/mail-bug/ladybug.xpm"
 	    :ascent center))
   "Icon for the second account.
 Must be an XPM (use Gimp)."
@@ -153,9 +158,9 @@ Must be an XPM (use Gimp)."
 (defvar mail-bug-advertised-mails-two '())
 
 (defvar mail-bug-shell-script-command "mail-bug.pl"
-  "Full command line. Can't touch that.")
+  "Full command line. Can't touch dat.")
 
-(defcustom mail-bug-timer-interval 300
+(defcustom mail-bug-timer-interval 200
   "Interval(in seconds) for mail check."
   :type 'number
   :group 'mail-bug)
@@ -207,6 +212,10 @@ Must be an XPM (use Gimp)."
               (if (zerop err)
 		  (funcall, callback)
                 (error "mail-bug error: %d" err)))))))))
+
+(defun mail-bug-read-mail-callback ()
+  "Construct the mail elements list"
+  (setq this-mail (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-two "*"))))
 
 (defun mail-bug-shell-command-callback ()
   "Construct the unread mails lists"
@@ -407,11 +416,11 @@ mouse-3: View mail in MBOLIC" mail-bug-launch-client-command mail-bug-host-two m
 
 (defun mail-bug-desktop-notification (summary body timeout icon)
   "Call notification-daemon method with ARGS over dbus"
-  (if (not (window-system))
+  (if (window-system)
       ;; (if mail-bug-new-mail-sound
       ;;     (shell-command
       ;;      (concat "mplayer -really-quiet " mail-bug-new-mail-sound " 2> /dev/null")))
-      (dbus-call-method-non-blocking
+      (dbus-call-method
        :session                                 ; use the session (not system) bus
        "org.freedesktop.Notifications"          ; service name
        "/org/freedesktop/Notifications"         ; path name
