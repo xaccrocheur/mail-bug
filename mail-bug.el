@@ -150,7 +150,7 @@ Must be an XPM (use Gimp)."
 (defvar mail-bug-advertised-mails-one '())
 (defvar mail-bug-advertised-mails-two '())
 
-(defvar mail-bug-shell-script-command "mail-bug.pl"
+(defvar mail-bug-shell-script-command "~/.emacs.d/lisp/mail-bug/mail-bug.pl"
   "Full command line. Can't touch dat.")
 
 (defcustom mail-bug-timer-interval 200
