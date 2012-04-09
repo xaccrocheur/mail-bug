@@ -34,7 +34,7 @@
 ;; machine smtp.gmail.com login LOGIN port 587 password PASSWORD
 ;; machine imap.gmail.com login LOGIN port 993 password PASSWORD
 
-;; and use M-x customize-group "mail-bug" RET
+;; and use M-x customize-group "mail-bug" to safely setup your prefs.
 
 ;;; Code:
 
