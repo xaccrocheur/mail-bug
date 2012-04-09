@@ -56,18 +56,11 @@
   :prefix "mail-bug-accounts"
   :group 'mail-bug)
 
-(defcustom mail-bug-launch-client-command "px-go-mail"
-  "Mail client command.
+(defcustom mail-bug-external-client 'px-go-mail
+  "You preferred bigass mail client command.
 Example : wl"
-  :type 'string
+  :type 'function
   :group 'mail-bug)
-
-(defun mail-bug-launch-client ()
-  (if (string-equal mail-bug-launch-client-command "gnus")
-      (gnus)
-    (if (string-equal mail-bug-launch-client-command "wl")
-	(wl))
-    (px-go-mail)))
 
 (defcustom mail-bug-host-one "imap.gmail.com"
   "Mail host.
@@ -263,7 +256,7 @@ Must be an XPM (use Gimp)."
       (define-key map (vector 'mode-line 'mouse-1)
         `(lambda (e)
            (interactive "e")
-	   (mail-bug-launch-client)))
+	   (funcall mail-bug-external-client)))
 
       (define-key map (vector 'mode-line 'mouse-2)
         `(lambda (e)
@@ -285,7 +278,7 @@ Must be an XPM (use Gimp)."
 --------------
 mouse-1: View mail in %s
 mouse-2: View mail on %s
-mouse-3: View mail in MBOLIC" mail-bug-launch-client-command mail-bug-host-one mail-bug-host-one)))
+mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-one mail-bug-host-one)))
                            s)
       (concat mail-bug-logo-one ":" s)))
 " "
@@ -299,7 +292,7 @@ mouse-3: View mail in MBOLIC" mail-bug-launch-client-command mail-bug-host-one m
       (define-key map (vector 'mode-line 'mouse-1)
         `(lambda (e)
            (interactive "e")
-	   (mail-bug-launch-client)))
+	   (funcall mail-bug-external-client)))
 
       (define-key map (vector 'mode-line 'mouse-2)
         `(lambda (e)
@@ -321,7 +314,7 @@ mouse-3: View mail in MBOLIC" mail-bug-launch-client-command mail-bug-host-one m
 --------------
 mouse-1: View mail in %s
 mouse-2: View mail on %s
-mouse-3: View mail in MBOLIC" mail-bug-launch-client-command mail-bug-host-two mail-bug-host-two)))
+mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-two mail-bug-host-two)))
                            s)
       (concat mail-bug-logo-two ":" s)))))
 
