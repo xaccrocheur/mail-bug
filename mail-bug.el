@@ -178,8 +178,9 @@ Must be an XPM (use Gimp)."
   (mail-bug-check mail-bug-host-one mail-bug-port-one mail-bug-imap-box-one)
   (mail-bug-check mail-bug-host-two mail-bug-port-two mail-bug-imap-box-two))
 
-(defun mail-bug-check (host port box)
-  "Check unread mail."
+(defun mail-bug-check (host port box &optional mail-id)
+  "Check unread mail.
+Get the login and password from HOST and PORT delta association"
   ;; (message "%s %s %s" host protocol box)
   (mail-bug-shell-command
    (format "%s %s %s %s %s %s"
@@ -188,11 +189,33 @@ Must be an XPM (use Gimp)."
 	   port
 	   box
 	   (auth-source-user-or-password "login" host port)
-	   (auth-source-user-or-password "password" host port))
+	   (auth-source-user-or-password "password" host port)
+	   (if mail-id
+	       (format "%s" mail-id)
+	     nil)
+	   )
    'mail-bug-shell-command-callback host))
 
-(defmacro mail-bug-shell-command (cmd callback account)
+;; (concat "*" (replace-regexp-in-string " .*" "" ,cmd) "*")
+;; (concat "*mail-bug-" ,account "*")
+(defmacro mail-bug-shell-command (cmd callback account &optional mail-id)
   "Run CMD asynchronously, then run CALLBACK"
+
+  (if mail-id
+      (progn
+	(message "yo")
+	(concat "*" (replace-regexp-in-string " .*" "" ,cmd) "*"))
+    (message "yi"))
+
+  `(setq mail-bug-tmp-buf
+	(if mail-id
+	    (progn
+	      (message "yo")
+	      (concat "*" (replace-regexp-in-string " .*" "" ,cmd) "*"))
+	  (progn
+	    (message "yi")
+	    (concat "*mail-bug-" ,account "*"))))
+
   `(let* ((buf (generate-new-buffer (concat "*mail-bug-" ,account "*")))
           (p (start-process-shell-command ,cmd buf ,cmd)))
      (set-process-sentinel
@@ -208,7 +231,9 @@ Must be an XPM (use Gimp)."
 
 (defun mail-bug-read-mail-callback ()
   "Construct the mail elements list"
-  (setq this-mail (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-two "*"))))
+  (with-current-buffer (current-buffer)
+
+  (setq this-mail (mail-bug-buffer-to-list (current-buffer)))))
 
 (defun mail-bug-shell-command-callback ()
   "Construct the unread mails lists"
@@ -337,7 +362,6 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-two mail-bu
      (let
 	 ((tooltip-string
 	   (format " %s | %s | %s (%s)"
-
 			 (car (nthcdr 1 x)) ; date
 			 (car x)	    ; from
 			 (car (nthcdr 2 x)) ; subject
@@ -408,25 +432,24 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-two mail-bu
   "Call notification-daemon method with ARGS over dbus"
   (if (window-system)
       (if mail-bug-new-mail-sound
-          (progn (shell-command
-		  (concat "mplayer -really-quiet " mail-bug-new-mail-sound " 2> /dev/null"))
-		 (dbus-call-method
-		  :session                                 ; use the session (not system) bus
-		  "org.freedesktop.Notifications"          ; service name
-		  "/org/freedesktop/Notifications"         ; path name
-		  "org.freedesktop.Notifications" "Notify" ; Method
-		  "GNU Emacs"			       	    ; Application
-		  0					    ; Timeout
-		  icon
-		  summary
-		  body
-		  '(:array)
-		  '(:array :signature "{sv}")
-		  ':int32 timeout)))
-	(message "New mail!" )))
+          (progn
+	    (shell-command (concat "mplayer -really-quiet " mail-bug-new-mail-sound " 2> /dev/null"))
+	    (dbus-call-method
+	     :session                                 ; use the session (not system) bus
+	     "org.freedesktop.Notifications"          ; service name
+	     "/org/freedesktop/Notifications"         ; path name
+	     "org.freedesktop.Notifications" "Notify" ; Method
+	     "GNU Emacs"			       	    ; Application
+	     0					    ; Timeout
+	     icon
+	     summary
+	     body
+	     '(:array)
+	     '(:array :signature "{sv}")
+	     ':int32 timeout)))
+    (message "New mail!" )))
 
 ;; Utilities
-
 (defun mail-bug-buffer-to-list (buf)
   "Make & return a list (of lists) LINES from lines in a buffer BUF"
   (with-current-buffer buf
