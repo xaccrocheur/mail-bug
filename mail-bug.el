@@ -201,20 +201,11 @@ Get the login and password from HOST and PORT delta association"
 (defmacro mail-bug-shell-command (cmd callback account &optional mail-id)
   "Run CMD asynchronously, then run CALLBACK"
 
-  (if mail-id
-      (progn
-	(message "yo")
-	(concat "*" (replace-regexp-in-string " .*" "" ,cmd) "*"))
-    (message "yi"))
+  `(message "%s" ,account)
 
-  `(setq mail-bug-tmp-buf
-	(if mail-id
-	    (progn
-	      (message "yo")
-	      (concat "*" (replace-regexp-in-string " .*" "" ,cmd) "*"))
-	  (progn
-	    (message "yi")
-	    (concat "*mail-bug-" ,account "*"))))
+  ;; (if mail-id
+  ;;     (setq mail-bug-tmp-buf (concat "*" (replace-regexp-in-string " .*" "" cmd) "*"))
+  ;;   (setq mail-bug-tmp-buf (concat "*mail-bug-" account "*")))
 
   `(let* ((buf (generate-new-buffer (concat "*mail-bug-" ,account "*")))
           (p (start-process-shell-command ,cmd buf ,cmd)))
@@ -226,7 +217,7 @@ Get the login and password from HOST and PORT delta association"
             (let ((inhibit-read-only t)
                   (err (process-exit-status process)))
               (if (zerop err)
-		  (funcall, callback)
+		  (funcall ,callback)
                 (error "mail-bug error: %d" err)))))))))
 
 (defun mail-bug-read-mail-callback ()
@@ -406,9 +397,9 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-two mail-bu
 	   (mail-bug-desktop-notification
 	    "<h3 style='color:palegreen;'>New mail!</h3>"
 	    (format "<h4>%s</h4><h5>%s</h5><hr>%s"
-		    '(car (car x))
-		    '(car (nthcdr 1 x))
-		    '(car (nthcdr 2 x)))
+		    (car x)
+		    (nthcdr 1 x)
+		    (car (nthcdr 2 x)))
 	    1 mail-bug-new-mail-icon-one)
 	   (add-to-list 'mail-bug-advertised-mails-one x))))
    mail-bug-unseen-mails-one))
@@ -421,9 +412,9 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-two mail-bu
 	   (mail-bug-desktop-notification
 	    "<h3 style='color:red;'>New mail!</h3>"
 	    (format "<h4>%s</h4><h5>%s</h5><hr>%s"
-		    '(car (car x))
-		    '(car (nthcdr 1 x))
-		    '(car (nthcdr 2 x)))
+		    (car x)
+		    (nthcdr 1 x)
+		    (car (nthcdr 2 x)))
 	    1 mail-bug-new-mail-icon-two)
 	   (add-to-list 'mail-bug-advertised-mails-two x))))
    mail-bug-unseen-mails-two))
@@ -433,7 +424,6 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-two mail-bu
   (if (window-system)
       (if mail-bug-new-mail-sound
           (progn
-	    (shell-command (concat "mplayer -really-quiet " mail-bug-new-mail-sound " 2> /dev/null"))
 	    (dbus-call-method
 	     :session                                 ; use the session (not system) bus
 	     "org.freedesktop.Notifications"          ; service name
@@ -446,7 +436,8 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-two mail-bu
 	     body
 	     '(:array)
 	     '(:array :signature "{sv}")
-	     ':int32 timeout)))
+	     ':int32 timeout)
+	    (shell-command (concat "mplayer -really-quiet " mail-bug-new-mail-sound " 2> /dev/null"))))
     (message "New mail!" )))
 
 ;; Utilities
