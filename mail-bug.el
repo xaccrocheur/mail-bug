@@ -318,9 +318,6 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-two mail-bu
                            s)
       (concat mail-bug-logo-two ":" s)))))
 
-(defun mbolic-open-mail (mail-id)
-)
-
 (defun mbolic (maillist)
   (interactive)
   (if (get-buffer "MBOLIC")
@@ -410,23 +407,23 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-two mail-bu
 (defun mail-bug-desktop-notification (summary body timeout icon)
   "Call notification-daemon method with ARGS over dbus"
   (if (window-system)
-      ;; (if mail-bug-new-mail-sound
-      ;;     (shell-command
-      ;;      (concat "mplayer -really-quiet " mail-bug-new-mail-sound " 2> /dev/null")))
-      (dbus-call-method
-       :session                                 ; use the session (not system) bus
-       "org.freedesktop.Notifications"          ; service name
-       "/org/freedesktop/Notifications"         ; path name
-       "org.freedesktop.Notifications" "Notify" ; Method
-       "GNU Emacs"			       	    ; Application
-       0					    ; Timeout
-       icon
-       summary
-       body
-       '(:array)
-       '(:array :signature "{sv}")
-       ':int32 timeout)
-    (message "New mail!" )))
+      (if mail-bug-new-mail-sound
+          (progn (shell-command
+		  (concat "mplayer -really-quiet " mail-bug-new-mail-sound " 2> /dev/null"))
+		 (dbus-call-method
+		  :session                                 ; use the session (not system) bus
+		  "org.freedesktop.Notifications"          ; service name
+		  "/org/freedesktop/Notifications"         ; path name
+		  "org.freedesktop.Notifications" "Notify" ; Method
+		  "GNU Emacs"			       	    ; Application
+		  0					    ; Timeout
+		  icon
+		  summary
+		  body
+		  '(:array)
+		  '(:array :signature "{sv}")
+		  ':int32 timeout)))
+	(message "New mail!" )))
 
 ;; Utilities
 
@@ -460,16 +457,3 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-two mail-bu
 
 (message "%s loaded" (or load-file-name buffer-file-name))
 (provide 'mail-bug)
-
-
-;; (defun dumb-f ()
-;;   (message "I'm a function"))
-
-;; (defvar my-function 'plopssss)
-
-;; (funcall my-function)
-;; ==> "I'm a function"
-
-;; (setq zz '(("monique.marin2@free.fr" "Mon, 2 Apr 2012 13:52:39 +0000" "Départ " "1543")
-;;  ("\"agnes coatmeur-marin\" <agneslcm@gmx.fr>" "Mon, 02 Apr 2012 15:20:23 +0200" "Re : Quelle tuile ce plan pourri jet4you" "1542")
-;;  ("<contact@adamweb.net>" "Mon, 2 Apr 2012 14:15:42 +0200" "Re: un message en stupide français à la con" "1541")))q
