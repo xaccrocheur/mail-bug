@@ -4,8 +4,9 @@
 
 ;; Author: Phil CM <philippe.coatmeur@gmail.com>
 ;; Keywords: mail notification desktop
-;; Version: 0.0.2
+;; Version: 0.0.5
 ;; Url: http://github.com/xaccrocheur/mail-bug.el
+;; Compatibility: GNU Emacs 24.x (because of both authinfo and dbus)
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -22,9 +23,15 @@
 
 ;;; Commentary:
 
-;; Show unread mails count on mode line (and details in tooltip on
-;; mouse over) and a desktop notification for new mails.
-;; To enable it, put this in your .emacs :
+;; Show unread mails count on mode line (and details / option menu
+;; tooltip on mouse over) and a desktop notification for new mails.
+
+;; The mail-bug package consists of this elisp script and its brother
+;; mail-bug.pl, a small perl script that does all the muscle work of
+;; talking to the imap server. They are both installed at the same
+;; place if you properly checked out github.
+
+;; To enable mail-bug, put this in your .emacs :
 
 ;; (require 'mail-bug)
 ;; (mail-bug-init)
@@ -34,7 +41,7 @@
 ;; machine smtp.gmail.com login LOGIN port 587 password PASSWORD
 ;; machine imap.gmail.com login LOGIN port 993 password PASSWORD
 
-;; and use M-x customize-group "mail-bug" to safely setup your prefs.
+;; Then use M-x customize-group "mail-bug" to safely setup your prefs.
 
 ;;; Code:
 
@@ -57,7 +64,7 @@
   :group 'mail-bug)
 
 (defcustom mail-bug-external-client 'px-go-mail
-  "You preferred bigass mail client command.
+  "You preferred bigass mail client command/function.
 Example : wl"
   :type 'function
   :group 'mail-bug)
@@ -98,7 +105,7 @@ Example : INBOX"
   :type 'string
   :group 'mail-bug-account-two)
 
-(defcustom mail-bug-new-mail-sound "/usr/share/sounds/KDE-Im-New-Mail.ogg"
+(defcustom mail-bug-new-mail-sound "/usr/share/sounds/pop.wav"
   "Sound for new mail notification.
 Any format works."
   :type 'string
@@ -153,7 +160,7 @@ Must be an XPM (use Gimp)."
 (defvar mail-bug-shell-script-command "~/.emacs.d/lisp/mail-bug/mail-bug.pl"
   "Full command line. Can't touch dat.")
 
-(defcustom mail-bug-timer-interval 200
+(defcustom mail-bug-timer-interval 400
   "Interval(in seconds) for mail check."
   :type 'number
   :group 'mail-bug)
@@ -164,7 +171,7 @@ Must be an XPM (use Gimp)."
   (interactive)
   (add-to-list 'global-mode-string
                '(:eval (mail-bug-mode-line)))
-  (run-with-timer 0
+  (run-with-timer 10
 		  mail-bug-timer-interval
 		  'mail-bug-check-all))
 
@@ -419,25 +426,64 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-two mail-bu
 	   (add-to-list 'mail-bug-advertised-mails-two x))))
    mail-bug-unseen-mails-two))
 
+;; (defun handle-hello (hello)
+;;   (print hello))
+
+;; (dbus-call-method-asynchronously :session "org.test.emacs" "/helloworld" "org.test.emacs" "hello" 'handle-hello)
+
+;; (dbus-call-method-asynchronously
+;;   :system "org.freedesktop.Hal"
+;;   "/org/freedesktop/Hal/devices/computer"
+;;   "org.freedesktop.Hal.Device" "GetPropertyString" 'message
+;;   "system.kernel.machine")
+
+;; (defun mail-bug-desktop-notification (summary body timeout icon)
+;;   "Call notification-daemon method with ARGS over DBus.
+;; And that's not the half of it."
+;;   (if (window-system)
+;;       (if mail-bug-new-mail-sound
+;;           (progn
+;; 	    (dbus-call-method
+;; 	     :session                                 ; use the session (not system) bus
+;; 	     "org.freedesktop.Notifications"          ; service name
+;; 	     "/org/freedesktop/Notifications"         ; path name
+;; 	     "org.freedesktop.Notifications" "Notify" ; Method
+;; 	     "GNU Emacs"	         	    ; Application
+;; 	     0					    ; Timeout
+;; 	     icon
+;; 	     summary
+;; 	     body
+;; 	     '(:array)
+;; 	     '(:array :signature "{sv}")
+;; 	     ':int32 timeout)
+;; 	    ;; (play-sound-file "/usr/share/sounds/pop.wav")
+;; 	    (start-process-shell-command "*mail-bug-sound*" nil (concat "mplayer " mail-bug-new-mail-sound))))
+;;     (message "New mail!" )))
+
+
 (defun mail-bug-desktop-notification (summary body timeout icon)
-  "Call notification-daemon method with ARGS over dbus"
+  "Call notification-daemon method with ARGS over DBus.
+And that's not the half of it."
   (if (window-system)
-      (if mail-bug-new-mail-sound
-          (progn
-	    (dbus-call-method
-	     :session                                 ; use the session (not system) bus
-	     "org.freedesktop.Notifications"          ; service name
-	     "/org/freedesktop/Notifications"         ; path name
-	     "org.freedesktop.Notifications" "Notify" ; Method
-	     "GNU Emacs"			       	    ; Application
-	     0					    ; Timeout
-	     icon
-	     summary
-	     body
-	     '(:array)
-	     '(:array :signature "{sv}")
-	     ':int32 timeout)
-	    (shell-command (concat "mplayer -really-quiet " mail-bug-new-mail-sound " 2> /dev/null"))))
+      (progn
+	(dbus-call-method
+	 :session                                 ; use the session (not system) bus
+	 "org.freedesktop.Notifications"          ; service name
+	 "/org/freedesktop/Notifications"         ; path name
+	 "org.freedesktop.Notifications" "Notify" ; Method
+	 "GNU Emacs"                              ; Application
+	 0					  ; Timeout
+	 icon
+	 summary
+	 body
+	 '(:array)
+	 '(:array :signature "{sv}")
+	 ':int32 timeout)
+	;; (play-sound-file "/usr/share/sounds/pop.wav")
+	(if (and
+	     (file-exists-p "/usr/bin/mplayer")
+	     mail-bug-new-mail-sound)
+	    (start-process-shell-command "*mail-bug-sound*" nil (concat "mplayer " mail-bug-new-mail-sound))))
     (message "New mail!" )))
 
 ;; Utilities
@@ -448,9 +494,10 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-two mail-bu
       (goto-char (point-min))
       (let ((lines '()))
         (while (not (eobp))
-          (push (split-string
-                 (buffer-substring (point) (point-at-eol)) "\|_\|")
-                lines)
+          (push
+	   (split-string
+	    (buffer-substring (point) (point-at-eol)) "\|_\|")
+	   lines)
           (beginning-of-line 2))
 	lines))))
 
