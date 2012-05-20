@@ -1,12 +1,36 @@
 ;;; mail-bug.el --- Notify of unread mails on mode line & on DBus
 
-;; Copyright (C) 2012 Phil CM
-
 ;; Author: Phil CM <philippe.coatmeur@gmail.com>
-;; Keywords: mail notification desktop
-;; Version: 0.0.5
-;; Url: http://github.com/xaccrocheur/mail-bug.el
+;; Version: 0.5
+;; URL: http://github.com/xaccrocheur/mail-bug.el
 ;; Compatibility: GNU Emacs 24.x (because of both authinfo and dbus)
+;; Keywords: mail notification desktop
+
+;; ----------------------------------------------------------------------------
+;;; Commentary:
+
+;; Show unread mails count on mode line (and details / option menu
+;; tooltip on mouse over) and a desktop notification for new mails.
+
+;; The mail-bug package consists of this elisp script and its brother
+;; mail-bug.pl, a small perl script that does all the muscle work of
+;; talking to the imap server. They are both installed at the same
+;; place if you properly checked out the github master branch.
+
+;; To enable mail-bug, put this in your .emacs :
+
+;; (require 'mail-bug)
+;; (mail-bug-init)
+;; Fill in your ~/.authinfo.gpg according to the book, here's mine :
+
+;; machine mail.gandi.net login LOGIN port 993 password PASSWORD
+;; machine smtp.gmail.com login LOGIN port 587 password PASSWORD
+;; machine imap.gmail.com login LOGIN port 993 password PASSWORD
+
+;; Then use M-x customize-group "mail-bug" to safely setup your prefs.
+
+;; ----------------------------------------------------------------------------
+;; This file is NOT part of GNU Emacs.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -20,28 +44,6 @@
 
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-;;; Commentary:
-
-;; Show unread mails count on mode line (and details / option menu
-;; tooltip on mouse over) and a desktop notification for new mails.
-
-;; The mail-bug package consists of this elisp script and its brother
-;; mail-bug.pl, a small perl script that does all the muscle work of
-;; talking to the imap server. They are both installed at the same
-;; place if you properly checked out github.
-
-;; To enable mail-bug, put this in your .emacs :
-
-;; (require 'mail-bug)
-;; (mail-bug-init)
-;; Fill in your ~/.authinfo.gpg according to the book, here's mine :
-
-;; machine mail.gandi.net login LOGIN port 993 password PASSWORD
-;; machine smtp.gmail.com login LOGIN port 587 password PASSWORD
-;; machine imap.gmail.com login LOGIN port 993 password PASSWORD
-
-;; Then use M-x customize-group "mail-bug" to safely setup your prefs.
 
 ;;; Code:
 
