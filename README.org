@@ -4,16 +4,24 @@ Show unread mails count on mode line (and details in tooltip on
 mouse over) and a desktop notification for new mails.
 
 ** INSTALLATION
-To enable it, put this in your .emacs :
+To enable it, put the full directory in your load-path this in your
+.emacs :
 
 (require 'mail-bug)
 
 (mail-bug-init)
 
-Fill in your ~/.authinfo.gpg according to the book, here's mine :
+Create a ~/.authinfo.gpg and fill it like so :
 
 machine mail.isp1.net login LOGIN port 993 password PASSWORD
+
 machine smtp.isp2.com login LOGIN port 587 password PASSWORD
+
 machine imap.isp2.com login LOGIN port 993 password PASSWORD
 
-and use M-x customize-group "mail-bug" to safely setup your prefs.
+** USAGE
+Use M-x customize-group "mail-bug" to safely setup your prefs.
+
+** NOTES
+This repository is automatically installed by
+https://github.com/xaccrocheur/kituu
