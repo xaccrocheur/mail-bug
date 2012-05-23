@@ -7,11 +7,13 @@ mouse over) and a desktop notification for new mails.
 To enable it, put this in your .emacs :
 
 (require 'mail-bug)
+
 (mail-bug-init)
+
 Fill in your ~/.authinfo.gpg according to the book, here's mine :
 
-machine mail.gandi.net login LOGIN port 993 password PASSWORD
-machine smtp.gmail.com login LOGIN port 587 password PASSWORD
-machine imap.gmail.com login LOGIN port 993 password PASSWORD
+machine mail.isp1.net login LOGIN port 993 password PASSWORD
+machine smtp.isp2.com login LOGIN port 587 password PASSWORD
+machine imap.isp2.com login LOGIN port 993 password PASSWORD
 
 and use M-x customize-group "mail-bug" to safely setup your prefs.
