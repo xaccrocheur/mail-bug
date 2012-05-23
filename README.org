@@ -1,5 +1,7 @@
 * mail-bug.el
 
+plop
+
 Show unread mails count on mode line (and details in tooltip on
 mouse over) and a desktop notification for new mails.
 
