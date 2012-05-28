@@ -50,6 +50,8 @@
 (require 'auth-source)
 (require 'dbus)
 
+(defvar libnotify-program "/usr/bin/notify-send")
+
 (defgroup mail-bug nil
   "Universal mail notifier."
   :prefix "mail-bug-"
@@ -125,6 +127,20 @@ PNG works."
   :type 'string
   :group 'mail-bug-account-two)
 
+;; ;; Display a coloured square indicating the vc status of the current file
+;; (defun vc-icon ()
+;;   (let ((icon mail-bug-new-mail-icon-two)
+;;         (bg-colour (face-attribute 'mode-line :background)))
+;;     (propertize
+;;      "  "
+;;      'display (find-image `((:type png
+;;                              :file ,icon
+;;                              :ascent center
+;;                              :background ,bg-colour))))))
+
+
+(defvar mail-bug-icon-file-one "~/.emacs.d/lisp/mail-bug/greenbug.xpm")
+
 (defcustom mail-bug-icon-one
   (when (image-type-available-p 'xpm)
     '(image :type xpm
@@ -133,6 +149,8 @@ PNG works."
   "Icon for the first account.
 Must be an XPM (use Gimp)."
   :group 'mail-bug-account-one)
+
+(defvar mail-bug-icon-file-two "~/.emacs.d/lisp/mail-bug/ladybug.xpm")
 
 (defcustom mail-bug-icon-two
   (when (image-type-available-p 'xpm)
@@ -181,16 +199,21 @@ Must be an XPM (use Gimp)."
   "Check unread mail now."
   (interactive)
   (if (get-buffer  (concat "*mail-bug-" mail-bug-host-one "*"))
-      (kill-buffer (concat "*mail-bug-" mail-bug-host-one "*")))
+      (progn
+	(if (get-buffer-process (concat "*mail-bug-" mail-bug-host-one "*"))
+	    (set-process-query-on-exit-flag (get-buffer-process (concat "*mail-bug-" mail-bug-host-one "*")) nil)
+	  (kill-buffer (concat "*mail-bug-" mail-bug-host-one "*")))))
   (if (get-buffer  (concat "*mail-bug-" mail-bug-host-two "*"))
-      (kill-buffer (concat "*mail-bug-" mail-bug-host-two "*")))
+      (progn
+	(if (get-buffer-process (concat "*mail-bug-" mail-bug-host-two "*"))
+	    (set-process-query-on-exit-flag (get-buffer-process (concat "*mail-bug-" mail-bug-host-two "*")) nil)
+	  (kill-buffer (concat "*mail-bug-" mail-bug-host-two "*")))))
   (mail-bug-check mail-bug-host-one mail-bug-port-one mail-bug-imap-box-one)
   (mail-bug-check mail-bug-host-two mail-bug-port-two mail-bug-imap-box-two))
 
 (defun mail-bug-check (host port box &optional mail-id)
   "Check unread mail.
 Get the login and password from HOST and PORT delta association"
-  ;; (message "%s %s %s" host protocol box)
   (mail-bug-shell-command
    (format "%s %s %s %s %s %s"
            mail-bug-shell-script-command
@@ -205,17 +228,8 @@ Get the login and password from HOST and PORT delta association"
 	   )
    'mail-bug-shell-command-callback host))
 
-;; (concat "*" (replace-regexp-in-string " .*" "" ,cmd) "*")
-;; (concat "*mail-bug-" ,account "*")
 (defmacro mail-bug-shell-command (cmd callback account &optional mail-id)
   "Run CMD asynchronously, then run CALLBACK"
-
-  `(message "%s" ,account)
-
-  ;; (if mail-id
-  ;;     (setq mail-bug-tmp-buf (concat "*" (replace-regexp-in-string " .*" "" cmd) "*"))
-  ;;   (setq mail-bug-tmp-buf (concat "*mail-bug-" account "*")))
-
   `(let* ((buf (generate-new-buffer (concat "*mail-bug-" ,account "*")))
           (p (start-process-shell-command ,cmd buf ,cmd)))
      (set-process-sentinel
@@ -233,115 +247,133 @@ Get the login and password from HOST and PORT delta association"
   "Construct the mail elements list"
   (with-current-buffer (current-buffer)
 
-  (setq this-mail (mail-bug-buffer-to-list (current-buffer)))))
+    (setq this-mail (mail-bug-buffer-to-list (current-buffer)))))
 
 (defun mail-bug-shell-command-callback ()
   "Construct the unread mails lists"
   (setq mail-bug-unseen-mails-one (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-one "*")))
   (setq mail-bug-unseen-mails-two (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-two "*")))
   (mail-bug-mode-line)
+
+  ;; (setq mail-bug-unseen-mails-all (cons mail-bug-unseen-mails-one mail-bug-unseen-mails-two))
+
+  ;; (setq accounts (safe-length mail-bug-unseen-mails-all))
+
+  ;; ;; (message "accounts : %d" accounts)
+  ;; ;; (loop for i in mail-bug-unseen-mails-all do (message "i : %s" i))
+
+  ;; (let
+  ;;     ((n 1))
+  ;;   (loop
+  ;;    (when (> n accounts)
+  ;;      (return))
+  ;;    (test (format "%s" n))
+  ;;    (incf n)))
+
   ;; (mail-bug-desktop-notify mail-bug-new-mail-icon-one)
   ;; (mail-bug-desktop-notify mail-bug-new-mail-icon-two)
-  (mail-bug-desktop-notify-one)
-  (mail-bug-desktop-notify-two)
+  ;; (mail-bug-desktop-notify-one)
+  ;; (mail-bug-desktop-notify-two)
+  (mail-bug-desktop-notify "one")
+  (mail-bug-desktop-notify "two")
   (force-mode-line-update))
 
 (defun mail-bug-own-little-imap-client (maillist)
   (interactive)
   (princ
    (mapconcat
-   (lambda (x)
-     (let
-	 ((tooltip-string
-	   (format "%s\n%s \n--------------\n%s\n"
-		   (car (nthcdr 1 x))
-		   ;; (nthcdr 2 x)
-		   (nthcdr 2 x)
-		   (car x)
-		   (car (nthcdr 2 x))
-		   ;; (car x)
-		   )))
-       tooltip-string)
-     )
-   maillist
-   "\n xxx \n")
+    (lambda (x)
+      (let
+	  ((tooltip-string
+	    (format "%s\n%s \n--------------\n%s\n"
+		    (car (nthcdr 1 x))
+		    ;; (nthcdr 2 x)
+		    (nthcdr 2 x)
+		    (car x)
+		    (car (nthcdr 2 x))
+		    ;; (car x)
+		    )))
+	tooltip-string)
+      )
+    maillist
+    "\n xxx \n")
    (generate-new-buffer "MBOLIC"))
   (switch-to-buffer "MBOLIC"))
 
 (defun mail-bug-mode-line ()
   "Construct an emacs modeline object"
-(concat
-  (if (null mail-bug-unseen-mails-one)
-      (concat mail-bug-logo-one "  ")
-    (let ((s
-	   (format "%d" (length mail-bug-unseen-mails-one)))
-          (map (make-sparse-keymap))
-          (url (concat "http://" mail-bug-host-one)))
+  (concat
+   (if (null mail-bug-unseen-mails-one)
+       (concat mail-bug-logo-one "  ")
+     (let ((s
+	    (format "%d" (length mail-bug-unseen-mails-one)))
+	   (map (make-sparse-keymap))
+	   (url (concat "http://" mail-bug-host-one)))
 
-      (define-key map (vector 'mode-line 'mouse-1)
-        `(lambda (e)
-           (interactive "e")
-	   (funcall mail-bug-external-client)))
+       (define-key map (vector 'mode-line 'mouse-1)
+	 `(lambda (e)
+	    (interactive "e")
+	    (funcall mail-bug-external-client)))
 
-      (define-key map (vector 'mode-line 'mouse-2)
-        `(lambda (e)
-           (interactive "e")
-           (browse-url ,url)))
+       (define-key map (vector 'mode-line 'mouse-2)
+	 `(lambda (e)
+	    (interactive "e")
+	    (browse-url ,url)))
 
-      (define-key map (vector 'mode-line 'mouse-3)
-        `(lambda (e)
-           (interactive "e")
-	   (mbolic mail-bug-unseen-mails-one)))
+       (define-key map (vector 'mode-line 'mouse-3)
+	 `(lambda (e)
+	    (interactive "e")
+	    (mbolic mail-bug-unseen-mails-one)))
 
-      (add-text-properties 0 (length s)
-                           `(local-map,
-			     map mouse-face mode-line-highlight
-			     uri, url help-echo,
-			     (concat
-			      (mail-bug-tooltip "one")
-			      (format "
+       (add-text-properties 0 (length s)
+			    `(local-map,
+			      map mouse-face mode-line-highlight
+			      uri, url help-echo,
+			      (concat
+			       (mail-bug-tooltip "one")
+			       (format "
 --------------
 mouse-1: View mail in %s
 mouse-2: View mail on %s
 mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-one mail-bug-host-one)))
-                           s)
-      (concat mail-bug-logo-one ":" s)))
-" "
-  (if (null mail-bug-unseen-mails-two)
-      (concat mail-bug-logo-two "  ")
-    (let ((s
-	   (format "%d" (length mail-bug-unseen-mails-two)))
-          (map (make-sparse-keymap))
-          (url (concat "http://" mail-bug-host-two)))
+			    s)
+       (concat mail-bug-logo-one ":" s)))
+   " "
+   (if (null mail-bug-unseen-mails-two)
+       (concat mail-bug-logo-two "  ")
+     (let ((s
+	    (format "%d" (length mail-bug-unseen-mails-two)))
+	   (map (make-sparse-keymap))
+	   (url (concat "http://" mail-bug-host-two)))
 
-      (define-key map (vector 'mode-line 'mouse-1)
-        `(lambda (e)
-           (interactive "e")
-	   (funcall mail-bug-external-client)))
+       (define-key map (vector 'mode-line 'mouse-1)
+	 `(lambda (e)
+	    (interactive "e")
+	    (funcall mail-bug-external-client)))
 
-      (define-key map (vector 'mode-line 'mouse-2)
-        `(lambda (e)
-           (interactive "e")
-           (browse-url ,url)))
+       (define-key map (vector 'mode-line 'mouse-2)
+	 `(lambda (e)
+	    (interactive "e")
+	    (browse-url ,url)))
 
-      (define-key map (vector 'mode-line 'mouse-3)
-        `(lambda (e)
-           (interactive "e")
-	   (mbolic mail-bug-unseen-mails-two)))
+       (define-key map (vector 'mode-line 'mouse-3)
+	 `(lambda (e)
+	    (interactive "e")
+	    (mbolic mail-bug-unseen-mails-two)))
 
-      (add-text-properties 0 (length s)
-                           `(local-map,
-			     map mouse-face mode-line-highlight
-			     uri, url help-echo,
-			     (concat
-			      (mail-bug-tooltip "two")
-			      (format "
+       (add-text-properties 0 (length s)
+			    `(local-map,
+			      map mouse-face mode-line-highlight
+			      uri, url help-echo,
+			      (concat
+			       (mail-bug-tooltip "two")
+			       (format "
 --------------
 mouse-1: View mail in %s
 mouse-2: View mail on %s
 mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-two mail-bug-host-two)))
-                           s)
-      (concat mail-bug-logo-two ":" s)))))
+			    s)
+       (concat mail-bug-logo-two ":" s)))))
 
 (defun mbolic (maillist)
   (interactive)
@@ -362,11 +394,11 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-two mail-bu
      (let
 	 ((tooltip-string
 	   (format " %s | %s | %s (%s)"
-			 (car (nthcdr 1 x)) ; date
-			 (car x)	    ; from
-			 (car (nthcdr 2 x)) ; subject
-			 (car (nthcdr 3 x)) ; id
-			 )))
+		   (car (nthcdr 1 x)) ; date
+		   (car x)	    ; from
+		   (car (nthcdr 2 x)) ; subject
+		   (car (nthcdr 3 x)) ; id
+		   )))
        (progn
 	 (widget-create 'push-button
 			:notify (lambda (&rest ignore)
@@ -398,95 +430,41 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-two mail-bu
    zelist
    "\n\n"))
 
-(defun mail-bug-desktop-notify-one ()
+(defun mail-bug-desktop-notify (suffix)
   (mapcar
    (lambda (x)
-     (if (not (member x mail-bug-advertised-mails-one))
+     (if (not (member x (symbol-value (intern (concat "mail-bug-advertised-mails-" suffix)))))
 	 (progn
 	   (mail-bug-desktop-notification
-	    "<h3 style='color:palegreen;'>New mail!</h3>"
-	    (format "<h4>%s</h4><h5>%s</h5><hr>%s"
-		    (car x)
-		    (nthcdr 1 x)
-		    (car (nthcdr 2 x)))
-	    1 mail-bug-new-mail-icon-one)
-	   (add-to-list 'mail-bug-advertised-mails-one x))))
-   mail-bug-unseen-mails-one))
+	    (format "%s" (first x))
+	    (format "%s \n%s" (second x) (third x))
+	    "5000" (symbol-value (intern (concat "mail-bug-new-mail-icon-" suffix))))
+	   (add-to-list (intern (concat "mail-bug-advertised-mails-" suffix)) x))))
+   (symbol-value (intern (concat "mail-bug-unseen-mails-" suffix)))))
 
-(defun mail-bug-desktop-notify-two ()
-  (mapcar
-   (lambda (x)
-     (if (not (member x mail-bug-advertised-mails-two))
-	 (progn
-	   (mail-bug-desktop-notification
-	    "<h3 style='color:red;'>New mail!</h3>"
-	    (format "<h4>%s</h4><h5>%s</h5><hr>%s"
-		    (car x)
-		    (nthcdr 1 x)
-		    (car (nthcdr 2 x)))
-	    1 mail-bug-new-mail-icon-two)
-	   (add-to-list 'mail-bug-advertised-mails-two x))))
-   mail-bug-unseen-mails-two))
-
-;; (defun handle-hello (hello)
-;;   (print hello))
-
-;; (dbus-call-method-asynchronously :session "org.test.emacs" "/helloworld" "org.test.emacs" "hello" 'handle-hello)
-
-;; (dbus-call-method-asynchronously
-;;   :system "org.freedesktop.Hal"
-;;   "/org/freedesktop/Hal/devices/computer"
-;;   "org.freedesktop.Hal.Device" "GetPropertyString" 'message
-;;   "system.kernel.machine")
-
-;; (defun mail-bug-desktop-notification (summary body timeout icon)
-;;   "Call notification-daemon method with ARGS over DBus.
-;; And that's not the half of it."
-;;   (if (window-system)
-;;       (if mail-bug-new-mail-sound
-;;           (progn
-;; 	    (dbus-call-method
-;; 	     :session                                 ; use the session (not system) bus
-;; 	     "org.freedesktop.Notifications"          ; service name
-;; 	     "/org/freedesktop/Notifications"         ; path name
-;; 	     "org.freedesktop.Notifications" "Notify" ; Method
-;; 	     "GNU Emacs"	         	    ; Application
-;; 	     0					    ; Timeout
-;; 	     icon
-;; 	     summary
-;; 	     body
-;; 	     '(:array)
-;; 	     '(:array :signature "{sv}")
-;; 	     ':int32 timeout)
-;; 	    ;; (play-sound-file "/usr/share/sounds/pop.wav")
-;; 	    (start-process-shell-command "*mail-bug-sound*" nil (concat "mplayer " mail-bug-new-mail-sound))))
-;;     (message "New mail!" )))
-
+(defun mail-bug-reset-advertised-mails ()
+(interactive)
+(setq mail-bug-advertised-mails-one ())
+(setq mail-bug-advertised-mails-two ()))
 
 (defun mail-bug-desktop-notification (summary body timeout icon)
   "Call notification-daemon method with ARGS over DBus.
 And that's not the half of it."
   (if (window-system)
       (progn
-	(dbus-call-method
-	 :session                                 ; use the session (not system) bus
-	 "org.freedesktop.Notifications"          ; service name
-	 "/org/freedesktop/Notifications"         ; path name
-	 "org.freedesktop.Notifications" "Notify" ; Method
-	 "GNU Emacs"                              ; Application
-	 0					  ; Timeout
-	 icon
-	 summary
-	 body
-	 '(:array)
-	 '(:array :signature "{sv}")
-	 ':int32 timeout)
-	;; (play-sound-file "/usr/share/sounds/pop.wav")
+
+	(start-process "notify" "*mail-bug-notify*"
+		       libnotify-program
+		       (concat "--expire-time=" timeout)
+		       "--urgency=low"
+		       (concat "--icon=" icon)
+		       (format "%s" summary)
+		       (format "%s" body))
 	(if (and
 	     (file-exists-p "/usr/bin/mplayer")
 	     mail-bug-new-mail-sound)
 	    (start-process-shell-command "*mail-bug-sound*" nil (concat "mplayer " mail-bug-new-mail-sound))))
-    (message "New mail!" )))
+    (message "New mail from %s !" summary)))
 
 ;; Utilities
 (defun mail-bug-buffer-to-list (buf)
@@ -514,9 +492,9 @@ And that's not the half of it."
   (subseq (car s) 0 -6))
 
 (defun Rx ()
-(interactive)
-(setq mail-bug-advertised-mails-one '())
-(setq mail-bug-advertised-mails-two '()))
+  (interactive)
+  (setq mail-bug-advertised-mails-one '())
+  (setq mail-bug-advertised-mails-two '()))
 
 (message "%s loaded" (or load-file-name buffer-file-name))
 (provide 'mail-bug)
