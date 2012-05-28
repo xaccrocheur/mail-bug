@@ -320,6 +320,7 @@ Get the login and password from HOST and PORT delta association"
 	    (interactive "e")
 	    (browse-url ,url)))
 
+
        (define-key map (vector 'mode-line 'mouse-3)
 	 `(lambda (e)
 	    (interactive "e")
