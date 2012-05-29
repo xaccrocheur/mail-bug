@@ -52,18 +52,17 @@
 
 (defvar libnotify-program "/usr/bin/notify-send")
 
-
 (defgroup mail-bug nil
   "Universal mail notifier."
   :prefix "mail-bug-"
   :group 'mail)
 
-(defgroup mail-bug-account-one nil
+(defgroup mail-bug-account-1 nil
   "Details for account one."
   :prefix "mail-bug-accounts"
   :group 'mail-bug)
 
-(defgroup mail-bug-account-two nil
+(defgroup mail-bug-account-2 nil
   "Details for account two."
   :prefix "mail-bug-accounts"
   :group 'mail-bug)
@@ -74,41 +73,41 @@ Example : wl"
   :type 'function
   :group 'mail-bug)
 
-(defcustom mail-bug-host-one "imap.gmail.com"
+(defcustom mail-bug-host-1 "imap.gmail.com"
   "Mail host.
 Example : imap.gmail.com"
   :type 'string
-  :group 'mail-bug-account-one)
+  :group 'mail-bug-account-1)
 
-(defcustom mail-bug-port-one "993"
+(defcustom mail-bug-port-1 "993"
   "Port number and (optional) protocol path.
 993 IS the default IMAP port"
   :type 'string
-  :group 'mail-bug-account-one)
+  :group 'mail-bug-account-1)
 
-(defcustom mail-bug-imap-box-one "INBOX"
+(defcustom mail-bug-imap-box-1 "INBOX"
   "Name of the imap folder on the server.
 Example : INBOX"
   :type 'string
-  :group 'mail-bug-account-one)
+  :group 'mail-bug-account-1)
 
-(defcustom mail-bug-host-two "mail.gandi.net"
+(defcustom mail-bug-host-2 "mail.gandi.net"
   "Mail host.
 Example : imap.gmail.com"
   :type 'string
-  :group 'mail-bug-account-two)
+  :group 'mail-bug-account-2)
 
-(defcustom mail-bug-port-two "993"
+(defcustom mail-bug-port-2 "993"
   "Port number and (optional) protocol path.
 993 IS the default IMAP port"
   :type 'string
-  :group 'mail-bug-account-two)
+  :group 'mail-bug-account-2)
 
-(defcustom mail-bug-imap-box-two "INBOX"
+(defcustom mail-bug-imap-box-2 "INBOX"
   "Name of the imap folder on the server.
 Example : INBOX"
   :type 'string
-  :group 'mail-bug-account-two)
+  :group 'mail-bug-account-2)
 
 (defcustom mail-bug-new-mail-sound "/usr/share/sounds/pop.wav"
   "Sound for new mail notification.
@@ -116,55 +115,55 @@ Any format works."
   :type 'string
   :group 'mail-bug)
 
-(defcustom mail-bug-new-mail-icon-one "/usr/share/icons/oxygen/128x128/actions/configure.png"
+(defcustom mail-bug-new-mail-icon-1 "/usr/share/icons/oxygen/128x128/actions/configure.png"
   "Icon for new mail notification.
 PNG works."
   :type 'string
-  :group 'mail-bug-account-one)
+  :group 'mail-bug-account-1)
 
-(defcustom mail-bug-new-mail-icon-two "/usr/share/icons/Revenge/128x128/apps/emacs.png"
+(defcustom mail-bug-new-mail-icon-2 "/usr/share/icons/Revenge/128x128/apps/emacs.png"
   "Icon for new mail notification.
 PNG works."
   :type 'string
-  :group 'mail-bug-account-two)
+  :group 'mail-bug-account-2)
 
-(defvar mail-bug-icon-file-one "~/.emacs.d/lisp/mail-bug/greenbug.xpm")
+(defvar mail-bug-icon-file-1 "~/.emacs.d/lisp/mail-bug/greenbug.xpm")
 
-(defcustom mail-bug-icon-one
+(defcustom mail-bug-icon-1
   (when (image-type-available-p 'xpm)
     '(image :type xpm
 	    :file "~/.emacs.d/lisp/mail-bug/greenbug.xpm"
 	    :ascent center))
   "Icon for the first account.
 Must be an XPM (use Gimp)."
-  :group 'mail-bug-account-one)
+  :group 'mail-bug-account-1)
 
-(defvar mail-bug-icon-file-two "~/.emacs.d/lisp/mail-bug/ladybug.xpm")
+(defvar mail-bug-icon-file-2 "~/.emacs.d/lisp/mail-bug/ladybug.xpm")
 
-(defcustom mail-bug-icon-two
+(defcustom mail-bug-icon-2
   (when (image-type-available-p 'xpm)
     '(image :type xpm
 	    :file "~/.emacs.d/lisp/mail-bug/ladybug.xpm"
 	    :ascent center))
   "Icon for the second account.
 Must be an XPM (use Gimp)."
-  :group 'mail-bug-account-two)
+  :group 'mail-bug-account-2)
 
-(defconst mail-bug-logo-one
+(defconst mail-bug-logo-1
   (if (and window-system
-	   mail-bug-icon-two)
-      (apply 'propertize " " `(display ,mail-bug-icon-one))
-    mail-bug-host-one))
+	   mail-bug-icon-2)
+      (apply 'propertize " " `(display ,mail-bug-icon-1))
+    mail-bug-host-1))
 
-(defconst mail-bug-logo-two
+(defconst mail-bug-logo-2
   (if (and window-system
-	   mail-bug-icon-two)
-      (apply 'propertize " " `(display ,mail-bug-icon-two))
-    mail-bug-host-two))
+	   mail-bug-icon-2)
+      (apply 'propertize " " `(display ,mail-bug-icon-2))
+    mail-bug-host-2))
 
 (defvar mail-bug-unseen-mails nil)
-(defvar mail-bug-advertised-mails-one '())
-(defvar mail-bug-advertised-mails-two '())
+(defvar mail-bug-advertised-mails-1 '())
+(defvar mail-bug-advertised-mails-2 '())
 
 (defvar mail-bug-shell-script-command "~/.emacs.d/lisp/mail-bug/mail-bug.pl"
   "Full command line. Can't touch dat.")
@@ -181,32 +180,58 @@ Must be an XPM (use Gimp)."
   ;; (add-to-list 'global-mode-string
   ;;              '(:eval (mail-bug-mode-line)))
   (add-to-list 'global-mode-string
-               '(:eval (mail-bug-mode-line-all "two")))
+               '(:eval (mail-bug-mode-line-all "2")))
   (add-to-list 'global-mode-string " ")
   (add-to-list 'global-mode-string
-               '(:eval (mail-bug-mode-line-all "one")))
+               '(:eval (mail-bug-mode-line-all "1")))
 
   (run-with-timer 10
-		  mail-bug-timer-interval
-		  'mail-bug-check-all))
+  		  mail-bug-timer-interval
+  		  'mail-bug-check-tout "1")
+  (run-with-timer 10
+  		  mail-bug-timer-interval
+  		  'mail-bug-check-tout "2")
+)
 
-(defun mail-bug-check-all ()
+;; (mail-bug-init)
+;; (mail-bug-check-tout "2")
+;; (mail-bug-check-tout "1")
+
+;; (setq num "1")
+
+(defun mail-bug-check-tout (num)
   "Check unread mail now."
   (interactive)
-  (if (get-buffer  (concat "*mail-bug-" mail-bug-host-one "*"))
+  (message "plop! %s" num)
+  (if (get-buffer (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" num))) "*"))
       (progn
-	(if (get-buffer-process (concat "*mail-bug-" mail-bug-host-one "*"))
-	    (set-process-query-on-exit-flag (get-buffer-process (concat "*mail-bug-" mail-bug-host-one "*")) nil)
-	  (kill-buffer (concat "*mail-bug-" mail-bug-host-one "*")))))
-  (if (get-buffer  (concat "*mail-bug-" mail-bug-host-two "*"))
-      (progn
-	(if (get-buffer-process (concat "*mail-bug-" mail-bug-host-two "*"))
-	    (set-process-query-on-exit-flag (get-buffer-process (concat "*mail-bug-" mail-bug-host-two "*")) nil)
-	  (kill-buffer (concat "*mail-bug-" mail-bug-host-two "*")))))
-  (mail-bug-check mail-bug-host-one mail-bug-port-one mail-bug-imap-box-one)
-  (mail-bug-check mail-bug-host-two mail-bug-port-two mail-bug-imap-box-two))
+  	(if (get-buffer-process (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" num))) "*"))
+  	    (set-process-query-on-exit-flag
+  	     (get-buffer-process
+  	      (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" num))) "*")) nil)
+  	  (kill-buffer (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" num))) "*")))))
+  (mail-bug-auth
+   (symbol-value (intern (concat "mail-bug-host-" num)))
+   (symbol-value (intern (concat "mail-bug-port-" num)))
+   (symbol-value (intern (concat "mail-bug-imap-box-" num)))))
 
-(defun mail-bug-check (host port box &optional mail-id)
+;; (defun mail-bug-check-all ()
+;;   "Check unread mail now."
+;;   (interactive)
+;;   (if (get-buffer (concat "*mail-bug-" mail-bug-host-1 "*"))
+;;       (progn
+;; 	(if (get-buffer-process (concat "*mail-bug-" mail-bug-host-1 "*"))
+;; 	    (set-process-query-on-exit-flag (get-buffer-process (concat "*mail-bug-" mail-bug-host-1 "*")) nil)
+;; 	  (kill-buffer (concat "*mail-bug-" mail-bug-host-1 "*")))))
+;;   (if (get-buffer  (concat "*mail-bug-" mail-bug-host-2 "*"))
+;;       (progn
+;; 	(if (get-buffer-process (concat "*mail-bug-" mail-bug-host-2 "*"))
+;; 	    (set-process-query-on-exit-flag (get-buffer-process (concat "*mail-bug-" mail-bug-host-2 "*")) nil)
+;; 	  (kill-buffer (concat "*mail-bug-" mail-bug-host-2 "*")))))
+;;   (mail-bug-check mail-bug-host-1 mail-bug-port-1 mail-bug-imap-box-1)
+;;   (mail-bug-check mail-bug-host-2 mail-bug-port-2 mail-bug-imap-box-2))
+
+(defun mail-bug-auth (host port box &optional mail-id)
   "Check unread mail.
 Get the login and password from HOST and PORT delta association"
   (mail-bug-shell-command
@@ -246,12 +271,13 @@ Get the login and password from HOST and PORT delta association"
 
 (defun mail-bug-shell-command-callback ()
   "Construct the unread mails lists"
-  (setq mail-bug-unseen-mails-one (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-one "*")))
-  (setq mail-bug-unseen-mails-two (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-two "*")))
+  (setq mail-bug-unseen-mails-1 (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-1 "*")))
+  (setq mail-bug-unseen-mails-2 (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-2 "*")))
   ;; (mail-bug-mode-line)
-  (mail-bug-mode-line-all "one")
-  (mail-bug-mode-line-all "two")
-  ;; (setq mail-bug-unseen-mails-all (cons mail-bug-unseen-mails-one mail-bug-unseen-mails-two))
+  (mail-bug-mode-line-all "1")
+  (mail-bug-mode-line-all "2")
+
+  ;; (setq mail-bug-unseen-mails-all (cons mail-bug-unseen-mails-1 mail-bug-unseen-mails-2))
 
   ;; (setq accounts (safe-length mail-bug-unseen-mails-all))
 
@@ -265,8 +291,17 @@ Get the login and password from HOST and PORT delta association"
   ;;      (return))
   ;;    (test (format "%s" n))
   ;;    (incf n)))
-  (mail-bug-desktop-notify "one")
-  (mail-bug-desktop-notify "two")
+
+  ;; (let
+  ;;     ((n 1))
+  ;;   (loop
+  ;;    (when (> n accounts)
+  ;;      (return))
+  ;;    (test (format "%s" n))
+  ;;    (incf n)))
+
+  (mail-bug-desktop-notify "1")
+  (mail-bug-desktop-notify "2")
   (force-mode-line-update))
 
 (defun mail-bug-own-little-imap-client (maillist)
@@ -290,86 +325,6 @@ Get the login and password from HOST and PORT delta association"
     "\n xxx \n")
    (generate-new-buffer "MBOLIC"))
   (switch-to-buffer "MBOLIC"))
-
-;; (symbol-value (intern (concat "mail-bug-unseen-mails-" list)))
-
-;; (symbol-value (intern (concat "mail-bug-logo-" list)))
-
-(defun mail-bug-mode-line ()
-  "Construct an emacs modeline object"
-  (concat
-   (if (null mail-bug-unseen-mails-one)
-       (concat mail-bug-logo-one " ")
-     (let ((s
-	    (format "%d" (length mail-bug-unseen-mails-one)))
-	   (map (make-sparse-keymap))
-	   (url (concat "http://" mail-bug-host-one)))
-
-       (define-key map (vector 'mode-line 'mouse-1)
-	 `(lambda (e)
-	    (interactive "e")
-	    (funcall mail-bug-external-client)))
-
-       (define-key map (vector 'mode-line 'mouse-2)
-	 `(lambda (e)
-	    (interactive "e")
-	    (browse-url ,url)))
-
-
-       (define-key map (vector 'mode-line 'mouse-3)
-	 `(lambda (e)
-	    (interactive "e")
-	    (mbolic mail-bug-unseen-mails-one)))
-
-       (add-text-properties 0 (length s)
-			    `(local-map,
-			      map mouse-face mode-line-highlight
-			      uri, url help-echo,
-			      (concat
-			       (mail-bug-tooltip "one")
-			       (format "
---------------
-mouse-1: View mail in %s
-mouse-2: View mail on %s
-mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-one mail-bug-host-one)))
-			    s)
-       (concat mail-bug-logo-one ":" s)))
-   " "
-   (if (null mail-bug-unseen-mails-two)
-       (concat mail-bug-logo-two " ")
-     (let ((s
-	    (format "%d" (length mail-bug-unseen-mails-two)))
-	   (map (make-sparse-keymap))
-	   (url (concat "http://" mail-bug-host-two)))
-
-       (define-key map (vector 'mode-line 'mouse-1)
-	 `(lambda (e)
-	    (interactive "e")
-	    (funcall mail-bug-external-client)))
-
-       (define-key map (vector 'mode-line 'mouse-2)
-	 `(lambda (e)
-	    (interactive "e")
-	    (browse-url ,url)))
-
-       (define-key map (vector 'mode-line 'mouse-3)
-	 `(lambda (e)
-	    (interactive "e")
-	    (mbolic mail-bug-unseen-mails-two)))
-
-       (add-text-properties 0 (length s)
-			    `(local-map,
-			      map mouse-face mode-line-highlight
-			      uri, url help-echo,
-			      (concat
-			       (mail-bug-tooltip "two")
-			       (format "
---------------
-mouse-1: View mail in %s
-mouse-2: View mail on %s
-mouse-3: View mail in MBOLIC" mail-bug-external-client mail-bug-host-two mail-bug-host-two)))
-			    s)
-       (concat mail-bug-logo-two ":" s)))))
 
 (defun mail-bug-mode-line-all (list)
   "Construct an emacs modeline object"
@@ -423,8 +378,8 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client (symbol-value (intern (co
 
 (defun mail-bug-reset-advertised-mails ()
 (interactive)
-(setq mail-bug-advertised-mails-one ())
-(setq mail-bug-advertised-mails-two ()))
+(setq mail-bug-advertised-mails-1 ())
+(setq mail-bug-advertised-mails-2 ()))
 
 (defun mail-bug-desktop-notification (summary body timeout icon)
   "Call notification-daemon method with ARGS over DBus.
