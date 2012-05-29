@@ -193,12 +193,6 @@ Must be an XPM (use Gimp)."
   		  'mail-bug-check-tout "2")
 )
 
-;; (mail-bug-init)
-;; (mail-bug-check-tout "2")
-;; (mail-bug-check-tout "1")
-
-;; (setq num "1")
-
 (defun mail-bug-check-tout (num)
   "Check unread mail now."
   (interactive)
@@ -214,22 +208,6 @@ Must be an XPM (use Gimp)."
    (symbol-value (intern (concat "mail-bug-host-" num)))
    (symbol-value (intern (concat "mail-bug-port-" num)))
    (symbol-value (intern (concat "mail-bug-imap-box-" num)))))
-
-;; (defun mail-bug-check-all ()
-;;   "Check unread mail now."
-;;   (interactive)
-;;   (if (get-buffer (concat "*mail-bug-" mail-bug-host-1 "*"))
-;;       (progn
-;; 	(if (get-buffer-process (concat "*mail-bug-" mail-bug-host-1 "*"))
-;; 	    (set-process-query-on-exit-flag (get-buffer-process (concat "*mail-bug-" mail-bug-host-1 "*")) nil)
-;; 	  (kill-buffer (concat "*mail-bug-" mail-bug-host-1 "*")))))
-;;   (if (get-buffer  (concat "*mail-bug-" mail-bug-host-2 "*"))
-;;       (progn
-;; 	(if (get-buffer-process (concat "*mail-bug-" mail-bug-host-2 "*"))
-;; 	    (set-process-query-on-exit-flag (get-buffer-process (concat "*mail-bug-" mail-bug-host-2 "*")) nil)
-;; 	  (kill-buffer (concat "*mail-bug-" mail-bug-host-2 "*")))))
-;;   (mail-bug-check mail-bug-host-1 mail-bug-port-1 mail-bug-imap-box-1)
-;;   (mail-bug-check mail-bug-host-2 mail-bug-port-2 mail-bug-imap-box-2))
 
 (defun mail-bug-auth (host port box &optional mail-id)
   "Check unread mail.
@@ -274,57 +252,68 @@ Get the login and password from HOST and PORT delta association"
   (setq mail-bug-unseen-mails-1 (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-1 "*")))
   (setq mail-bug-unseen-mails-2 (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-2 "*")))
   ;; (mail-bug-mode-line)
-  (mail-bug-mode-line-all "1")
-  (mail-bug-mode-line-all "2")
+  ;; (mail-bug-mode-line-all "1")
+  ;; (mail-bug-mode-line-all "2")
 
-  ;; (setq mail-bug-unseen-mails-all (cons mail-bug-unseen-mails-1 mail-bug-unseen-mails-2))
+  (setq mail-bug-unseen-mails-all (cons mail-bug-unseen-mails-1 mail-bug-unseen-mails-2))
 
-  ;; (setq accounts (safe-length mail-bug-unseen-mails-all))
+  (setq accounts (safe-length mail-bug-unseen-mails-all))
 
   ;; ;; (message "accounts : %d" accounts)
   ;; ;; (loop for i in mail-bug-unseen-mails-all do (message "i : %s" i))
 
-  ;; (let
-  ;;     ((n 1))
-  ;;   (loop
-  ;;    (when (> n accounts)
-  ;;      (return))
-  ;;    (test (format "%s" n))
-  ;;    (incf n)))
+  (let
+      ((n 1))
+    (loop
+     (when (> n accounts)
+       (return))
+     ;; (mail-bug-mode-line-all (format "%s" n))
+     (mail-bug-mode-line-all-var (format "%s" n) mail-bug-unseen-mails-1)
+     (mail-bug-desktop-notify (format "%s" n))
+     (message "youpi!")
+     ;; (message "%s" n)
+     (incf n)))
+  (force-mode-line-update)
 
-  ;; (let
-  ;;     ((n 1))
-  ;;   (loop
-  ;;    (when (> n accounts)
-  ;;      (return))
-  ;;    (test (format "%s" n))
-  ;;    (incf n)))
+)
 
-  (mail-bug-desktop-notify "1")
-  (mail-bug-desktop-notify "2")
-  (force-mode-line-update))
+(defun mail-bug-mode-line-all-var (num list)
+  "Construct an emacs modeline object"
+   (if (null list)
+       (concat (symbol-value (intern (concat "mail-bug-logo-" num))) "  ")
+     (let ((s
+	    (format "%d" (length list)))
+	   (map (make-sparse-keymap))
+	   (url (concat "http://" (symbol-value (intern (concat "mail-bug-host-" num))))))
 
-(defun mail-bug-own-little-imap-client (maillist)
-  (interactive)
-  (princ
-   (mapconcat
-    (lambda (x)
-      (let
-	  ((tooltip-string
-	    (format "%s\n%s \n--------------\n%s\n"
-		    (car (nthcdr 1 x))
-		    ;; (nthcdr 2 x)
-		    (nthcdr 2 x)
-		    (car x)
-		    (car (nthcdr 2 x))
-		    ;; (car x)
-		    )))
-	tooltip-string)
-      )
-    maillist
-    "\n xxx \n")
-   (generate-new-buffer "MBOLIC"))
-  (switch-to-buffer "MBOLIC"))
+       (define-key map (vector 'mode-line 'mouse-1)
+	 `(lambda (e)
+	    (interactive "e")
+	    (funcall mail-bug-external-client)))
+
+       (define-key map (vector 'mode-line 'mouse-2)
+	 `(lambda (e)
+	    (interactive "e")
+	    (browse-url ,url)))
+
+       (define-key map (vector 'mode-line 'mouse-3)
+	 `(lambda (e)
+	    (interactive "e")
+	    (mbolic list)))
+
+       (add-text-properties 0 (length s)
+			    `(local-map,
+			      map mouse-face mode-line-highlight
+			      uri, url help-echo,
+			      (concat
+			       (mail-bug-tooltip (format "%s" list))
+			       (format "
+--------------
+mouse-1: View mail in %s
+mouse-2: View mail on %s
+mouse-3: View mail in MBOLIC" mail-bug-external-client (symbol-value (intern (concat "mail-bug-host-" num))) (symbol-value (intern (concat "mail-bug-host-" num))))))
+			    s)
+       (concat (symbol-value (intern (concat "mail-bug-logo-" num))) ":" s))))
 
 (defun mail-bug-mode-line-all (list)
   "Construct an emacs modeline object"
@@ -398,6 +387,28 @@ And that's not the half of it."
 	     mail-bug-new-mail-sound)
 	    (start-process-shell-command "*mail-bug-sound*" nil (concat "mplayer " mail-bug-new-mail-sound))))
     (message "New mail from %s !" summary)))
+
+(defun mail-bug-own-little-imap-client (maillist)
+  (interactive)
+  (princ
+   (mapconcat
+    (lambda (x)
+      (let
+	  ((tooltip-string
+	    (format "%s\n%s \n--------------\n%s\n"
+		    (car (nthcdr 1 x))
+		    ;; (nthcdr 2 x)
+		    (nthcdr 2 x)
+		    (car x)
+		    (car (nthcdr 2 x))
+		    ;; (car x)
+		    )))
+	tooltip-string)
+      )
+    maillist
+    "\n xxx \n")
+   (generate-new-buffer "MBOLIC"))
+  (switch-to-buffer "MBOLIC"))
 
 (defun mbolic (maillist)
   (interactive)
