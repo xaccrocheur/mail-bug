@@ -52,6 +52,7 @@
 
 (defvar libnotify-program "/usr/bin/notify-send")
 
+
 (defgroup mail-bug nil
   "Universal mail notifier."
   :prefix "mail-bug-"
@@ -177,8 +178,14 @@ Must be an XPM (use Gimp)."
 (defun mail-bug-init ()
   "Init"
   (interactive)
+  ;; (add-to-list 'global-mode-string
+  ;;              '(:eval (mail-bug-mode-line)))
   (add-to-list 'global-mode-string
-               '(:eval (mail-bug-mode-line)))
+               '(:eval (mail-bug-mode-line-all "two")))
+  (add-to-list 'global-mode-string " ")
+  (add-to-list 'global-mode-string
+               '(:eval (mail-bug-mode-line-all "one")))
+
   (run-with-timer 10
 		  mail-bug-timer-interval
 		  'mail-bug-check-all))
@@ -241,9 +248,9 @@ Get the login and password from HOST and PORT delta association"
   "Construct the unread mails lists"
   (setq mail-bug-unseen-mails-one (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-one "*")))
   (setq mail-bug-unseen-mails-two (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-two "*")))
-  (mail-bug-mode-line)
-  ;; (mail-bug-mode-line-all "one")
-  ;; (mail-bug-mode-line-all "two")
+  ;; (mail-bug-mode-line)
+  (mail-bug-mode-line-all "one")
+  (mail-bug-mode-line-all "two")
   ;; (setq mail-bug-unseen-mails-all (cons mail-bug-unseen-mails-one mail-bug-unseen-mails-two))
 
   ;; (setq accounts (safe-length mail-bug-unseen-mails-all))
