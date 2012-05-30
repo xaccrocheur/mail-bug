@@ -247,6 +247,8 @@ Get the login and password from HOST and PORT delta association"
 
     (setq this-mail (mail-bug-buffer-to-list (current-buffer)))))
 
+(defvar accounts 2)
+
 (defun mail-bug-shell-command-callback ()
   "Construct the unread mails lists"
   (setq mail-bug-unseen-mails-1 (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-1 "*")))
@@ -255,9 +257,9 @@ Get the login and password from HOST and PORT delta association"
   ;; (mail-bug-mode-line-all "1")
   ;; (mail-bug-mode-line-all "2")
 
-  (setq mail-bug-unseen-mails-all (cons mail-bug-unseen-mails-1 mail-bug-unseen-mails-2))
+  ;; (setq mail-bug-unseen-mails-all (cons mail-bug-unseen-mails-1 mail-bug-unseen-mails-2))
 
-  (setq accounts (safe-length mail-bug-unseen-mails-all))
+  ;; (setq accounts (safe-length mail-bug-unseen-mails-all))
 
   ;; ;; (message "accounts : %d" accounts)
   ;; ;; (loop for i in mail-bug-unseen-mails-all do (message "i : %s" i))
@@ -277,17 +279,7 @@ Get the login and password from HOST and PORT delta association"
      ;; (message "%s" myvar)
      (message "%s" (car zlist))
      (incf n)))
-  (force-mode-line-update)
-)
-
-(setq zlist ())
-
-;; (mail-bug-check-tout "1")
-
-
-;; (setq plop "zob")
-;; (setq myvar (let "plop" (concat "zob-" plop)))
-;; (message "%s" myvar)
+  (force-mode-line-update))
 
 (defun mail-bug-mode-line-all-var (num list)
   "Construct an emacs modeline object"
