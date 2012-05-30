@@ -267,15 +267,27 @@ Get the login and password from HOST and PORT delta association"
     (loop
      (when (> n accounts)
        (return))
-     ;; (mail-bug-mode-line-all (format "%s" n))
-     (mail-bug-mode-line-all-var (format "%s" n) mail-bug-unseen-mails-1)
+     (mail-bug-mode-line-all (format "%s" n))
+     ;; (mail-bug-mode-line-all-var (format "%s" n) mail-bug-unseen-mails-1)
      (mail-bug-desktop-notify (format "%s" n))
      (message "youpi!")
-     ;; (message "%s" n)
+
+     (setq myvar (let "plop" (concat "mail-bug-unseen-mails-" (format "%s" n))))
+     (add-to-list 'zlist myvar)
+     ;; (message "%s" myvar)
+     (message "%s" (car zlist))
      (incf n)))
   (force-mode-line-update)
-
 )
+
+(setq zlist ())
+
+;; (mail-bug-check-tout "1")
+
+
+;; (setq plop "zob")
+;; (setq myvar (let "plop" (concat "zob-" plop)))
+;; (message "%s" myvar)
 
 (defun mail-bug-mode-line-all-var (num list)
   "Construct an emacs modeline object"
