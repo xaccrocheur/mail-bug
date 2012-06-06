@@ -20,6 +20,8 @@ my $pass = $ARGV[4];
 my $sep = "|_|";
 my $msgid = $ARGV[5] if ( defined $ARGV[5] );
 
+my $number_of_args = $#ARGV + 1;
+
 sub decode_imap_subject {
 
 my $string=$_[0];
@@ -48,51 +50,57 @@ else {
 return $decoded;
 }
 
-# Connect to the IMAP server via SSL
-my $socket = IO::Socket::SSL->new(
-				  PeerAddr => $host,
-				  PeerPort => $port,
-				 )
-  or die "socket(): $@";
+if ($number_of_args > 4) {
+  # Connect to the IMAP server via SSL
+  my $socket = IO::Socket::SSL->new(
+				    PeerAddr => $host,
+				    PeerPort => $port,
+				   )
+    or die "socket(): $@";
 
-my $imap = Mail::IMAPClient->new(
-				 Socket   => $socket,
-				 User     => $login,
-				 Password => $pass,
-				)
-  or die "new(): $@";
+  my $imap = Mail::IMAPClient->new(
+				   Socket   => $socket,
+				   User     => $login,
+				   Password => $pass,
+				  )
+    or die "new(): $@";
 
-# print "I'm authenticated\n" if $imap->IsAuthenticated();
-# my @folders = $imap->folders();
-# print join("\n* ", 'Folders:', @folders), "\n";
+  # print "I'm authenticated\n" if $imap->IsAuthenticated();
+  # my @folders = $imap->folders();
+  # print join("\n* ", 'Folders:', @folders), "\n";
 
-# foreach my $f ($imap->folders) {
-#   print "The $f folder has ",
-#     $imap->unseen_count($f)||0, " unseen messages.\n";
-# }
+  # foreach my $f ($imap->folders) {
+  #   print "The $f folder has ",
+  #     $imap->unseen_count($f)||0, " unseen messages.\n";
+  # }
 
-$imap->select($box);
-my @mails = ($imap->unseen);
 
-if ( defined $msgid ) {
-  foreach my $id (@mails) {
-    my $from = $imap->get_header($msgid, "From");
-    my $date = $imap->get_header($msgid, "Date");
-    my $subject = decode('utf8', decode_imap_subject($imap->get_header($msgid, "Subject")));
-    my $body = decode('utf8', decode_qp($imap->body_string($msgid)));
+  $imap->select($box);
+  my @mails = ($imap->unseen);
 
-    print "$from" . "$sep" . "$date" . "$sep" . "$subject" . "$sep" . "$id" . "$sep" . "$body" . "\n";
+  if ( defined $msgid ) {
+    foreach my $id (@mails) {
+      my $from = $imap->get_header($msgid, "From");
+      my $date = $imap->get_header($msgid, "Date");
+      my $subject = decode('utf8', decode_imap_subject($imap->get_header($msgid, "Subject")));
+      my $body = decode('utf8', decode_qp($imap->body_string($msgid)));
+
+      print "$from" . "$sep" . "$date" . "$sep" . "$subject" . "$sep" . "$id" . "$sep" . "$body" . "\n";
+    }
+  } else {
+    foreach my $id (@mails) {
+      my $msgid = $imap->get_header($id, "Message-id");
+      my $from = $imap->get_header($id, "From");
+      my $date = $imap->get_header($id, "Date");
+      my $subject = decode('utf8', decode_imap_subject($imap->get_header($id, "Subject")));
+
+      print "$from" . "$sep" . "$date" . "$sep" . "$subject" . "$sep" . "$id" . "\n";
+    }
   }
-} else {
-  foreach my $id (@mails) {
-    my $msgid = $imap->get_header($id, "Message-id");
-    my $from = $imap->get_header($id, "From");
-    my $date = $imap->get_header($id, "Date");
-    my $subject = decode('utf8', decode_imap_subject($imap->get_header($id, "Subject")));
-
-    print "$from" . "$sep" . "$date" . "$sep" . "$subject" . "$sep" . "$id" . "\n";
-  }
-}
 
 # Say bye
 $imap->logout();
+
+} else {
+  die("not enough args");
+}

@@ -164,6 +164,7 @@ Must be an XPM (use Gimp)."
 (defvar mail-bug-unseen-mails nil)
 (defvar mail-bug-advertised-mails-1 '())
 (defvar mail-bug-advertised-mails-2 '())
+(defvar accounts 2)
 
 (defvar mail-bug-shell-script-command "~/.emacs.d/lisp/mail-bug/mail-bug.pl"
   "Full command line. Can't touch dat.")
@@ -174,29 +175,53 @@ Must be an XPM (use Gimp)."
   :group 'mail-bug)
 
 ;;;###autoload
+;;(toggle-debug-on-error)
+
 (defun mail-bug-init ()
   "Init"
   (interactive)
   ;; (add-to-list 'global-mode-string
   ;;              '(:eval (mail-bug-mode-line)))
+
   (add-to-list 'global-mode-string
-               '(:eval (mail-bug-mode-line-all "2")))
+	       '(:eval (mail-bug-mode-line-all "1")))
+
   (add-to-list 'global-mode-string " ")
+
   (add-to-list 'global-mode-string
-               '(:eval (mail-bug-mode-line-all "1")))
+	       '(:eval (mail-bug-mode-line-all "2")))
+
 
   (run-with-timer 10
-  		  mail-bug-timer-interval
-  		  'mail-bug-check-tout "1")
+		  mail-bug-timer-interval
+		  'mail-bug-check-tout "1")
   (run-with-timer 10
-  		  mail-bug-timer-interval
-  		  'mail-bug-check-tout "2")
+		  mail-bug-timer-interval
+		  'mail-bug-check-tout "2")
+  ;;     (progn
+  ;; 	(message "go 1")
+  ;; 	(add-to-list 'global-mode-string
+  ;; 		     '(:eval (mail-bug-mode-line-all "1"))))
+  ;;   (message "problem 1"))
+
+  ;; (if (run-with-timer 10
+  ;; 		      mail-bug-timer-interval
+  ;; 		      'mail-bug-check-tout "2")
+  ;;     (progn
+  ;; 	(message "go 2")
+  ;; 	(add-to-list 'global-mode-string
+  ;; 		     '(:eval (mail-bug-mode-line-all "2"))))
+  ;;   (message "problem 2"))
+
+  ;; (run-with-timer 10
+  ;; 		  mail-bug-timer-interval
+  ;; 		  'mail-bug-check-tout "2")
 )
 
 (defun mail-bug-check-tout (num)
-  "Check unread mail now."
+  "Really check unread mail now."
   (interactive)
-  (message "plop! %s" num)
+  ;; (message "plop! %s" num)
   (if (get-buffer (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" num))) "*"))
       (progn
   	(if (get-buffer-process (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" num))) "*"))
@@ -218,8 +243,20 @@ Get the login and password from HOST and PORT delta association"
 	   host
 	   port
 	   box
+
+	   ;; (let* ((auth (auth-source-search :host host))
+	   ;; 	  (user (plist-get (nth 0 auth) :user))
+	   ;; 	  (user (if (functionp user) (funcall user) user)))
+	   ;;   user)
+
+	   ;; (let* ((auth (auth-source-search :host host))
+	   ;; 	  (secret (plist-get (nth 0 auth) :secret))
+	   ;; 	  (secret (if (functionp secret) (funcall secret) secret)))
+	   ;;   secret)
+
 	   (auth-source-user-or-password "login" host port)
 	   (auth-source-user-or-password "password" host port)
+
 	   (if mail-id
 	       (format "%s" mail-id)
 	     nil)
@@ -239,7 +276,7 @@ Get the login and password from HOST and PORT delta association"
                   (err (process-exit-status process)))
               (if (zerop err)
 		  (funcall ,callback)
-                (error "mail-bug error: %d" err)))))))))
+                (error "mail-bug error: (account %s) %d" ,account err)))))))))
 
 (defun mail-bug-read-mail-callback ()
   "Construct the mail elements list"
@@ -247,7 +284,6 @@ Get the login and password from HOST and PORT delta association"
 
     (setq this-mail (mail-bug-buffer-to-list (current-buffer)))))
 
-(defvar accounts 2)
 
 (defun mail-bug-shell-command-callback ()
   "Construct the unread mails lists"
@@ -271,22 +307,23 @@ Get the login and password from HOST and PORT delta association"
        (return))
      (mail-bug-mode-line-all (format "%s" n))
      ;; (mail-bug-mode-line-all-var (format "%s" n) mail-bug-unseen-mails-1)
-     (mail-bug-desktop-notify (format "%s" n))
-     (message "youpi!")
+     ;; (mail-bug-desktop-notify (format "%s" n))
+     ;; (message "youpi!")
 
-     (setq myvar (let "plop" (concat "mail-bug-unseen-mails-" (format "%s" n))))
-     (add-to-list 'zlist myvar)
-     ;; (message "%s" myvar)
-     (message "%s" (car zlist))
+     ;; (setq myvar (let "plop" (concat "mail-bug-unseen-mails-" (format "%s" n))))
+     ;; (add-to-list 'zlist myvar)
+     ;; (message "concated %s" myvar)
+     ;; (mail-bug-mode-line-all-var (format "%s" n) (format "%s" myvar))
+     ;; (message "%s" (car zlist))
      (incf n)))
   (force-mode-line-update))
 
-(defun mail-bug-mode-line-all-var (num list)
+(defun mail-bug-mode-line-all (num)
   "Construct an emacs modeline object"
-   (if (null list)
+   (if (null (symbol-value (intern (concat "mail-bug-unseen-mails-" num))))
        (concat (symbol-value (intern (concat "mail-bug-logo-" num))) "  ")
      (let ((s
-	    (format "%d" (length list)))
+	    (format "%d" (length (symbol-value (intern (concat "mail-bug-unseen-mails-" num))))))
 	   (map (make-sparse-keymap))
 	   (url (concat "http://" (symbol-value (intern (concat "mail-bug-host-" num))))))
 
@@ -303,14 +340,14 @@ Get the login and password from HOST and PORT delta association"
        (define-key map (vector 'mode-line 'mouse-3)
 	 `(lambda (e)
 	    (interactive "e")
-	    (mbolic list)))
+	    (mbolic (symbol-value (intern (concat "mail-bug-unseen-mails-" num))))))
 
        (add-text-properties 0 (length s)
 			    `(local-map,
 			      map mouse-face mode-line-highlight
 			      uri, url help-echo,
 			      (concat
-			       (mail-bug-tooltip (format "%s" list))
+			       (mail-bug-tooltip (format "%s" num))
 			       (format "
 --------------
 mouse-1: View mail in %s
@@ -319,45 +356,48 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client (symbol-value (intern (co
 			    s)
        (concat (symbol-value (intern (concat "mail-bug-logo-" num))) ":" s))))
 
-(defun mail-bug-mode-line-all (list)
+
+(defun mail-bug-mode-line-all-var (num list)
   "Construct an emacs modeline object"
-   (if (null (symbol-value (intern (concat "mail-bug-unseen-mails-" list))))
-       (concat (symbol-value (intern (concat "mail-bug-logo-" list))) "  ")
-     (let ((s
-	    (format "%d" (length (symbol-value (intern (concat "mail-bug-unseen-mails-" list))))))
-	   (map (make-sparse-keymap))
-	   (url (concat "http://" (symbol-value (intern (concat "mail-bug-host-" list))))))
+  (if (null list)
+      (concat (symbol-value (intern (concat "mail-bug-logo-" num))) "  ")
+    (let ((s
+	   (format "%d" (length list)))
+	  (map (make-sparse-keymap))
+	  (url (concat "http://" (symbol-value (intern (concat "mail-bug-host-" num))))))
 
-       (define-key map (vector 'mode-line 'mouse-1)
-	 `(lambda (e)
-	    (interactive "e")
-	    (funcall mail-bug-external-client)))
+      (define-key map (vector 'mode-line 'mouse-1)
+	`(lambda (e)
+	   (interactive "e")
+	   (funcall mail-bug-external-client)))
 
-       (define-key map (vector 'mode-line 'mouse-2)
-	 `(lambda (e)
-	    (interactive "e")
-	    (browse-url ,url)))
+      (define-key map (vector 'mode-line 'mouse-2)
+	`(lambda (e)
+	   (interactive "e")
+	   (browse-url ,url)))
 
-       (define-key map (vector 'mode-line 'mouse-3)
-	 `(lambda (e)
-	    (interactive "e")
-	    (mbolic (symbol-value (intern (concat "mail-bug-unseen-mails-" list))))))
+      (define-key map (vector 'mode-line 'mouse-3)
+	`(lambda (e)
+	   (interactive "e")
+	   (mbolic list)))
 
-       (add-text-properties 0 (length s)
-			    `(local-map,
-			      map mouse-face mode-line-highlight
-			      uri, url help-echo,
-			      (concat
-			       (mail-bug-tooltip (format "%s" list))
-			       (format "
+      (add-text-properties 0 (length s)
+			   `(local-map,
+			     map mouse-face mode-line-highlight
+			     uri, url help-echo,
+			     (concat
+			      (mail-bug-tooltip (format "%s" list))
+			      (format "
 --------------
 mouse-1: View mail in %s
 mouse-2: View mail on %s
-mouse-3: View mail in MBOLIC" mail-bug-external-client (symbol-value (intern (concat "mail-bug-host-" list))) (symbol-value (intern (concat "mail-bug-host-" list))))))
-			    s)
-       (concat (symbol-value (intern (concat "mail-bug-logo-" list))) ":" s))))
+mouse-3: View mail in MBOLIC" mail-bug-external-client (symbol-value (intern (concat "mail-bug-host-" num))) (symbol-value (intern (concat "mail-bug-host-" num))))))
+			   s)
+      (concat (symbol-value (intern (concat "mail-bug-logo-" num))) ":" s)))
+  (message "list vide"))
 
 (defun mail-bug-desktop-notify (list)
+  (message "entering notify")
   (mapcar
    (lambda (x)
      (if (not (member x (symbol-value (intern (concat "mail-bug-advertised-mails-" list)))))
