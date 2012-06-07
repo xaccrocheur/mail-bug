@@ -191,7 +191,6 @@ Must be an XPM (use Gimp)."
   (add-to-list 'global-mode-string
 	       '(:eval (mail-bug-mode-line-all "2")))
 
-
   (run-with-timer 10
 		  mail-bug-timer-interval
 		  'mail-bug-check-tout "1")
@@ -221,7 +220,6 @@ Must be an XPM (use Gimp)."
 (defun mail-bug-check-tout (num)
   "Really check unread mail now."
   (interactive)
-  ;; (message "plop! %s" num)
   (if (get-buffer (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" num))) "*"))
       (progn
   	(if (get-buffer-process (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" num))) "*"))
@@ -248,8 +246,15 @@ Get the login and password from HOST and PORT delta association"
 	   ;; 	  (user (plist-get (nth 0 auth) :user))
 	   ;; 	  (user (if (functionp user) (funcall user) user)))
 	   ;;   user)
+	   ;; (let ((credentials (auth-source-search :host mail-bug-host-1
+	   ;; 					  :require '(:user :secret))))
+	   ;;   (dolist (p credentials)
+	   ;;     (let ((host (plist-get p :host))
+	   ;; 	     (user (plist-get p :user))
+	   ;; 	     (secret (plist-get p :secret)))
+	   ;; 	 )))
 
-	   ;; (let* ((auth (auth-source-search :host host))
+	   ;; (let* ((auth (auth-source-search :host mail-bug-host-1))
 	   ;; 	  (secret (plist-get (nth 0 auth) :secret))
 	   ;; 	  (secret (if (functionp secret) (funcall secret) secret)))
 	   ;;   secret)
