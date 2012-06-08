@@ -169,13 +169,13 @@ Must be an XPM (use Gimp)."
 (defvar mail-bug-shell-script-command "~/.emacs.d/lisp/mail-bug/mail-bug.pl"
   "Full command line. Can't touch dat.")
 
-(defcustom mail-bug-timer-interval 400
+(defcustom mail-bug-timer-interval 120
   "Interval(in seconds) for mail check."
   :type 'number
   :group 'mail-bug)
 
 ;;;###autoload
-;;(toggle-debug-on-error)
+(toggle-debug-on-error)
 
 (defun mail-bug-init ()
   "Init"
@@ -183,13 +183,13 @@ Must be an XPM (use Gimp)."
   ;; (add-to-list 'global-mode-string
   ;;              '(:eval (mail-bug-mode-line)))
 
-  (add-to-list 'global-mode-string
-	       '(:eval (mail-bug-mode-line-all "1")))
+  ;; (add-to-list 'global-mode-string
+  ;; 	       '(:eval (mail-bug-mode-line-all "1")))
 
-  (add-to-list 'global-mode-string " ")
+  ;; (add-to-list 'global-mode-string " ")
 
-  (add-to-list 'global-mode-string
-	       '(:eval (mail-bug-mode-line-all "2")))
+  ;; (add-to-list 'global-mode-string
+  ;; 	       '(:eval (mail-bug-mode-line-all "2")))
 
   (run-with-timer 10
 		  mail-bug-timer-interval
@@ -220,6 +220,7 @@ Must be an XPM (use Gimp)."
 (defun mail-bug-check-tout (num)
   "Really check unread mail now."
   (interactive)
+  (message "checking mail %s" (format-time-string "%H:%M:%S" (current-time)))
   (if (get-buffer (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" num))) "*"))
       (progn
   	(if (get-buffer-process (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" num))) "*"))
@@ -305,26 +306,65 @@ Get the login and password from HOST and PORT delta association"
   ;; ;; (message "accounts : %d" accounts)
   ;; ;; (loop for i in mail-bug-unseen-mails-all do (message "i : %s" i))
 
-  (let
-      ((n 1))
-    (loop
-     (when (> n accounts)
-       (return))
-     (mail-bug-mode-line-all (format "%s" n))
-     ;; (mail-bug-mode-line-all-var (format "%s" n) mail-bug-unseen-mails-1)
-     ;; (mail-bug-desktop-notify (format "%s" n))
-     ;; (message "youpi!")
+  ;; (let
+  ;;     ((n 1))
+  ;;   (loop
+  ;;    (when (> n accounts)
+  ;;      (return))
+  ;;    ;; (mail-bug-mode-line-all (format "%s" n))
+  ;;    (mail-bug-desktop-notify (format "%s" n))
+  ;;    ;; (add-to-list 'global-mode-string
+  ;;    		  ;; (eval (mail-bug-mode-line-all (format "%s" n))))
+  ;;    ;; (add-to-list 'global-mode-string " ")
+  ;;    ;; (message "n is now %s" n)
+  ;;    (force-mode-line-update)
+  ;;    (incf n)))
+  (setq i 1)
+  (setq final-line ())
 
-     ;; (setq myvar (let "plop" (concat "mail-bug-unseen-mails-" (format "%s" n))))
-     ;; (add-to-list 'zlist myvar)
-     ;; (message "concated %s" myvar)
-     ;; (mail-bug-mode-line-all-var (format "%s" n) (format "%s" myvar))
-     ;; (message "%s" (car zlist))
-     (incf n)))
+  (loop for i from 1 to accounts do
+	;; (mail-bug-mode-line-all (format "%s" i))
+	(add-to-list 'global-mode-string
+		     `(:eval (mail-bug-mode-line-all (format "%s" ,i))) t)
+	;; (setq final-line (cons (mail-bug-mode-line-all (format "%s" i)) final-line))
+	(add-to-list 'global-mode-string " " t)
+
+	;; (setq global-mode-string
+	;;       (append global-mode-string
+	;; 	      (mail-bug-mode-line-all (format "%s" i))))
+	(mail-bug-desktop-notify (format "%s" i))
+	(message "hiyo %s" i))
+
+  ;; (mlist final-line)
+
+  ;; (setq global-mode-string
+  ;; 	(append global-mode-string
+  ;; 		(mapconcat 'identity final-line " ")))
+
+  ;; (add-to-list 'global-mode-string (cdr final-line))
+
+
+  ;; (mapconcat 'identity final-line " ")
+
+  ;; (add-to-list 'global-mode-string
+  ;; 	       '(:eval (mail-bug-mode-line-all "2")))
+
+  ;; (add-to-list 'global-mode-string " ")
+
+  ;; (add-to-list 'global-mode-string
+  ;; 	       '(:eval (mail-bug-mode-line-all "1")))
+
   (force-mode-line-update))
 
+(defun mlist (list)
+  "Print each element of LIST."
+  (while list
+    (message "car : %s" (car list))
+    (setq list (cdr list))))
+
 (defun mail-bug-mode-line-all (num)
-  "Construct an emacs modeline object"
+  "Construct an emacs modeline object."
+  ;; (message "mail-bug-mode-line-all called with %s" num)
    (if (null (symbol-value (intern (concat "mail-bug-unseen-mails-" num))))
        (concat (symbol-value (intern (concat "mail-bug-logo-" num))) "  ")
      (let ((s
@@ -402,7 +442,6 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client (symbol-value (intern (co
   (message "list vide"))
 
 (defun mail-bug-desktop-notify (list)
-  (message "entering notify")
   (mapcar
    (lambda (x)
      (if (not (member x (symbol-value (intern (concat "mail-bug-advertised-mails-" list)))))
@@ -413,11 +452,6 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client (symbol-value (intern (co
 	    "5000" (symbol-value (intern (concat "mail-bug-new-mail-icon-" list))))
 	   (add-to-list (intern (concat "mail-bug-advertised-mails-" list)) x))))
    (symbol-value (intern (concat "mail-bug-unseen-mails-" list)))))
-
-(defun mail-bug-reset-advertised-mails ()
-(interactive)
-(setq mail-bug-advertised-mails-1 ())
-(setq mail-bug-advertised-mails-2 ()))
 
 (defun mail-bug-desktop-notification (summary body timeout icon)
   "Call notification-daemon method with ARGS over DBus.
@@ -535,6 +569,22 @@ And that's not the half of it."
 (defun mail-bug-format-time (s)
   "Clean Time string S"
   (subseq (car s) 0 -6))
+
+;; Debug
+
+(defun mail-bug-debug ()
+  "Empty all lists and check all now."
+  (interactive)
+  (mail-bug-reset-advertised-mails)
+  (mail-bug-check-tout "1")
+  (mail-bug-check-tout "2"))
+
+
+(defun mail-bug-reset-advertised-mails ()
+  (interactive)
+  (setq mail-bug-advertised-mails-1 ())
+  (setq mail-bug-advertised-mails-2 ()))
+
 
 (message "%s loaded" (or load-file-name buffer-file-name))
 (provide 'mail-bug)
