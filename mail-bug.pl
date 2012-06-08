@@ -50,6 +50,7 @@ else {
 return $decoded;
 }
 
+# We need a better error handling
 if ($number_of_args > 4) {
   # Connect to the IMAP server via SSL
   my $socket = IO::Socket::SSL->new(
