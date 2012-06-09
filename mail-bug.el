@@ -268,6 +268,7 @@ Get the login and password from HOST and PORT delta association"
   (setq i 1)
   (loop for i from 1 to accounts do
 
+
 	(add-to-list 'global-mode-string
 		     `(:eval (mail-bug-mode-line (format "%s" ,i))) t)
 	(add-to-list 'global-mode-string " " t)
