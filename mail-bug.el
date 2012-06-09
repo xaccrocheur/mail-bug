@@ -252,7 +252,7 @@ Get the login and password from HOST and PORT delta association"
                   (err (process-exit-status process)))
               (if (zerop err)
 		  (funcall ,callback)
-                (error "mail-bug error: (account %s) %d" ,account err)))))))))
+                (error "mail-bug error: (%s)" err)))))))))
 
 (defun mail-bug-read-mail-callback ()
   "Construct the mail elements list"
@@ -266,6 +266,8 @@ Get the login and password from HOST and PORT delta association"
   (setq mail-bug-unseen-mails-1 (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-1 "*")))
   (setq mail-bug-unseen-mails-2 (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-2 "*")))
   (setq i 1)
+
+  (setq bigass-list ())
   (loop for i from 1 to accounts do
 
 	(setq one-list
