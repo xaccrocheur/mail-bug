@@ -267,8 +267,6 @@ Get the login and password from HOST and PORT delta association"
   (setq mail-bug-unseen-mails-2 (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-2 "*")))
   (setq i 1)
   (loop for i from 1 to accounts do
-
-
 	(add-to-list 'global-mode-string
 		     `(:eval (mail-bug-mode-line (format "%s" ,i))) t)
 	(add-to-list 'global-mode-string " " t)
