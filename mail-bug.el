@@ -273,6 +273,7 @@ Get the login and password from HOST and PORT delta association"
 	(mail-bug-desktop-notify (format "%s" i)))
   (force-mode-line-update))
 
+
 (defun mail-bug-mode-line (num)
   "Construct an emacs modeline object.
 Launch the modeline and notify commands."
