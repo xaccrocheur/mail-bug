@@ -364,6 +364,7 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client (symbol-value (intern (co
       (kill-buffer "MBOLIC"))
   (switch-to-buffer "MBOLIC")
   (kill-all-local-variables)
+
   ;; (require 'button)
 
        ;; (insert-button "fsf"
@@ -379,7 +380,9 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client (symbol-value (intern (co
   ;;   (mapcar 'delete-overlay (cdr all)))
 
   (defun test-widget (msg-id num)
-    (message "hi, I'm mail number %s on list %s" msg-id num))
+    (message "hi, I'm mail number %s on list %s" msg-id num)
+    (pop-to-buffer "plop")
+)
 
   (mapcar
    (lambda (x)
@@ -393,22 +396,6 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client (symbol-value (intern (co
 		    (car (nthcdr 3 x)))
 	    ))
        (progn
-
-	 ;; (widget-create 'push-button
-	 ;; 		:notify (lambda (&rest ignore)
-	 ;; 			  (test-widget ,mail-number ,num))
-	 ;; 		tooltip-string)
-
-	 ;; (widget-create 'push-button
-	 ;; 		;; :button-face 'bookmark-simply-buffer-face
-	 ;; 		:tag tooltip-string
-	 ;; 		:help-echo "plop"
-	 ;; 		:format "%[%t%]"
-	 ;; 		:notify (lambda (&rest ignore)
-	 ;; 			  (test-widget ,mail-number ,num))
-	 ;; 		)
-
-;; (message "window is %s wide" (- 5 (frame-width)))
 
 (setq new-string (substring summary-string 0 (1- (frame-width))))
 
