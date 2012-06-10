@@ -52,6 +52,23 @@
 
 (defvar libnotify-program "/usr/bin/notify-send")
 
+
+(defcustom person-data '(("brian"  50 t)
+			 ("dorith" 55 nil)
+			 ("ken"    52 t))
+  "Alist of basic info about people.
+          Each element has the form (NAME AGE MALE-FLAG)."
+  :type '(alist :value-type (group integer boolean)))
+
+(defcustom pets '(("brian")
+		  ("dorith" "dog" "guppy")
+		  ("ken" "cat"))
+  "Alist of people's pets.
+          In an element (KEY . VALUE), KEY is the person's name,
+          and the VALUE is a list of that person's pets."
+  :type '(alist :value-type (repeat string)))
+
+
 (defgroup mail-bug nil
   "Universal mail notifier."
   :prefix "mail-bug-"
@@ -127,31 +144,37 @@ PNG works."
   :type 'string
   :group 'mail-bug-account-2)
 
-(defvar mail-bug-icon-file-1 "~/.emacs.d/lisp/mail-bug/greenbug.xpm")
+;; (defvar mail-bug-icon-file-1 "~/.emacs.d/lisp/mail-bug/greenbug.xpm"
+;;   "plop"
+;;   :type 'string
+;;   :group 'mail-bug-account-1)
+
+;; (defvar mail-bug-icon-file-2 "~/.emacs.d/lisp/mail-bug/ladybug.xpm"
+;;   "plop"
+;;   :type 'string
+;;   :group 'mail-bug-account-2)
 
 (defcustom mail-bug-icon-1
   (when (image-type-available-p 'xpm)
     '(image :type xpm
-	    :file "~/.emacs.d/lisp/mail-bug/greenbug.xpm"
-	    :ascent center))
+   	    :file "~/.emacs.d/lisp/mail-bug/greenbug.xpm"
+   	    :ascent center))
   "Icon for the first account.
 Must be an XPM (use Gimp)."
   :group 'mail-bug-account-1)
 
-(defvar mail-bug-icon-file-2 "~/.emacs.d/lisp/mail-bug/ladybug.xpm")
-
 (defcustom mail-bug-icon-2
   (when (image-type-available-p 'xpm)
     '(image :type xpm
-	    :file "~/.emacs.d/lisp/mail-bug/ladybug.xpm"
-	    :ascent center))
+   	    :file "~/.emacs.d/lisp/mail-bug/ladybug.xpm"
+   	    :ascent center))
   "Icon for the second account.
 Must be an XPM (use Gimp)."
   :group 'mail-bug-account-2)
 
 (defconst mail-bug-logo-1
   (if (and window-system
-	   mail-bug-icon-2)
+	   mail-bug-icon-1)
       (apply 'propertize " " `(display ,mail-bug-icon-1))
     mail-bug-host-1))
 
@@ -161,6 +184,18 @@ Must be an XPM (use Gimp)."
       (apply 'propertize " " `(display ,mail-bug-icon-2))
     mail-bug-host-2))
 
+;; (defconst mail-bug-logo-1
+;;   (if (and window-system
+;; 	   mail-bug-icon-2)
+;;       (apply 'propertize " " `(display ,mail-bug-icon-1))
+;;     mail-bug-host-1))
+
+;; (defconst mail-bug-logo-2
+;;   (if (and window-system
+;; 	   mail-bug-icon-2)
+;;       (apply 'propertize " " `(display ,mail-bug-icon-2))
+;;     mail-bug-host-2))
+
 (defvar mail-bug-unseen-mails nil)
 (defvar mail-bug-advertised-mails-1 '())
 (defvar mail-bug-advertised-mails-2 '())
@@ -169,7 +204,7 @@ Must be an XPM (use Gimp)."
 (defvar mail-bug-shell-script-command "~/.emacs.d/lisp/mail-bug/mail-bug.pl"
   "Full command line. Can't touch dat.")
 
-(defcustom mail-bug-timer-interval 120
+(defcustom mail-bug-timer-interval 180
   "Interval(in seconds) for mail check."
   :type 'number
   :group 'mail-bug)
@@ -247,12 +282,12 @@ Get the login and password from HOST and PORT delta association"
       p
       (lambda (process event)
         (with-current-buffer (process-buffer process)
-          (when (eq (process-status  process) 'exit)
+          (when (eq (process-status process) 'exit)
             (let ((inhibit-read-only t)
                   (err (process-exit-status process)))
               (if (zerop err)
 		  (funcall ,callback)
-                (error "mail-bug error: (%s)" err)))))))))
+                (message "Mail-bug error: (%s)" err)))))))))
 
 (defun mail-bug-read-mail-callback ()
   "Construct the mail elements list"
@@ -275,7 +310,6 @@ Get the login and password from HOST and PORT delta association"
 	       (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" (format "%s" i)))) "*")))
 
 	(add-to-list 'bigass-list one-list)
-
 
 	(add-to-list 'global-mode-string
 		     `(:eval (mail-bug-mode-line (format "%s" ,i))) t)
@@ -307,21 +341,106 @@ Launch the modeline and notify commands."
        (define-key map (vector 'mode-line 'mouse-3)
 	 `(lambda (e)
 	    (interactive "e")
-	    (mbolic (symbol-value (intern (concat "mail-bug-unseen-mails-" num))))))
+	    (mbolic (symbol-value (intern (concat "mail-bug-unseen-mails-" ,num))) ,num)
+	    ;; (message "plop")
+	    ))
 
        (add-text-properties 0 (length s)
 			    `(local-map,
 			      map mouse-face mode-line-highlight
-			      uri, url help-echo,
-			      (concat
-			       (mail-bug-tooltip (format "%s" num))
-			       (format "
+			      uri ,url help-echo
+			      ,(concat (mail-bug-tooltip (format "%s" num))
+				       (format "
 --------------
 mouse-1: View mail in %s
 mouse-2: View mail on %s
 mouse-3: View mail in MBOLIC" mail-bug-external-client (symbol-value (intern (concat "mail-bug-host-" num))) (symbol-value (intern (concat "mail-bug-host-" num))))))
 			    s)
        (concat (symbol-value (intern (concat "mail-bug-logo-" num))) ":" s))))
+
+(defun mbolic (maillist num)
+  (interactive)
+  (if (get-buffer "MBOLIC")
+      (kill-buffer "MBOLIC"))
+  (switch-to-buffer "MBOLIC")
+  (kill-all-local-variables)
+  ;; (require 'button)
+
+       ;; (insert-button "fsf"
+       ;;         'action (lambda (x) (browse-url (button-get x 'url)))
+       ;;         'url "http://www.fsf.org")
+
+  ;; (let ((inhibit-read-only t))
+  ;;   (erase-buffer))
+
+  ;; (let ((all (overlay-lists)))
+  ;;   ;; Delete all the overlays.
+  ;;   (mapcar 'delete-overlay (car all))
+  ;;   (mapcar 'delete-overlay (cdr all)))
+
+  (defun test-widget (msg-id num)
+    (message "hi, I'm mail number %s on list %s" msg-id num))
+
+  (mapcar
+   (lambda (x)
+     (let ((mail-number (car (nthcdr 3 x)))
+	   (summary-string
+	    (format "%s | %s | %s (%s)"
+		    ;; (substring (car (nthcdr 1 x)) 0 25) ; date
+		    (car (nthcdr 1 x)) ; date
+		    (car x)	    ; from
+		    (car (nthcdr 2 x)) ; subject
+		    (car (nthcdr 3 x)))
+	    ))
+       (progn
+
+	 ;; (widget-create 'push-button
+	 ;; 		:notify (lambda (&rest ignore)
+	 ;; 			  (test-widget ,mail-number ,num))
+	 ;; 		tooltip-string)
+
+	 ;; (widget-create 'push-button
+	 ;; 		;; :button-face 'bookmark-simply-buffer-face
+	 ;; 		:tag tooltip-string
+	 ;; 		:help-echo "plop"
+	 ;; 		:format "%[%t%]"
+	 ;; 		:notify (lambda (&rest ignore)
+	 ;; 			  (test-widget ,mail-number ,num))
+	 ;; 		)
+
+;; (message "window is %s wide" (- 5 (frame-width)))
+
+(setq new-string (substring summary-string 0 (1- (frame-width))))
+
+(insert-button new-string 'action
+	       `(lambda (widget &rest ignore)
+		  (test-widget ,mail-number ,num)))
+
+	 ;; (insert-button tooltip-string 'action
+	 ;; 		`(lambda (widget &rest ignore)
+	 ;; 		   (test-widget ,mail-number ,num)))
+	 (widget-insert "\n"))
+       ))
+   maillist)
+  ;; (use-local-map widget-keymap)
+  ;; (widget-setup)
+)
+
+(defun mail-bug-tooltip (list)
+  "Loop through the mail(s) elements and build the mouse-hover tooltip."
+  (mapconcat
+   (lambda (x)
+     (let
+	 ((tooltip-string
+	   (format "%s\n%s \n-------\n%s"
+		   (car x)
+		   (car (nthcdr 1 x))
+		   (car (nthcdr 2 x))
+		   )))
+       tooltip-string)
+     )
+   (symbol-value (intern (concat "mail-bug-unseen-mails-" list)))
+   "\n\n"))
 
 (defun mail-bug-desktop-notify (list)
   (mapcar
@@ -332,7 +451,8 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client (symbol-value (intern (co
 	    (format "%s" (first x))
 	    (format "%s \n%s" (second x) (third x))
 	    "5000" (symbol-value (intern (concat "mail-bug-new-mail-icon-" list))))
-	   (add-to-list (intern (concat "mail-bug-advertised-mails-" list)) x))))
+	   (add-to-list (intern (concat "mail-bug-advertised-mails-" list))
+			x))))
    (symbol-value (intern (concat "mail-bug-unseen-mails-" list)))))
 
 (defun mail-bug-desktop-notification (summary body timeout icon)
@@ -352,80 +472,6 @@ And that's not the half of it."
 	     mail-bug-new-mail-sound)
 	    (start-process-shell-command "*mail-bug-sound*" nil (concat "mplayer " mail-bug-new-mail-sound))))
     (message "New mail from %s !" summary)))
-
-(defun mail-bug-own-little-imap-client (maillist)
-  (interactive)
-  (princ
-   (mapconcat
-    (lambda (x)
-      (let
-	  ((tooltip-string
-	    (format "%s\n%s \n--------------\n%s\n"
-		    (car (nthcdr 1 x))
-		    ;; (nthcdr 2 x)
-		    (nthcdr 2 x)
-		    (car x)
-		    (car (nthcdr 2 x))
-		    ;; (car x)
-		    )))
-	tooltip-string)
-      )
-    maillist
-    "\n xxx \n")
-   (generate-new-buffer "MBOLIC"))
-  (switch-to-buffer "MBOLIC"))
-
-(defun mbolic (maillist)
-  (interactive)
-  (if (get-buffer "MBOLIC")
-      (kill-buffer "MBOLIC"))
-  (switch-to-buffer "MBOLIC")
-
-  (let ((inhibit-read-only t))
-    (erase-buffer))
-
-  (let ((all (overlay-lists)))
-    ;; Delete all the overlays.
-    (mapcar 'delete-overlay (car all))
-    (mapcar 'delete-overlay (cdr all)))
-
-  (mapcar
-   (lambda (x)
-     (let
-	 ((tooltip-string
-	   (format " %s | %s | %s (%s)"
-		   (car (nthcdr 1 x)) ; date
-		   (car x)	    ; from
-		   (car (nthcdr 2 x)) ; subject
-		   (car (nthcdr 3 x)) ; id
-		   )))
-       (progn
-	 (widget-create 'push-button
-			:notify (lambda (&rest ignore)
-				  (widget-insert "\n")
-				  (widget-insert "plop"))
-			tooltip-string)
-	 (widget-insert "\n")))
-     )
-   maillist)
-  (use-local-map widget-keymap)
-  (widget-setup))
-
-(defun mail-bug-tooltip (list)
-  "Loop through the mail headers and build the hover tooltip"
-  (mapconcat
-   (lambda (x)
-     (let
-	 ((tooltip-string
-	   (format "%s\n%s \n-------\n%s"
-		   (car x)
-		   (car (nthcdr 1 x))
-		   (car (nthcdr 2 x))
-		   )))
-       tooltip-string)
-     )
-   (symbol-value (intern (concat "mail-bug-unseen-mails-" list)))
-   "\n\n"))
 
 ;; Utilities
 (defun mail-bug-buffer-to-list (buf)
@@ -451,6 +497,28 @@ And that's not the half of it."
 (defun mail-bug-format-time (s)
   "Clean Time string S"
   (subseq (car s) 0 -6))
+
+(defun mail-bug-own-little-imap-client (maillist)
+  (interactive)
+  (princ
+   (mapconcat
+    (lambda (x)
+      (let
+	  ((tooltip-string
+	    (format "%s\n%s \n--------------\n%s\n"
+		    (car (nthcdr 1 x))
+		    ;; (nthcdr 2 x)
+		    (nthcdr 2 x)
+		    (car x)
+		    (car (nthcdr 2 x))
+		    ;; (car x)
+		    )))
+	tooltip-string)
+      )
+    maillist
+    "\n xxx \n")
+   (generate-new-buffer "MBOLIC"))
+  (switch-to-buffer "MBOLIC"))
 
 ;; Debug
 
