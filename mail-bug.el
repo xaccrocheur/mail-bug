@@ -239,8 +239,7 @@ Cleanup process buffer(s) and carry on."
   	    (progn
 	      (set-process-query-on-exit-flag
 	       (get-buffer-process
-		mail-bug-process-buffer) nil)
-	      (kill-buffer mail-bug-process-buffer))
+		mail-bug-process-buffer) nil))
 	  (kill-buffer mail-bug-process-buffer))))
   (mail-bug-auth
    (symbol-value (intern (concat "mail-bug-host-" num)))
@@ -253,7 +252,6 @@ Cleanup process buffer(s) and carry on."
 Get the login and password from HOST and PORT delta association"
 
   ;; (message "auth ID %s" mail-id)
-
 
   (if mail-id (progn
 		(setq callback 'mail-bug-read-mail-callback)
@@ -291,15 +289,15 @@ Get the login and password from HOST and PORT delta association"
                   (err (process-exit-status process)))
               (if (zerop err)
 		  (funcall ,callback)
-                (message "Mail-bug error: (%s)" err)))))))))
+                (error "Mail-bug error: (%s)" err)))))))))
 
 (defun mail-bug-read-mail-callback ()
   "Construct the mail elements list"
   (with-current-buffer (current-buffer)
   ;; (message "I'm the callback!")
   ;; (widget-insert "hey!\n")
-  (setq this-mail (mail-bug-buffer-to-list (current-buffer)))
-  )
+  ;; (setq this-mail (mail-bug-buffer-to-list (current-buffer)))
+    )
   )
 
 (defun mail-bug-shell-command-callback ()
@@ -346,8 +344,8 @@ Get the login and password from HOST and PORT delta association"
      (let ((mail-number (car (nthcdr 3 x)))
 	   (summary-string
 	    (format "%s | %s | %s (%s)"
-		    (substring (car (nthcdr 1 x)) 0 25) ; date
-		    ;; (car (nthcdr 1 x)) ; date
+		    ;; (substring (car (nthcdr 1 x)) 0 25) ; date
+		    (car (nthcdr 1 x)) ; date
 		    (car x)	    ; from
 		    (car (nthcdr 2 x)) ; subject
 		    (car (nthcdr 3 x)))
@@ -479,12 +477,20 @@ And that's not the half of it."
 
 (defun mail-bug-buffer-to-list (buf)
   (with-current-buffer buf
-    (goto-char (point-min))
+    (if (= (point-min) (point-max))
+	'(())
+      (goto-char (point-min))
     ;; (buffer-string)
-    (message "now reading %s" (current-buffer))
-    (read (current-buffer))
-)
-)
+    ;; (message "now reading %s that has %s lines in it" (current-buffer) (point-max))
+
+    ;; (setq enchilada (buffer-substring (point-min) (point-max)))
+
+    ;; (if (<= 2 (point-max))
+    ;; 	(read (current-buffer))
+    ;;   (message "nothing"))
+
+      (read (current-buffer))
+      )))
 
 ;; (mail-bug-buffer-to-real-list "*mail-bug-imap.gmail.com*")
 
