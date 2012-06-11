@@ -90,7 +90,7 @@ Example : wl"
   :type 'function
   :group 'mail-bug)
 
-(defcustom mail-bug-host-1 "imap.gmail.com"
+(defcustom mail-bug-host-1 "imap.gmx.com"
   "Mail host.
 Example : imap.gmail.com"
   :type 'string
@@ -299,9 +299,11 @@ If MAIL-ID is set, then read this single mail."
   (setq my-date (second (first this-mail)))
   (setq my-subj (third (first this-mail)))
   (setq my-body (fourth (first this-mail)))
+  )
 
+  (with-current-buffer "MBOLIC-mail"
   ;; (switch-to-buffer "MBOLIC-mail")
-  ;; (widget-insert "hey!\n")
+    (widget-insert my-from)
     )
   )
 
@@ -340,8 +342,11 @@ If MAIL-ID is set, then read this single mail."
 			      "-" msg-id "*"))
 
     (message "hi, I'm mail number %s on list %s" msg-id num)
+    (if (get-buffer "MBOLIC-mail")
+	(kill-buffer "MBOLIC-mail"))
+    (get-buffer-create "MBOLIC-mail")
     (mail-bug-check num msg-id)
-    (display-buffer mail-buffer)
+    (display-buffer "MBOLIC-mail")
     )
 
   (mapcar
@@ -460,7 +465,7 @@ And that's not the half of it."
 	(if (and
 	     (file-exists-p "/usr/bin/mplayer")
 	     mail-bug-new-mail-sound)
-	    (progn (start-process-shell-command "*mail-bug-sound*" nil (concat "mplayer " mail-bug-new-mail-sound))
+	    (progn (start-process-shell-command "*mail-bug-sound*" nil (concat "mplayer -volume 25 " mail-bug-new-mail-sound))
 		   (sleep-for 0.5)
 )))
     (message "New mail from %s !" summary)))
@@ -508,6 +513,9 @@ And that's not the half of it."
   (switch-to-buffer "MBOLIC"))
 
 ;; Debug
+
+;; (first mail-bug-unseen-mails-1)
+;; mail-bug-unseen-mails-2
 
 (defun mail-bug-debug ()
   "Empty all lists and check all now."
