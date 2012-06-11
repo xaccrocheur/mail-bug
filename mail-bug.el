@@ -223,15 +223,13 @@ Must be an XPM (use Gimp)."
 
 (defun mail-bug-check (num &optional mail-id)
   "Really check unread mail now.
-Cleanup process buffer(s) and carry on."
+Cleanup process buffer(s) and proceed to auth."
   (message "checking mail %s" (format-time-string "%H:%M:%S" (current-time)))
 
   (setq mail-bug-process-buffer
 	(concat "*mail-bug-"
 		(symbol-value (intern (concat "mail-bug-host-" num)))
 		(if mail-id (format "-%s" mail-id)) "*"))
-
-  (message "Buffer is %s" mail-bug-process-buffer)
 
   (if (get-buffer mail-bug-process-buffer)
       (progn
@@ -241,6 +239,7 @@ Cleanup process buffer(s) and carry on."
 	       (get-buffer-process
 		mail-bug-process-buffer) nil))
 	  (kill-buffer mail-bug-process-buffer))))
+
   (mail-bug-auth
    (symbol-value (intern (concat "mail-bug-host-" num)))
    (symbol-value (intern (concat "mail-bug-port-" num)))
@@ -248,11 +247,9 @@ Cleanup process buffer(s) and carry on."
    (if mail-id (format "%s" mail-id))))
 
 (defun mail-bug-auth (host port box &optional mail-id)
-  "Check unread mail.
-Get the login and password from HOST and PORT delta association"
-
-  ;; (message "auth ID %s" mail-id)
-
+  "Prepare the actual check command.
+Get the login and password from HOST and PORT delta association.
+If MAIL-ID is set, then read this single mail."
   (if mail-id (progn
 		(setq callback 'mail-bug-read-mail-callback)
 		(setq args (format "%s %s %s %s %s %s %s"
@@ -296,7 +293,15 @@ Get the login and password from HOST and PORT delta association"
   (with-current-buffer (current-buffer)
   ;; (message "I'm the callback!")
   ;; (widget-insert "hey!\n")
-  ;; (setq this-mail (mail-bug-buffer-to-list (current-buffer)))
+  (setq this-mail (mail-bug-buffer-to-list (current-buffer)))
+
+  (setq my-from (first (first this-mail)))
+  (setq my-date (second (first this-mail)))
+  (setq my-subj (third (first this-mail)))
+  (setq my-body (fourth (first this-mail)))
+
+  ;; (switch-to-buffer "MBOLIC-mail")
+  ;; (widget-insert "hey!\n")
     )
   )
 
@@ -337,7 +342,7 @@ Get the login and password from HOST and PORT delta association"
     (message "hi, I'm mail number %s on list %s" msg-id num)
     (mail-bug-check num msg-id)
     (display-buffer mail-buffer)
-)
+    )
 
   (mapcar
    (lambda (x)
@@ -350,13 +355,14 @@ Get the login and password from HOST and PORT delta association"
 		    (car (nthcdr 2 x)) ; subject
 		    (car (nthcdr 3 x)))
 	    ))
+
        (progn
 
-(setq new-string (substring summary-string 0 (1- (frame-width))))
+	 ;; (setq new-string (substring summary-string 0 (1- (frame-width))))
 
-(insert-button new-string 'action
-	       `(lambda (widget &rest ignore)
-		  (mail-bug-read-mail ,mail-number ,num)))
+	 (insert-button summary-string 'action
+			`(lambda (widget &rest ignore)
+			   (mail-bug-read-mail ,mail-number ,num)))
 
 	 ;; (insert-button tooltip-string 'action
 	 ;; 		`(lambda (widget &rest ignore)
@@ -426,8 +432,6 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client (symbol-value (intern (co
    (symbol-value (intern (concat "mail-bug-unseen-mails-" list)))
    "\n\n"))
 
-;; mail-bug-unseen-mails-2
-
 (defun mail-bug-desktop-notify (list)
   (mapcar
    (lambda (x)
@@ -442,7 +446,7 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client (symbol-value (intern (co
    (symbol-value (intern (concat "mail-bug-unseen-mails-" list)))))
 
 (defun mail-bug-desktop-notification (summary body timeout icon)
-  "Call notification-daemon method with ARGS over DBus.
+  "Call notification-daemon method with ARGS over desktop-notify.
 And that's not the half of it."
   (if (window-system)
       (progn
@@ -456,43 +460,20 @@ And that's not the half of it."
 	(if (and
 	     (file-exists-p "/usr/bin/mplayer")
 	     mail-bug-new-mail-sound)
-	    (start-process-shell-command "*mail-bug-sound*" nil (concat "mplayer " mail-bug-new-mail-sound))))
+	    (progn (start-process-shell-command "*mail-bug-sound*" nil (concat "mplayer " mail-bug-new-mail-sound))
+		   (sleep-for 0.5)
+)))
     (message "New mail from %s !" summary)))
 
 ;; Utilities
-
-;; (defun mail-bug-buffer-to-list (buf)
-;;   "Make & return a list (of lists) LINES from lines in a buffer BUF"
-;;   (with-current-buffer buf
-;;     (save-excursion
-;;       (goto-char (point-min))
-;;       (let ((lines '()))
-;;         (while (not (eobp))
-;;           (push
-;; 	   (split-string
-;; 	    (buffer-substring (point) (point-at-eol)) "\|_\|")
-;; 	   lines)
-;;           (beginning-of-line 2))
-;; 	lines))))
 
 (defun mail-bug-buffer-to-list (buf)
   (with-current-buffer buf
     (if (= (point-min) (point-max))
 	'(())
       (goto-char (point-min))
-    ;; (buffer-string)
-    ;; (message "now reading %s that has %s lines in it" (current-buffer) (point-max))
-
-    ;; (setq enchilada (buffer-substring (point-min) (point-max)))
-
-    ;; (if (<= 2 (point-max))
-    ;; 	(read (current-buffer))
-    ;;   (message "nothing"))
-
       (read (current-buffer))
       )))
-
-;; (mail-bug-buffer-to-real-list "*mail-bug-imap.gmail.com*")
 
 (defun mail-bug-wordwrap (s N)
   "Hard wrap string S on 2 lines to N chars"
@@ -540,7 +521,6 @@ And that's not the half of it."
   (interactive)
   (setq mail-bug-advertised-mails-1 ())
   (setq mail-bug-advertised-mails-2 ()))
-
 
 (message "%s loaded" (or load-file-name buffer-file-name))
 (provide 'mail-bug)
