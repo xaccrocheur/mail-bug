@@ -80,14 +80,12 @@ if ($number_of_args > 4) {
   my @mails = ($imap->unseen);
 
   if ( defined $msgid ) {
-    foreach my $id (@mails) {
-      my $from = $imap->get_header($msgid, "From");
-      my $date = $imap->get_header($msgid, "Date");
-      my $subject = decode('utf8', decode_imap_subject($imap->get_header($msgid, "Subject")));
-      my $body = decode('utf8', decode_qp($imap->body_string($msgid)));
+    my $from = $imap->get_header($msgid, "From");
+    my $date = $imap->get_header($msgid, "Date");
+    my $subject = decode('utf8', decode_imap_subject($imap->get_header($msgid, "Subject")));
+    my $body = decode('utf8', decode_qp($imap->body_string($msgid)));
 
-      print "$from" . "$sep" . "$date" . "$sep" . "$subject" . "$sep" . "$id" . "$sep" . "$body" . "\n";
-    }
+    print "$from" . "$sep" . "$date" . "$sep" . "$subject" . "$sep" . "$body" . "$sep" ;
   } else {
     foreach my $id (@mails) {
       my $msgid = $imap->get_header($id, "Message-id");

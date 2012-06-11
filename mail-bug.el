@@ -201,7 +201,7 @@ Must be an XPM (use Gimp)."
 (defvar mail-bug-advertised-mails-2 '())
 (defvar accounts 2)
 
-(defvar mail-bug-shell-script-command "~/.emacs.d/lisp/mail-bug/mail-bug.pl"
+(defvar mail-bug-shell-script-command "~/.emacs.d/lisp/mail-bug/mail-bug-beta.pl"
   "Full command line. Can't touch dat.")
 
 (defcustom mail-bug-timer-interval 180
@@ -251,18 +251,30 @@ Cleanup process buffer(s) and carry on."
 (defun mail-bug-auth (host port box &optional mail-id)
   "Check unread mail.
 Get the login and password from HOST and PORT delta association"
-  (mail-bug-shell-command
-   (format "%s %s %s %s %s %s"
-           mail-bug-shell-script-command
-	   host
-	   port
-	   box
 
-	   (auth-source-user-or-password "login" host port)
-	   (auth-source-user-or-password "password" host port)
+  ;; (message "auth ID %s" mail-id)
 
-	   (if mail-id (format "%s" mail-id)))
-   'mail-bug-shell-command-callback host))
+
+  (if mail-id (progn
+		(setq callback 'mail-bug-read-mail-callback)
+		(setq args (format "%s %s %s %s %s %s %s"
+				   mail-bug-shell-script-command
+				   host
+				   port
+				   box
+				   (auth-source-user-or-password "login" host port)
+				   (auth-source-user-or-password "password" host port)
+				   mail-id)))
+    (progn
+      (setq callback 'mail-bug-shell-command-callback)
+      (setq args (format "%s %s %s %s %s %s"
+			 mail-bug-shell-script-command
+			 host
+			 port
+			 box
+			 (auth-source-user-or-password "login" host port)
+			 (auth-source-user-or-password "password" host port)))))
+  (mail-bug-shell-command args callback host mail-id))
 
 (defmacro mail-bug-shell-command (cmd callback host &optional mail-id)
   "Run CMD asynchronously, then run CALLBACK"
@@ -283,11 +295,33 @@ Get the login and password from HOST and PORT delta association"
 
 (defun mail-bug-read-mail-callback ()
   "Construct the mail elements list"
-  ;; (with-current-buffer (current-buffer)
-    (widget-insert "hey!\n")
-    ;; (setq this-mail (mail-bug-buffer-to-list (current-buffer)))
-;; )
-)
+  (with-current-buffer (current-buffer)
+  ;; (message "I'm the callback!")
+  ;; (widget-insert "hey!\n")
+  (setq this-mail (mail-bug-buffer-to-list (current-buffer)))
+  )
+  )
+
+(defun mail-bug-shell-command-callback ()
+  "Construct the unread mails lists"
+  (setq mail-bug-unseen-mails-1 (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-1 "*")))
+  (setq mail-bug-unseen-mails-2 (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-2 "*")))
+  (setq i 1)
+
+  (setq bigass-list ())
+  (loop for i from 1 to accounts do
+
+	(setq one-list
+	      (mail-bug-buffer-to-list
+	       (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" (format "%s" i)))) "*")))
+
+	(add-to-list 'bigass-list one-list)
+
+	(add-to-list 'global-mode-string
+		     `(:eval (mail-bug-mode-line (format "%s" ,i))) t)
+	(add-to-list 'global-mode-string " " t)
+	(mail-bug-desktop-notify (format "%s" i)))
+  (force-mode-line-update))
 
 (defun mbolic (maillist num)
   (interactive)
@@ -304,7 +338,7 @@ Get the login and password from HOST and PORT delta association"
 
     (message "hi, I'm mail number %s on list %s" msg-id num)
     (mail-bug-check num msg-id)
-    (pop-to-buffer mail-buffer)
+    (display-buffer mail-buffer)
 )
 
   (mapcar
@@ -335,27 +369,6 @@ Get the login and password from HOST and PORT delta association"
   ;; (use-local-map widget-keymap)
   ;; (widget-setup)
 )
-
-(defun mail-bug-shell-command-callback ()
-  "Construct the unread mails lists"
-  (setq mail-bug-unseen-mails-1 (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-1 "*")))
-  (setq mail-bug-unseen-mails-2 (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-2 "*")))
-  (setq i 1)
-
-  (setq bigass-list ())
-  (loop for i from 1 to accounts do
-
-	(setq one-list
-	      (mail-bug-buffer-to-list
-	       (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" (format "%s" i)))) "*")))
-
-	(add-to-list 'bigass-list one-list)
-
-	(add-to-list 'global-mode-string
-		     `(:eval (mail-bug-mode-line (format "%s" ,i))) t)
-	(add-to-list 'global-mode-string " " t)
-	(mail-bug-desktop-notify (format "%s" i)))
-  (force-mode-line-update))
 
 (defun mail-bug-mode-line (num)
   "Construct an emacs modeline object.
@@ -415,6 +428,8 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client (symbol-value (intern (co
    (symbol-value (intern (concat "mail-bug-unseen-mails-" list)))
    "\n\n"))
 
+;; mail-bug-unseen-mails-2
+
 (defun mail-bug-desktop-notify (list)
   (mapcar
    (lambda (x)
@@ -447,19 +462,31 @@ And that's not the half of it."
     (message "New mail from %s !" summary)))
 
 ;; Utilities
+
+;; (defun mail-bug-buffer-to-list (buf)
+;;   "Make & return a list (of lists) LINES from lines in a buffer BUF"
+;;   (with-current-buffer buf
+;;     (save-excursion
+;;       (goto-char (point-min))
+;;       (let ((lines '()))
+;;         (while (not (eobp))
+;;           (push
+;; 	   (split-string
+;; 	    (buffer-substring (point) (point-at-eol)) "\|_\|")
+;; 	   lines)
+;;           (beginning-of-line 2))
+;; 	lines))))
+
 (defun mail-bug-buffer-to-list (buf)
-  "Make & return a list (of lists) LINES from lines in a buffer BUF"
   (with-current-buffer buf
-    (save-excursion
-      (goto-char (point-min))
-      (let ((lines '()))
-        (while (not (eobp))
-          (push
-	   (split-string
-	    (buffer-substring (point) (point-at-eol)) "\|_\|")
-	   lines)
-          (beginning-of-line 2))
-	lines))))
+    (goto-char (point-min))
+    ;; (buffer-string)
+    (message "now reading %s" (current-buffer))
+    (read (current-buffer))
+)
+)
+
+;; (mail-bug-buffer-to-real-list "*mail-bug-imap.gmail.com*")
 
 (defun mail-bug-wordwrap (s N)
   "Hard wrap string S on 2 lines to N chars"
