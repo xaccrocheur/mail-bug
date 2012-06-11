@@ -214,29 +214,39 @@ Must be an XPM (use Gimp)."
 
 (defun mail-bug-init ()
   "Init"
-  (interactive)
   (run-with-timer 10
 		  mail-bug-timer-interval
-		  'mail-bug-check-tout "1")
+		  'mail-bug-check "1")
   (run-with-timer 10
 		  mail-bug-timer-interval
-		  'mail-bug-check-tout "2"))
+		  'mail-bug-check "2"))
 
-(defun mail-bug-check-tout (num)
-  "Really check unread mail now."
-  (interactive)
+(defun mail-bug-check (num &optional mail-id)
+  "Really check unread mail now.
+Cleanup process buffer(s) and carry on."
   (message "checking mail %s" (format-time-string "%H:%M:%S" (current-time)))
-  (if (get-buffer (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" num))) "*"))
+
+  (setq mail-bug-process-buffer
+	(concat "*mail-bug-"
+		(symbol-value (intern (concat "mail-bug-host-" num)))
+		(if mail-id (format "-%s" mail-id)) "*"))
+
+  (message "Buffer is %s" mail-bug-process-buffer)
+
+  (if (get-buffer mail-bug-process-buffer)
       (progn
-  	(if (get-buffer-process (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" num))) "*"))
-  	    (set-process-query-on-exit-flag
-  	     (get-buffer-process
-  	      (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" num))) "*")) nil)
-  	  (kill-buffer (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" num))) "*")))))
+	(if (get-buffer-process mail-bug-process-buffer)
+  	    (progn
+	      (set-process-query-on-exit-flag
+	       (get-buffer-process
+		mail-bug-process-buffer) nil)
+	      (kill-buffer mail-bug-process-buffer))
+	  (kill-buffer mail-bug-process-buffer))))
   (mail-bug-auth
    (symbol-value (intern (concat "mail-bug-host-" num)))
    (symbol-value (intern (concat "mail-bug-port-" num)))
-   (symbol-value (intern (concat "mail-bug-imap-box-" num)))))
+   (symbol-value (intern (concat "mail-bug-imap-box-" num)))
+   (if mail-id (format "%s" mail-id))))
 
 (defun mail-bug-auth (host port box &optional mail-id)
   "Check unread mail.
@@ -248,35 +258,17 @@ Get the login and password from HOST and PORT delta association"
 	   port
 	   box
 
-	   ;; (let* ((auth (auth-source-search :host host))
-	   ;; 	  (user (plist-get (nth 0 auth) :user))
-	   ;; 	  (user (if (functionp user) (funcall user) user)))
-	   ;;   user)
-	   ;; (let ((credentials (auth-source-search :host mail-bug-host-1
-	   ;; 					  :require '(:user :secret))))
-	   ;;   (dolist (p credentials)
-	   ;;     (let ((host (plist-get p :host))
-	   ;; 	     (user (plist-get p :user))
-	   ;; 	     (secret (plist-get p :secret)))
-	   ;; 	 )))
-
-	   ;; (let* ((auth (auth-source-search :host mail-bug-host-1))
-	   ;; 	  (secret (plist-get (nth 0 auth) :secret))
-	   ;; 	  (secret (if (functionp secret) (funcall secret) secret)))
-	   ;;   secret)
-
 	   (auth-source-user-or-password "login" host port)
 	   (auth-source-user-or-password "password" host port)
 
-	   (if mail-id
-	       (format "%s" mail-id)
-	     nil)
-	   )
+	   (if mail-id (format "%s" mail-id)))
    'mail-bug-shell-command-callback host))
 
-(defmacro mail-bug-shell-command (cmd callback account &optional mail-id)
+(defmacro mail-bug-shell-command (cmd callback host &optional mail-id)
   "Run CMD asynchronously, then run CALLBACK"
-  `(let* ((buf (generate-new-buffer (concat "*mail-bug-" ,account "*")))
+  `(let* ((buf (generate-new-buffer (concat "*mail-bug-" ,host
+					    (if ,mail-id
+						(format "-%s" ,mail-id)) "*")))
           (p (start-process-shell-command ,cmd buf ,cmd)))
      (set-process-sentinel
       p
@@ -291,10 +283,58 @@ Get the login and password from HOST and PORT delta association"
 
 (defun mail-bug-read-mail-callback ()
   "Construct the mail elements list"
-  (with-current-buffer (current-buffer)
+  ;; (with-current-buffer (current-buffer)
+    (widget-insert "hey!\n")
+    ;; (setq this-mail (mail-bug-buffer-to-list (current-buffer)))
+;; )
+)
 
-    (setq this-mail (mail-bug-buffer-to-list (current-buffer)))))
+(defun mbolic (maillist num)
+  (interactive)
+  (if (get-buffer "MBOLIC")
+      (kill-buffer "MBOLIC"))
+  (switch-to-buffer "MBOLIC")
+  (kill-all-local-variables)
 
+  (defun mail-bug-read-mail (msg-id num)
+
+    (setq mail-buffer (concat "*mail-bug-"
+			      (symbol-value (intern (concat "mail-bug-host-" num)))
+			      "-" msg-id "*"))
+
+    (message "hi, I'm mail number %s on list %s" msg-id num)
+    (mail-bug-check num msg-id)
+    (pop-to-buffer mail-buffer)
+)
+
+  (mapcar
+   (lambda (x)
+     (let ((mail-number (car (nthcdr 3 x)))
+	   (summary-string
+	    (format "%s | %s | %s (%s)"
+		    (substring (car (nthcdr 1 x)) 0 25) ; date
+		    ;; (car (nthcdr 1 x)) ; date
+		    (car x)	    ; from
+		    (car (nthcdr 2 x)) ; subject
+		    (car (nthcdr 3 x)))
+	    ))
+       (progn
+
+(setq new-string (substring summary-string 0 (1- (frame-width))))
+
+(insert-button new-string 'action
+	       `(lambda (widget &rest ignore)
+		  (mail-bug-read-mail ,mail-number ,num)))
+
+	 ;; (insert-button tooltip-string 'action
+	 ;; 		`(lambda (widget &rest ignore)
+	 ;; 		   (mail-bug-read-mail ,mail-number ,num)))
+	 (widget-insert "\n"))
+       ))
+   maillist)
+  ;; (use-local-map widget-keymap)
+  ;; (widget-setup)
+)
 
 (defun mail-bug-shell-command-callback ()
   "Construct the unread mails lists"
@@ -358,60 +398,6 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client (symbol-value (intern (co
 			    s)
        (concat (symbol-value (intern (concat "mail-bug-logo-" num))) ":" s))))
 
-(defun mbolic (maillist num)
-  (interactive)
-  (if (get-buffer "MBOLIC")
-      (kill-buffer "MBOLIC"))
-  (switch-to-buffer "MBOLIC")
-  (kill-all-local-variables)
-
-  ;; (require 'button)
-
-       ;; (insert-button "fsf"
-       ;;         'action (lambda (x) (browse-url (button-get x 'url)))
-       ;;         'url "http://www.fsf.org")
-
-  ;; (let ((inhibit-read-only t))
-  ;;   (erase-buffer))
-
-  ;; (let ((all (overlay-lists)))
-  ;;   ;; Delete all the overlays.
-  ;;   (mapcar 'delete-overlay (car all))
-  ;;   (mapcar 'delete-overlay (cdr all)))
-
-  (defun test-widget (msg-id num)
-    (message "hi, I'm mail number %s on list %s" msg-id num)
-    (pop-to-buffer "plop")
-)
-
-  (mapcar
-   (lambda (x)
-     (let ((mail-number (car (nthcdr 3 x)))
-	   (summary-string
-	    (format "%s | %s | %s (%s)"
-		    ;; (substring (car (nthcdr 1 x)) 0 25) ; date
-		    (car (nthcdr 1 x)) ; date
-		    (car x)	    ; from
-		    (car (nthcdr 2 x)) ; subject
-		    (car (nthcdr 3 x)))
-	    ))
-       (progn
-
-(setq new-string (substring summary-string 0 (1- (frame-width))))
-
-(insert-button new-string 'action
-	       `(lambda (widget &rest ignore)
-		  (test-widget ,mail-number ,num)))
-
-	 ;; (insert-button tooltip-string 'action
-	 ;; 		`(lambda (widget &rest ignore)
-	 ;; 		   (test-widget ,mail-number ,num)))
-	 (widget-insert "\n"))
-       ))
-   maillist)
-  ;; (use-local-map widget-keymap)
-  ;; (widget-setup)
-)
 
 (defun mail-bug-tooltip (list)
   "Loop through the mail(s) elements and build the mouse-hover tooltip."
@@ -513,8 +499,8 @@ And that's not the half of it."
   "Empty all lists and check all now."
   (interactive)
   (mail-bug-reset-advertised-mails)
-  (mail-bug-check-tout "1")
-  (mail-bug-check-tout "2"))
+  (mail-bug-check "1")
+  (mail-bug-check "2"))
 
 
 (defun mail-bug-reset-advertised-mails ()
