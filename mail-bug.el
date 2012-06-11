@@ -307,6 +307,7 @@ If MAIL-ID is set, then read this single mail."
     )
   )
 
+
 (defun mail-bug-shell-command-callback ()
   "Construct the unread mails lists"
   (setq mail-bug-unseen-mails-1 (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-1 "*")))
