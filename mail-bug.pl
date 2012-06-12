@@ -22,10 +22,6 @@ my $msgid = $ARGV[5] if ( defined $ARGV[5] );
 
 my $number_of_args = $#ARGV + 1;
 
-sub escape_bslashes {
-  my $string=$_[0];
-}
-
 sub decode_imap_subject {
 
   my $string=$_[0];
@@ -82,6 +78,7 @@ if ($number_of_args > 4) {
 
   sub escape_quote {
     my $_ = shift;
+
     s{
        (?<! (?<! \\ ) \\{1} )
        (?<! (?<! \\ ) \\{3} )
@@ -109,7 +106,7 @@ if ($number_of_args > 4) {
   } else {
     print '(';
     foreach my $id (@mails) {
-      my $msgid = escape_quote($imap->get_header($id, "Message-id"));
+      my $msgid = $imap->get_header($id, "Message-id");
       my $from = escape_quote($imap->get_header($id, "From"));
       my $date = $imap->get_header($id, "Date");
       my $subject = escape_quote(decode('utf8', decode_imap_subject($imap->get_header($id, "Subject"))));
