@@ -304,6 +304,12 @@ If MAIL-ID is set, then read this single mail."
   (with-current-buffer "MBOLIC-mail"
   ;; (switch-to-buffer "MBOLIC-mail")
     (widget-insert my-from)
+    (widget-insert "\n")
+    (widget-insert my-date)
+    (widget-insert "\n")
+    (widget-insert my-subj)
+    (widget-insert "\n----------------------------\n")
+    (widget-insert my-body)
     )
   )
 
