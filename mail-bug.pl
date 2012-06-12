@@ -106,7 +106,7 @@ if ($number_of_args > 4) {
   } else {
     print '(';
     foreach my $id (@mails) {
-      my $msgid = $imap->get_header($id, "Message-id");
+      # my $msgid = $imap->get_header($id, "Message-id");
       my $from = escape_quote($imap->get_header($id, "From"));
       my $date = $imap->get_header($id, "Date");
       my $subject = escape_quote(decode('utf8', decode_imap_subject($imap->get_header($id, "Subject"))));

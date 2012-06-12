@@ -326,13 +326,20 @@ If MAIL-ID is set, then read this single mail."
 	      (mail-bug-buffer-to-list
 	       (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" (format "%s" i)))) "*")))
 
-	(add-to-list 'bigass-list one-list)
+	(add-to-list 'bigass-list one-list t)
 
 	(add-to-list 'global-mode-string
 		     `(:eval (mail-bug-mode-line (format "%s" ,i))) t)
 	(add-to-list 'global-mode-string " " t)
 	(mail-bug-desktop-notify (format "%s" i)))
   (force-mode-line-update))
+
+
+(format "%s" (first mail-bug-unseen-mails-1))
+(format "%s" (first mail-bug-unseen-mails-2))
+(format "%s" (first (second bigass-list)))
+(format "%s" (first (first bigass-list)))
+
 
 (defun mbolic (maillist num)
   (interactive)
@@ -496,28 +503,6 @@ And that's not the half of it."
   "Clean Time string S"
   (subseq (car s) 0 -6))
 
-(defun mail-bug-own-little-imap-client (maillist)
-  (interactive)
-  (princ
-   (mapconcat
-    (lambda (x)
-      (let
-	  ((tooltip-string
-	    (format "%s\n%s \n--------------\n%s\n"
-		    (car (nthcdr 1 x))
-		    ;; (nthcdr 2 x)
-		    (nthcdr 2 x)
-		    (car x)
-		    (car (nthcdr 2 x))
-		    ;; (car x)
-		    )))
-	tooltip-string)
-      )
-    maillist
-    "\n xxx \n")
-   (generate-new-buffer "MBOLIC"))
-  (switch-to-buffer "MBOLIC"))
-
 ;; Debug
 
 ;; (first mail-bug-unseen-mails-1)
@@ -529,7 +514,6 @@ And that's not the half of it."
   (mail-bug-reset-advertised-mails)
   (mail-bug-check "1")
   (mail-bug-check "2"))
-
 
 (defun mail-bug-reset-advertised-mails ()
   (interactive)
