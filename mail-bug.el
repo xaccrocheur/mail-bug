@@ -308,7 +308,7 @@ If MAIL-ID is set, then read this single mail."
     (widget-insert my-date)
     (widget-insert "\n")
     (widget-insert my-subj)
-    (widget-insert "\n----------------------------\n")
+    (widget-insert "\n--------------------\n")
     (widget-insert my-body)
     )
   )
