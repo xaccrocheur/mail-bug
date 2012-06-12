@@ -80,19 +80,18 @@ if ($number_of_args > 4) {
   #     $imap->unseen_count($f)||0, " unseen messages.\n";
   # }
 
-sub escape_quote {
-  my $_ = shift;
-  s{
-      (?<! (?<! \\ ) \\{1} )
-      (?<! (?<! \\ ) \\{3} )
-      (?<! (?<! \\ ) \\{5} )
-      (?<! (?<! \\ ) \\{7} )
-      (?= " )
-  }{\\}xg;
+  sub escape_quote {
+    my $_ = shift;
+    s{
+       (?<! (?<! \\ ) \\{1} )
+       (?<! (?<! \\ ) \\{3} )
+       (?<! (?<! \\ ) \\{5} )
+       (?<! (?<! \\ ) \\{7} )
+       (?= " )
+   }{\\}xg;
 
-  return $_;
-}
-
+    return $_;
+  }
 
   $imap->select($box);
   my @mails = ($imap->unseen);
@@ -120,8 +119,8 @@ sub escape_quote {
     print ')';
   }
 
-# Say bye
-$imap->logout();
+  # Say bye
+  $imap->logout();
 
 } else {
   die("not enough args");
