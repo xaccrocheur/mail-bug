@@ -1,6 +1,8 @@
 #!/usr/bin/perl
 
-# PERL_MM_USE_DEFAULT=1 perl -MCPAN -e 'install Mail::IMAPClient'
+PERL_MM_USE_DEFAULT=1 perl -MCPAN -e 'install Mail::IMAPClient'
+
+# PERL_MM_USE_DEFAULT=1 perl -MCPAN -e 'install Video::Capture::V4l::Imager'
 
 use strict;
 use warnings;
