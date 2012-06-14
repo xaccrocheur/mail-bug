@@ -27,8 +27,8 @@
 ;; machine smtp.gmail.com login LOGIN port 587 password PASSWORD
 ;; machine imap.gmail.com login LOGIN port 993 password PASSWORD
 
-;; Then use M-x customize-group "mail-bug" to safely setup your prefs.
-
+;; DON'T edit this file at all (you can, but you don't have to) : Use
+;; "M-x customize RET mail-bug" to set your accounts and prefs.
 ;; ----------------------------------------------------------------------------
 ;; This file is NOT part of GNU Emacs.
 
@@ -52,37 +52,87 @@
 
 (defvar libnotify-program "/usr/bin/notify-send")
 
+;; (defcustom mail-bug-accounts '(("host" "")
+;;                   ("port" "")
+;;                   ("box" "")
+;;                   ("icon" ""))
+;;   "Alist of mail-bug-accounts.
+;; In an element (KEY . VALUE), KEY is the account's name,
+;; and the VALUE is a list of that account's elts."
+;;   :type '(alist :value-type (repeat string))
 
-(defcustom person-data '(("brian"  50 t)
-			 ("dorith" 55 nil)
-			 ("ken"    52 t))
-  "Alist of basic info about people.
-          Each element has the form (NAME AGE MALE-FLAG)."
-  :type '(alist :value-type (group integer boolean)))
 
-(defcustom pets '(("brian")
-		  ("dorith" "dog" "guppy")
-		  ("ken" "cat"))
-  "Alist of people's pets.
-          In an element (KEY . VALUE), KEY is the person's name,
-          and the VALUE is a list of that person's pets."
-  :type '(alist :value-type (repeat string)))
+(defcustom foo '(("account 1"
+                  (key1 "value1")
+                  (key2 "value2")
+                  (key3 "value3")
+                  (key4 "value4")
+                  (key5 "value5")))
+  "Alist of mail accounts"
+  :type '(repeat (list
+                  (string :tag "Account")
+                  (list (const key1) (string :tag "Key1 Value"))
+                  (list (const key2) (string :tag "Key2 Value"))
+                  (list (const key3) (string :tag "Key3 Value"))
+                  (list (const key4) (string :tag "Key4 Value"))
+                  (list (const key5) (string :tag "Key5 Value")))))
 
+(defcustom mail-bug-accounts '(("account 1"
+				(host "mail.host.ext")
+				(port "993")
+				(box "INBOX")
+				(icon "value4")
+				(notify "value5")))
+  "Alist of mail accounts.
+Create as many as you want."
+  :type '(repeat (list
+                  (string :tag "Account")
+                  (list (const host) (string :tag ">"))
+                  (list (const port) (string :tag ">"))
+                  (list (const box) (string :tag ">"))
+                  (list (const icon) (string :tag ">"))
+                  (list (const notify)
+			(checkbox :format "%[%v%] %t \n"
+				  :tag "Notify"))))
+  :group 'mail-bug)
+
+
+;; (defcustom mail-bug-accounts '(("account 1"
+;; 				(host "mail.host.ext")
+;; 				(port "993")
+;; 				(box "INBOX")
+;; 				(icon "value4")
+;; 				(notify "value5")))
+;;   "Alist of mail accounts.
+;; Create as many as you want."
+;;   :type '(repeat (list
+;;                   (string :tag "Account")
+;;                   (list (const host) (string :tag "Host"))
+;;                   (list (const port) (string :tag "Port"))
+;;                   (list (const box) (string :tag "Box"))
+;;                   (list (const icon) (string :tag "Icon"))
+;;                   (list (const notify) (string :tag "Notify"))))
+;;   :group 'mail-bug)
+
+
+  ;; :type '(list (const hostname) (set :inline t (const foo) (const bar)))
+
+;;  :group 'mail-bug)
 
 (defgroup mail-bug nil
   "Universal mail notifier."
   :prefix "mail-bug-"
   :group 'mail)
 
-(defgroup mail-bug-account-1 nil
-  "Details for account one."
-  :prefix "mail-bug-accounts"
-  :group 'mail-bug)
+;; (defgroup mail-bug-account-1 nil
+;;   "Details for account one."
+;;   :prefix "mail-bug-accounts"
+;;   :group 'mail-bug)
 
-(defgroup mail-bug-account-2 nil
-  "Details for account two."
-  :prefix "mail-bug-accounts"
-  :group 'mail-bug)
+;; (defgroup mail-bug-account-2 nil
+;;   "Details for account two."
+;;   :prefix "mail-bug-accounts"
+;;   :group 'mail-bug)
 
 (defcustom mail-bug-external-client 'px-go-mail
   "You preferred bigass mail client command/function.
@@ -334,12 +384,17 @@ If MAIL-ID is set, then read this single mail."
 	(mail-bug-desktop-notify (format "%s" i)))
   (force-mode-line-update))
 
+;; (format "%s" (first mail-bug-unseen-mails-1))
+;; (format "%s" (first mail-bug-unseen-mails-2))
+;; (format "%s" (second mail-bug-unseen-mails-2))
+;; (format "%s" (first (first bigass-list)))
+;; (format "%s" (first (second bigass-list)))
+;; (format "%s" (second (second bigass-list)))
 
-(format "%s" (first mail-bug-unseen-mails-1))
-(format "%s" (first mail-bug-unseen-mails-2))
-(format "%s" (first (second bigass-list)))
-(format "%s" (first (first bigass-list)))
-
+;; (loop for x being the elements of bigass-list
+;;      do (loop for y being the elements of x
+;;	       do (message "yowza! %s" y))
+;; )
 
 (defun mbolic (maillist num)
   (interactive)
@@ -433,7 +488,6 @@ mouse-3: View mail in MBOLIC" mail-bug-external-client (symbol-value (intern (co
 			    s)
        (concat (symbol-value (intern (concat "mail-bug-logo-" num))) ":" s))))
 
-
 (defun mail-bug-tooltip (list)
   "Loop through the mail(s) elements and build the mouse-hover tooltip."
   (mapconcat
@@ -478,10 +532,11 @@ And that's not the half of it."
 	(if (and
 	     (file-exists-p "/usr/bin/mplayer")
 	     mail-bug-new-mail-sound)
-	    (progn (start-process-shell-command "*mail-bug-sound*" nil (concat "mplayer -volume 25 " mail-bug-new-mail-sound))
+	    (progn (start-process-shell-command "*mail-bug-sound*" nil (concat "mplayer -volume 10 " mail-bug-new-mail-sound))
 		   (sleep-for 0.5)
 )))
     (message "New mail from %s !" summary)))
+
 
 ;; Utilities
 
