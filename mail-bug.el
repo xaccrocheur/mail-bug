@@ -146,6 +146,7 @@ Example : imap.gmail.com"
   :type 'string
   :group 'mail-bug-account-1)
 
+
 (defcustom mail-bug-port-1 "993"
   "Port number and (optional) protocol path.
 993 IS the default IMAP port"
