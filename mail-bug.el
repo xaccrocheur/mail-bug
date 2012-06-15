@@ -47,8 +47,123 @@
 
 ;;; Code:
 
+(toggle-debug-on-error)
+
+(require 'imap)
+
 (require 'auth-source)
 (require 'dbus)
+(require 'cl)
+;; (require 'elid)
+
+
+;; This is a transcript of a short interactive session for demonstration
+;; purposes.
+;;
+;; (imap-open "my.mail.server")
+;; => " *imap* my.mail.server:0"
+;;
+;; The rest are invoked with current buffer as the buffer returned by
+;; `imap-open'.  It is possible to do it all without this, but it would
+;; look ugly here since `buffer' is always the last argument for all
+;; imap.el API functions.
+;;
+;; (imap-authenticate "myusername" "mypassword")
+;; => auth
+;;
+;; (imap-mailbox-lsub "*")
+;; => ("INBOX.sentmail" "INBOX.private" "INBOX.draft" "INBOX.spam")
+;;
+;; (imap-mailbox-list "INBOX.n%")
+;; => ("INBOX.namedroppers" "INBOX.nnimap" "INBOX.ntbugtraq")
+;;
+;; (imap-mailbox-select "INBOX.nnimap")
+;; => "INBOX.nnimap"
+;;
+;; (imap-mailbox-get 'exists)
+;; => 166
+;;
+;; (imap-mailbox-get 'uidvalidity)
+;; => "908992622"
+;;
+;; (imap-search "FLAGGED SINCE 18-DEC-98")
+;; => (235 236)
+;;
+;; (imap-fetch 235 "RFC822.PEEK" 'RFC822)
+;; => "X-Sieve: cmu-sieve 1.3^M\nX-Username: <jas@pdc.kth.se>^M\r...."
+
+
+;; This is a transcript of a short interactive session for demonstration
+;; purposes.
+;;
+;; (imap-open "mail.gandi.net")
+;; => " *imap* my.mail.server:0"
+;;
+;; The rest are invoked with current buffer as the buffer returned by
+;; `imap-open'.  It is possible to do it all without this, but it would
+;; look ugly here since `buffer' is always the last argument for all
+;; imap.el API functions.
+;;
+;; (imap-authenticate "myusername" "mypassword")
+;; => auth
+;;
+;; (imap-mailbox-lsub "*")
+;; => ("INBOX.sentmail" "INBOX.private" "INBOX.draft" "INBOX.spam")
+;;
+;; (imap-mailbox-list "INBOX.n%")
+;; => ("INBOX.namedroppers" "INBOX.nnimap" "INBOX.ntbugtraq")
+;;
+;; (imap-mailbox-select "INBOX.nnimap")
+;; => "INBOX.nnimap"
+;;
+;; (imap-mailbox-get 'exists)
+;; => 166
+;;
+;; (imap-mailbox-get 'uidvalidity)
+;; => "908992622"
+;;
+;; (imap-search "FLAGGED SINCE 18-DEC-98")
+;; => (235 236)
+;;
+;; (imap-fetch 235 "RFC822.PEEK" 'RFC822)
+;; => "X-Sieve: cmu-sieve 1.3^M\nX-Username: <jas@pdc.kth.se>^M\r...."
+
+(defun test-imap ()
+  (switch-to-buffer (imap-open "mail.gandi.net"))
+  (with-current-buffer (current-buffer)
+    (imap-authenticate "contact@adamweb.net" "Amiga261")
+    (message "sublist : %s" (imap-mailbox-lsub "*"))
+    ;; (setq mailbox (imap-mailbox-list "INBOX"))
+    ;; (message "mailbox is : %s" mailbox)
+    (imap-mailbox-select "Inbox")
+    (imap-search "ALL")
+    (setq my-msg (imap-fetch 1 "RFC822" 'RFC822))
+    (message "HOY! %s" my-msg)
+))
+
+;; (test-imap)
+
+(setq elid-remotes
+      '((:name "mail"
+         :user "contact@adamweb.net"
+         :host "mail.gandi.net"
+         :port 993
+         :mailboxes ("^INBOX$")
+         :authstream tls
+         :authtype nil
+         ;; :mda my-mda
+)))
+
+(defun my-mda (props msg)
+  (with-temp-buffer
+    (insert msg)
+    ;; (eq 0 (call-process-region (point-min)
+    ;;                         (point-max)
+    ;;                         "maildrop" nil nil nil
+    ;;                         "/home/fred/maildroprc"))
+))
+
+;; (elid-deliver "mail")
 
 (defvar libnotify-program "/usr/bin/notify-send")
 
@@ -260,8 +375,6 @@ Must be an XPM (use Gimp)."
   :group 'mail-bug)
 
 ;;;###autoload
-(toggle-debug-on-error)
-
 (defun mail-bug-init ()
   "Init"
   (run-with-timer 10
