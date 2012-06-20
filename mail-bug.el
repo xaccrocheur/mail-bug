@@ -52,45 +52,67 @@
 (require 'imap)
 
 (require 'auth-source)
-(require 'dbus)
+;; (require 'dbus)
 (require 'cl)
-;; (require 'elid)
+(require 'elid)
+(require 'elmda)
 
+(setq elid-remotes
+      '((:name "mail"
+         :user "contact@adamweb.net"
+         :host "mail.gandi.net"
+         :port 993
+         :mailboxes ("^INBOX$")
+         :authstream tls
+         :authtype nil
+         :mda my-mda)))
 
-;; This is a transcript of a short interactive session for demonstration
-;; purposes.
+(defun my-mda (props msg)
+  "MSG is the content of a single email"
+  (with-temp-buffer
+    (insert msg)
+    (cond ((elmda-is-recipient "contact@adamweb.net")
+           (elmda-deliver-maildir "~/mailboxes/adamweb"))
+          ((elmda-is-recipient "work@example.com")
+           (elmda-deliver-maildir "~/mailboxes/work-inbox"))
+          ;; Fallback: just stick mails in a general inbox
+          ((elmda-deliver-maildir "~/mailboxes/general-inbox")))))
+
+;; (elid-deliver "mail")
+
+ ;; Global commands:
 ;;
-;; (imap-open "my.mail.server")
-;; => " *imap* my.mail.server:0"
+;; imap-open,       imap-opened,    imap-authenticate, imap-close,
+;; imap-capability, imap-namespace, imap-error-text
 ;;
-;; The rest are invoked with current buffer as the buffer returned by
-;; `imap-open'.  It is possible to do it all without this, but it would
-;; look ugly here since `buffer' is always the last argument for all
-;; imap.el API functions.
+
+;; Mailbox commands:
 ;;
-;; (imap-authenticate "myusername" "mypassword")
-;; => auth
+;; imap-mailbox-get,       imap-mailbox-map,         imap-current-mailbox,
+;; imap-current-mailbox-p, imap-search,              imap-mailbox-select,
+;; imap-mailbox-examine,   imap-mailbox-unselect,    imap-mailbox-expunge
+;; imap-mailbox-close,     imap-mailbox-create,      imap-mailbox-delete
+;; imap-mailbox-rename,    imap-mailbox-lsub,        imap-mailbox-list
+;; imap-mailbox-subscribe, imap-mailbox-unsubscribe, imap-mailbox-status
+;; imap-mailbox-acl-get,   imap-mailbox-acl-set,     imap-mailbox-acl-delete
 ;;
-;; (imap-mailbox-lsub "*")
-;; => ("INBOX.sentmail" "INBOX.private" "INBOX.draft" "INBOX.spam")
+
+;; Message commands:
 ;;
-;; (imap-mailbox-list "INBOX.n%")
-;; => ("INBOX.namedroppers" "INBOX.nnimap" "INBOX.ntbugtraq")
-;;
-;; (imap-mailbox-select "INBOX.nnimap")
-;; => "INBOX.nnimap"
-;;
-;; (imap-mailbox-get 'exists)
-;; => 166
-;;
-;; (imap-mailbox-get 'uidvalidity)
-;; => "908992622"
-;;
-;; (imap-search "FLAGGED SINCE 18-DEC-98")
-;; => (235 236)
-;;
-;; (imap-fetch 235 "RFC822.PEEK" 'RFC822)
-;; => "X-Sieve: cmu-sieve 1.3^M\nX-Username: <jas@pdc.kth.se>^M\r...."
+;; imap-fetch-asynch,                 imap-fetch,
+;; imap-current-message,              imap-list-to-message-set,
+;; imap-message-get,                  imap-message-map
+;; imap-message-envelope-date,        imap-message-envelope-subject,
+;; imap-message-envelope-from,        imap-message-envelope-sender,
+;; imap-message-envelope-reply-to,    imap-message-envelope-to,
+;; imap-message-envelope-cc,          imap-message-envelope-bcc
+;; imap-message-envelope-in-reply-to, imap-message-envelope-message-id
+;; imap-message-body,                 imap-message-flag-permanent-p
+;; imap-message-flags-set,            imap-message-flags-del
+;; imap-message-flags-add,            imap-message-copyuid
+;; imap-message-copy,                 imap-message-appenduid
+;; imap-message-append,               imap-envelope-from
+;; imap-body-lines
 
 
 ;; This is a transcript of a short interactive session for demonstration
@@ -115,6 +137,7 @@
 ;;
 ;; (imap-mailbox-select "INBOX.nnimap")
 ;; => "INBOX.nnimap"
+
 ;;
 ;; (imap-mailbox-get 'exists)
 ;; => 166
@@ -130,40 +153,29 @@
 
 (defun test-imap ()
   (switch-to-buffer (imap-open "mail.gandi.net"))
+  ;; (switch-to-buffer (imap-open "imap.gmail.com"))
   (with-current-buffer (current-buffer)
+    ;; (imap-authenticate "xaccrocheur@gmail.com" "Amiga260")
     (imap-authenticate "contact@adamweb.net" "Amiga261")
-    (message "sublist : %s" (imap-mailbox-lsub "*"))
+    ;; (message "mailboxes : %s" (imap-mailbox-lsub "*"))
     ;; (setq mailbox (imap-mailbox-list "INBOX"))
     ;; (message "mailbox is : %s" mailbox)
     (imap-mailbox-select "Inbox")
+    ;; (imap-mailbox-get 'unseen)
+    ;; (setq status (imap-mailbox-status "Inbox" 'unseen))
+    ;; (imap-mailbox-examine "Inbox")
     (imap-search "ALL")
-    (setq my-msg (imap-fetch 1 "RFC822" 'RFC822))
-    (message "HOY! %s" my-msg)
+    (imap-mailbox-get 'unseen "Inbox")
+    ;; (setq my-msg (imap-fetch 1 "RFC822" 'RFC822))
+    ;; (message "HOY! %s" my-msg)
+    ;; (imap-close)
 ))
 
-;; (test-imap)
+(defun test-imap-cmd ()
+(interactive)
+(test-imap))
 
-(setq elid-remotes
-      '((:name "mail"
-         :user "contact@adamweb.net"
-         :host "mail.gandi.net"
-         :port 993
-         :mailboxes ("^INBOX$")
-         :authstream tls
-         :authtype nil
-         ;; :mda my-mda
-)))
-
-(defun my-mda (props msg)
-  (with-temp-buffer
-    (insert msg)
-    ;; (eq 0 (call-process-region (point-min)
-    ;;                         (point-max)
-    ;;                         "maildrop" nil nil nil
-    ;;                         "/home/fred/maildroprc"))
-))
-
-;; (elid-deliver "mail")
+;; End tests
 
 (defvar libnotify-program "/usr/bin/notify-send")
 
@@ -175,7 +187,6 @@
 ;; In an element (KEY . VALUE), KEY is the account's name,
 ;; and the VALUE is a list of that account's elts."
 ;;   :type '(alist :value-type (repeat string))
-
 
 (defcustom foo '(("account 1"
                   (key1 "value1")
@@ -255,7 +266,7 @@ Example : wl"
   :type 'function
   :group 'mail-bug)
 
-(defcustom mail-bug-host-1 "imap.gmx.com"
+(defcustom mail-bug-host-1 "imap.gmail.com"
   "Mail host.
 Example : imap.gmail.com"
   :type 'string
@@ -481,10 +492,9 @@ If MAIL-ID is set, then read this single mail."
   (setq mail-bug-unseen-mails-1 (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-1 "*")))
   (setq mail-bug-unseen-mails-2 (mail-bug-buffer-to-list (concat "*mail-bug-" mail-bug-host-2 "*")))
   (setq i 1)
-
   (setq bigass-list ())
   (loop for i from 1 to accounts do
-
+  (add-to-list 'global-mode-string " " t)
 	(setq one-list
 	      (mail-bug-buffer-to-list
 	       (concat "*mail-bug-" (symbol-value (intern (concat "mail-bug-host-" (format "%s" i)))) "*")))
@@ -679,7 +689,7 @@ And that's not the half of it."
 (defun mail-bug-debug ()
   "Empty all lists and check all now."
   (interactive)
-  (mail-bug-reset-advertised-mails)
+  ;; (mail-bug-reset-advertised-mails)
   (mail-bug-check "1")
   (mail-bug-check "2"))
 
