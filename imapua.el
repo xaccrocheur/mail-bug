@@ -466,6 +466,9 @@ This means you can have multiple imapua sessions in one emacs session."
 				(if host-name
 				    (concat host-name ":" (number-to-string tcp-port)))))))
     (switch-to-buffer folder-buffer)
+
+		;; px
+		;; (set-window-dedicated-p (get-buffer-window (current-buffer)) 1)
     (if (not imapua-mode-initialized-p)
 	(progn
 	  (imapua-mode)
@@ -608,8 +611,55 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
       (setq msg (cons uid (imapua-date-format
 			   (imap-message-envelope-date uid imapua-connection))))
       (imap-message-flags-add (number-to-string uid) "\\Seen" nil imapua-connection)
-      (imapua-msg-redraw (current-buffer) folder-name msg)
-      (imapua-message-open folder-name uid))))
+
+			;; px
+      (message "imma open da msg in buffer ")
+
+			;; (setq split-height-threshold 10)
+			(set-window-dedicated-p (selected-window) (not current-prefix-arg))
+			;; px
+			;; (display-buffer (imapua-message-open folder-name uid))
+			(imapua-message-open folder-name uid)
+			;; (pop-to-buffer (imapua-message-open folder-name uid) 1)
+			;; (my-display-buffers (imapua-message-open folder-name uid))
+)))
+
+;; (add-hook 'imapua-mode-hook
+;; 					(lambda ()
+;; 						(interactive)
+;; 						(message "imapua mode on")
+;; 						(set-window-dedicated-p (selected-window) 1)))
+
+;; (add-hook 'php-mode-hook
+;; 					(lambda ()
+;; 						(interactive)
+;; 						(message "php mode on")
+;; 						(set-window-dedicated-p (selected-window) 1)))
+
+
+;; My open pane logic
+
+;; (defadvice pop-to-buffer (before cancel-other-window first)
+;;   (ad-set-arg 1 nil))
+
+;; (ad-activate 'pop-to-buffer)
+
+;; Toggle window dedication
+(defun toggle-window-dedicated ()
+  "Toggle whether the current active window is dedicated or not"
+  (interactive)
+  (message
+   (if (let (window (get-buffer-window (current-buffer)))
+         (set-window-dedicated-p window
+                                 (not (window-dedicated-p window))))
+       "Window '%s' is dedicated"
+     "Window '%s' is normal")
+   (current-buffer)))
+
+;; Press [pause] key in each window you want to "freeze"
+(global-set-key [pause] 'toggle-window-dedicated)
+
+;; now dodo
 
 (defun imapua-message-open (folder-name uid)
   (interactive "Mfolder-name:\nnUid:")
@@ -618,40 +668,69 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
  (lookup 'nic '(bob 12 fred 73 mike 18 nic 34 jim 22))
  => 34"
     (if (member key lst)
-	(cadr (member key lst))))
+				(cadr (member key lst))))
+
   ;; Main func.
   (imap-mailbox-select folder-name nil imapua-connection)
   (imap-fetch uid "(BODYSTRUCTURE ENVELOPE RFC822.HEADER)" 't nil imapua-connection)
   (let* ((buf (let ((buf-name (concat "message-" folder-name "-" (number-to-string uid))))
                 (when (get-buffer buf-name)
-                  (switch-to-buffer buf-name)
-                  (error "imapua: message already opened"))
-                (get-buffer-create buf-name)))
+									;; (message "oy")
+									(switch-to-buffer buf-name)
+									(error "imapua: message already opened"))
+								;; (get-buffer-create buf-name)
+								(progn
+									(get-buffer-create buf-name)
+									;; (message "buffer : %s" buf-name)
+									;; (generate-new-buffer buf-name)
+									;; (pop-to-buffer buf-name)
+)))
          (bs-def (imap-message-get uid 'BODYSTRUCTURE imapua-connection))
          (bs (imapua-parse-bs bs-def))
-	 (parts (imapua-bs-to-part-list bs))
-	 (text-part (if parts
-			(imapua-part-list-assoc 'type '(("text" . "plain")) parts)
-		      bs)))
+				 (parts (imapua-bs-to-part-list bs))
+				 (text-part (if parts
+												(imapua-part-list-assoc 'type '(("text" . "plain")) parts)
+											bs)))
+
+		;; (get-buffer-create (pop-to-buffer "plop"))
+
+  ;; (imap-mailbox-select folder-name nil imapua-connection)
+  ;; (imap-fetch uid "(BODYSTRUCTURE ENVELOPE RFC822.HEADER)" 't nil imapua-connection)
+  ;; (let* ((buf (let ((buf-name (concat "message-" folder-name "-" (number-to-string uid))))
+  ;;               (when (get-buffer buf-name)
+  ;;                 (switch-to-buffer buf-name)
+  ;;                 (error "imapua: message already opened"))
+  ;;               (get-buffer-create buf-name)))
+  ;;        (bs-def (imap-message-get uid 'BODYSTRUCTURE imapua-connection))
+  ;;        (bs (imapua-parse-bs bs-def))
+	;;  (parts (imapua-bs-to-part-list bs))
+	;;  (text-part (if parts
+	;; 		(imapua-part-list-assoc 'type '(("text" . "plain")) parts)
+	;; 	      bs)))
+
+
     ;; First insert the header.
     (let ((hdr (imap-message-get uid 'RFC822.HEADER imapua-connection)))
       (with-current-buffer buf
-	(insert hdr)
-	;; Do SMTP transport decoding on the message header.
-	(subst-char-in-region (point-min) (point-max) ?\r ?\ )
-	(message-sort-headers)
-	(make-local-variable 'imapua-message-text-end-of-headers)
-	(setq imapua-message-text-end-of-headers (point))
-	(put 'imapua-message-text-end-of-headers 'permanent-local 't)
-	(insert "--text follows this line--\n\n")))
+				(insert hdr)
+				;; Do SMTP transport decoding on the message header.
+				(subst-char-in-region (point-min) (point-max) ?\r ?\ )
+				(message-sort-headers)
+				(make-local-variable 'imapua-message-text-end-of-headers)
+				(setq imapua-message-text-end-of-headers (point))
+				(put 'imapua-message-text-end-of-headers 'permanent-local 't)
+				(insert "--text follows this line--\n\n")))
+
     ;; Now insert the first text part we have
     (when text-part
       (imapua-message-fill-text uid (if text-part text-part bs) buf))
     (save-excursion
+			(message "in open, buffer is %s" buf)
       (switch-to-buffer buf)
       (set-buffer-modified-p nil)
       (goto-char imapua-message-text-end-of-headers)
       (imapua-message-mode))
+
     ;; Display the list of other parts (if there are any) here
     (imapua-part-list-display imapua-connection folder-name uid buf parts)
     ))
