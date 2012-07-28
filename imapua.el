@@ -51,6 +51,9 @@
 (require 'message)
 (require 'cl)
 
+;; pX : line hilite
+(add-hook 'imapua-mode-hook (lambda () (hl-line-mode t)))
+
 ;; Imap logging management. Very useful for debug.
 
 ;; Imap debugging is another GNUs IMAP library feature:
@@ -104,32 +107,32 @@
   "colors for the IMAP user agent."
   :group 'imap-mail-user-agent)
 
-(defcustom imapua-folder-color "DarkGreen"
+(defcustom imapua-folder-color "#ffffff"
   "* color for folders"
   :type '(string)
   :group 'imap-mail-user-agent-colors)
 
-(defcustom imapua-unseen-message-color "Blue"
+(defcustom imapua-unseen-message-color "#0000ff"
   "* color for unread messages"
   :type '(string)
   :group 'imap-mail-user-agent-colors)
 
-(defcustom imapua-read-message-color "Black"
+(defcustom imapua-read-message-color "#000000"
   "* color for read messages"
   :type '(string)
   :group 'imap-mail-user-agent-colors)
 
-(defcustom imapua-marked-message-color "Red"
+(defcustom imapua-marked-message-color "#ff0000"
   "* color for marked messages"
   :type '(string)
   :group 'imap-mail-user-agent-colors)
 
-(defcustom imapua-deleted-message-color "Red"
+(defcustom imapua-deleted-message-color "#ff0000"
   "* color for deleted messages"
   :type '(string)
   :group 'imap-mail-user-agent-colors)
 
-(defcustom imapua-message-header-color "DarkGreen"
+(defcustom imapua-message-header-color "#00ff00"
   "* color for header in message buffer"
   :type '(string)
   :group 'imap-mail-user-agent-colors)
@@ -708,18 +711,64 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 	;; 		(imapua-part-list-assoc 'type '(("text" . "plain")) parts)
 	;; 	      bs)))
 
+		(setq gnus-visible-headers "^From:\\|^Subject:")
+
+;; (setq message-header-format-alist
+;; `((From)
+;;  ;; (Newsgroups)
+;;  (To)
+;;  (Cc)
+;;  (Subject)
+;;  ;; (In-Reply-To)
+;;  ;; (Fcc)
+;;  ;; (Bcc)
+;;  ;; (Date)
+;;  ;; (Organization)
+;;  ;; (Distribution)
+;;  ;; (Lines)
+;;  ;; (Expires)
+;;  ;; (Message-ID)
+;;  ;; (References . message-shorten-references)
+;;  (User-Agent))
+;; )
+
+;; ((From)
+;;  (Newsgroups)
+;;  (To)
+;;  (Cc)
+;;  (Subject)
+;;  (In-Reply-To)
+;;  (Fcc)
+;;  (Bcc)
+;;  (Date)
+;;  (Organization)
+;;  (Distribution)
+;;  (Lines)
+;;  (Expires)
+;;  (Message-ID)
+;;  (References . message-shorten-references)
+;;  (User-Agent))
 
     ;; First insert the header.
     (let ((hdr (imap-message-get uid 'RFC822.HEADER imapua-connection)))
       (with-current-buffer buf
+
+				;; pX : Short header
+				;; (insert (substring hdr 0 100))
 				(insert hdr)
+
+				(message "headers: %s " message-inserted-headers)
+
 				;; Do SMTP transport decoding on the message header.
 				(subst-char-in-region (point-min) (point-max) ?\r ?\ )
 				(message-sort-headers)
+
+
+
 				(make-local-variable 'imapua-message-text-end-of-headers)
 				(setq imapua-message-text-end-of-headers (point))
 				(put 'imapua-message-text-end-of-headers 'permanent-local 't)
-				(insert "--text follows this line--\n\n")))
+				(insert "\n--text follows this line--\n\n")))
 
     ;; Now insert the first text part we have
     (when text-part
