@@ -759,7 +759,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
     (let ((hdr (imap-message-get uid 'RFC822.HEADER imapua-connection)))
       (with-current-buffer buf
 				(setq inhibit-read-only t)
-				(insert "\nplop\n")
+				;; (insert "\nplop\n")
 
 				;; pX : Short header
 				;; (insert (substring hdr 0 100))
@@ -770,7 +770,6 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 				(message-sort-headers)
 				(make-local-variable 'imapua-message-text-end-of-headers)
 				(setq imapua-message-text-end-of-headers (point))
-				(put 'imapua-message-text-end-of-headers 'permanent-local 't)
 
 				(message "line is %s" (what-line))
 				;; (setq inhibit-read-only t)
@@ -787,9 +786,11 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 			(setq inhibit-read-only t)
 			(goto-line 5)
 			(kill-line 25)
-			(goto-line 5)
-			(insert "\n snip \n")
-)
+			;; (goto-line 5)
+			(put 'imapua-message-text-end-of-headers 'permanent-local 't)
+			(insert "\n--text follows this line--\n\n")
+			;; (insert "\n snip \n")
+			)
 
     ;; Now insert the first text part we have
     (when text-part
@@ -798,8 +799,10 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 			(message "in open, buffer is %s" buf)
       (switch-to-buffer buf)
       (set-buffer-modified-p nil)
-      (goto-char imapua-message-text-end-of-headers)
-      (imapua-message-mode))
+      ;; (goto-char imapua-message-text-end-of-headers)
+      (imapua-message-mode)
+			(kill-paragraph 5)
+)
 
     ;; Display the list of other parts (if there are any) here
     (imapua-part-list-display imapua-connection folder-name uid buf parts)
@@ -809,31 +812,32 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
   "Display the list of parts."
   (defun mime-to-string (mimetypeheader)
     (if (listp mimetypeheader)
-	(concat (car (car mimetypeheader))
-		"/"
-		(cdr (car mimetypeheader)))
+				(concat (car (car mimetypeheader))
+								"/"
+								(cdr (car mimetypeheader)))
       mimetypeheader))
   (with-current-buffer buffer
     (make-local-variable 'imapua-connection)
     (setq imapua-connection connection)
     (let ((buffer-read-only nil))
       (save-excursion
-	(goto-char (point-max))
-	(insert "\n\n--attachment links follows this line--\n\n")
-	(mapc (lambda (part)
-		(let ((partnum (cdr (assoc 'partnum part)))
-		      (name (lookup "name" (cadr (assoc 'body part)))))
-		  (if (> (- (point) (line-beginning-position)) 72)
-		      (insert "\n"))
-		  (let ((pt (point)))
-		    (insert "Attached:"
-			    (if name
-				(concat "'" name "' {" (mime-to-string (cdr (assoc 'type part))) "}")
+				(goto-char (point-max))
+				(insert "\n\n--attachment links follows this line--\n\n")
+				(mapc (lambda (part)
+								(let ((partnum (cdr (assoc 'partnum part)))
+											(name (lookup "name" (cadr (assoc 'body part)))))
+									(if (> (- (point) (line-beginning-position)) 72)
+											(insert "\n"))
+									(let ((pt (point)))
+										(insert "Attached:"
+														(if name
+																(concat "'" name "' {" (mime-to-string (cdr (assoc 'type part))) "}")
                               (mime-to-string (cdr (assoc 'type part))))
-			    "[" partnum "]\t")
-		    (add-text-properties pt (point) `(PARTNUM ,partnum FOLDER ,folder UID ,uid)))))
-	      part-list)
-	(set-buffer-modified-p nil)))))
+														"[" partnum "]\t")
+										(add-text-properties pt (point) `(PARTNUM ,partnum FOLDER ,folder UID ,uid)))))
+							part-list)
+				(set-buffer-modified-p nil))))
+	)
 
 (defun imapua-message-fill-text (uid text-part buffer)
   "Insert the text-part for rhe specified uid in the buffer provided."
