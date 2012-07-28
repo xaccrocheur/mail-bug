@@ -602,18 +602,18 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
   (if (looking-at "^[^ \t\n\r]+")
       ;; Must be a folder... expand or contract according to current state.
       (let ((folder-name (match-string-no-properties 0)))
-	(if (imap-mailbox-get 'OPENED folder-name imapua-connection)
-	    ;; Mark the mailbox
-	    (imap-mailbox-put 'OPENED nil folder-name imapua-connection)
-	  ;; Mark the folder opened
-	  (imap-mailbox-put 'OPENED 't folder-name imapua-connection))
-	(imapua-redraw))
+				(if (imap-mailbox-get 'OPENED folder-name imapua-connection)
+						;; Mark the mailbox
+						(imap-mailbox-put 'OPENED nil folder-name imapua-connection)
+					;; Mark the folder opened
+					(imap-mailbox-put 'OPENED 't folder-name imapua-connection))
+				(imapua-redraw))
     ;; Must be a message, mark it seen and then open it.
     (let ((msg nil)
-	  (folder-name (get-text-property (point) 'FOLDER))
-	  (uid (get-text-property (point) 'UID)))
+					(folder-name (get-text-property (point) 'FOLDER))
+					(uid (get-text-property (point) 'UID)))
       (setq msg (cons uid (imapua-date-format
-			   (imap-message-envelope-date uid imapua-connection))))
+													 (imap-message-envelope-date uid imapua-connection))))
       (imap-message-flags-add (number-to-string uid) "\\Seen" nil imapua-connection)
 
 			;; px
@@ -738,23 +738,6 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 						;; (References . message-shorten-references)
 						))
 
-;; ((From)
-;;  (Newsgroups)
-;;  (To)
-;;  (Cc)
-;;  (Subject)
-;;  (In-Reply-To)
-;;  (Fcc)
-;;  (Bcc)
-;;  (Date)
-;;  (Organization)
-;;  (Distribution)
-;;  (Lines)
-;;  (Expires)
-;;  (Message-ID)
-;;  (References . message-shorten-references)
-;;  (User-Agent))
-
     ;; First insert the header.
     (let ((hdr (imap-message-get uid 'RFC822.HEADER imapua-connection)))
       (with-current-buffer buf
@@ -802,7 +785,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
       ;; (goto-char imapua-message-text-end-of-headers)
       (imapua-message-mode)
 			(kill-paragraph 5)
-)
+			)
 
     ;; Display the list of other parts (if there are any) here
     (imapua-part-list-display imapua-connection folder-name uid buf parts)
@@ -1261,7 +1244,9 @@ Opened folders have their messages re-read and re-drawn."
 		   (string< (cdr left) (cdr right)))))
 	       (insert "\n")))))
      imapua-folder-list)
-    (goto-char stored-pos)))
+		(goto-char stored-pos)
+		(search-forward-regexp "^$")
+))
 
 
 (defun imapua-get-msg-redraw-func (folder-name)
