@@ -50,7 +50,8 @@
 (require 'timezone)
 (require 'message)
 (require 'cl)
-(require 'gnus)
+
+;; (require 'gnus)
 
 ;; pX : line hilite
 (add-hook 'imapua-mode-hook (lambda () (hl-line-mode t)))
@@ -108,12 +109,12 @@
   "colors for the IMAP user agent."
   :group 'imap-mail-user-agent)
 
-(defcustom imapua-folder-color "#ffffff"
+(defcustom imapua-folder-color "#eeeeec"
   "* color for folders"
   :type '(string)
   :group 'imap-mail-user-agent-colors)
 
-(defcustom imapua-unseen-message-color "#0000ff"
+(defcustom imapua-unseen-message-color "#00aaff"
   "* color for unread messages"
   :type '(string)
   :group 'imap-mail-user-agent-colors)
@@ -123,7 +124,7 @@
   :type '(string)
   :group 'imap-mail-user-agent-colors)
 
-(defcustom imapua-marked-message-color "#ff0000"
+(defcustom imapua-marked-message-color "#ffaa00"
   "* color for marked messages"
   :type '(string)
   :group 'imap-mail-user-agent-colors)
