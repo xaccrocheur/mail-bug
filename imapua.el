@@ -724,8 +724,8 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 						(To)
 						;; (Cc)
 						(Date)
-						(User-Agent)
 						(Subject)
+						;; (User-Agent)
 						;; (In-Reply-To)
 						;; (Fcc)
 						;; (Bcc)
@@ -775,7 +775,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 				(message "line is %s" (what-line))
 				;; (setq inhibit-read-only t)
 
-				(insert "\n--text follows this line--\n\n")
+				;; (insert "\n--text follows this line--\n\n")
 
 				(message "line is now %s" (what-line))
 				;; (kill-line 15)
@@ -785,9 +785,11 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 
 		(with-current-buffer buf
 			(setq inhibit-read-only t)
-			(goto-line 6)
-			(kill-line 30)
-			(insert "\n\n snip \n\n"))
+			(goto-line 5)
+			(kill-line 25)
+			(goto-line 5)
+			(insert "\n snip \n")
+)
 
     ;; Now insert the first text part we have
     (when text-part
