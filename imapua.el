@@ -50,6 +50,7 @@
 (require 'timezone)
 (require 'message)
 (require 'cl)
+(require 'gnus)
 
 ;; pX : line hilite
 (add-hook 'imapua-mode-hook (lambda () (hl-line-mode t)))
@@ -711,26 +712,31 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 	;; 		(imapua-part-list-assoc 'type '(("text" . "plain")) parts)
 	;; 	      bs)))
 
-		(setq gnus-visible-headers "^From:\\|^Subject:")
+		(setq gnus-visible-headers "^From:\\|^Subject:"
+					gnus-treat-hide-boring-headers 'head
+					gnus-ignored-headers "*."
+					)
 
-;; (setq message-header-format-alist
-;; `((From)
-;;  ;; (Newsgroups)
-;;  (To)
-;;  (Cc)
-;;  (Subject)
-;;  ;; (In-Reply-To)
-;;  ;; (Fcc)
-;;  ;; (Bcc)
-;;  ;; (Date)
-;;  ;; (Organization)
-;;  ;; (Distribution)
-;;  ;; (Lines)
-;;  ;; (Expires)
-;;  ;; (Message-ID)
-;;  ;; (References . message-shorten-references)
-;;  (User-Agent))
-;; )
+		(setq message-header-format-alist
+					`(
+						(From)
+						;; (Newsgroups)
+						(To)
+						;; (Cc)
+						(Date)
+						(User-Agent)
+						(Subject)
+						;; (In-Reply-To)
+						;; (Fcc)
+						;; (Bcc)
+						;; (Date)
+						;; (Organization)
+						;; (Distribution)
+						;; (Lines)
+						;; (Expires)
+						;; (Message-ID)
+						;; (References . message-shorten-references)
+						))
 
 ;; ((From)
 ;;  (Newsgroups)
@@ -752,23 +758,36 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
     ;; First insert the header.
     (let ((hdr (imap-message-get uid 'RFC822.HEADER imapua-connection)))
       (with-current-buffer buf
+				(setq inhibit-read-only t)
+				(insert "\nplop\n")
 
 				;; pX : Short header
 				;; (insert (substring hdr 0 100))
 				(insert hdr)
 
-				(message "headers: %s " message-inserted-headers)
-
 				;; Do SMTP transport decoding on the message header.
 				(subst-char-in-region (point-min) (point-max) ?\r ?\ )
 				(message-sort-headers)
-
-
-
 				(make-local-variable 'imapua-message-text-end-of-headers)
 				(setq imapua-message-text-end-of-headers (point))
 				(put 'imapua-message-text-end-of-headers 'permanent-local 't)
-				(insert "\n--text follows this line--\n\n")))
+
+				(message "line is %s" (what-line))
+				;; (setq inhibit-read-only t)
+
+				(insert "\n--text follows this line--\n\n")
+
+				(message "line is now %s" (what-line))
+				;; (kill-line 15)
+				;; (goto-line 1)
+
+))
+
+		(with-current-buffer buf
+			(setq inhibit-read-only t)
+			(goto-line 6)
+			(kill-line 30)
+			(insert "\n\n snip \n\n"))
 
     ;; Now insert the first text part we have
     (when text-part
