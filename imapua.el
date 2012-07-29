@@ -447,8 +447,6 @@ An malist is a Multi Association LIST: a list of alists."
     found))
 
 
-
-
 ;; The intializing proc.
 ;;;###autoload
 (defun imapua (&optional host-name tcp-port)
@@ -629,42 +627,6 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 			;; (my-display-buffers (imapua-message-open folder-name uid))
 )))
 
-;; (add-hook 'imapua-mode-hook
-;; 					(lambda ()
-;; 						(interactive)
-;; 						(message "imapua mode on")
-;; 						(set-window-dedicated-p (selected-window) 1)))
-
-;; (add-hook 'php-mode-hook
-;; 					(lambda ()
-;; 						(interactive)
-;; 						(message "php mode on")
-;; 						(set-window-dedicated-p (selected-window) 1)))
-
-
-;; My open pane logic
-
-;; (defadvice pop-to-buffer (before cancel-other-window first)
-;;   (ad-set-arg 1 nil))
-
-;; (ad-activate 'pop-to-buffer)
-
-;; Toggle window dedication
-(defun toggle-window-dedicated ()
-  "Toggle whether the current active window is dedicated or not"
-  (interactive)
-  (message
-   (if (let (window (get-buffer-window (current-buffer)))
-         (set-window-dedicated-p window
-                                 (not (window-dedicated-p window))))
-       "Window '%s' is dedicated"
-     "Window '%s' is normal")
-   (current-buffer)))
-
-;; Press [pause] key in each window you want to "freeze"
-(global-set-key [pause] 'toggle-window-dedicated)
-
-;; now dodo
 
 (defun imapua-message-open (folder-name uid)
   (interactive "Mfolder-name:\nnUid:")
@@ -1246,7 +1208,9 @@ Opened folders have their messages re-read and re-drawn."
 	       (insert "\n")))))
      imapua-folder-list)
 		(goto-char stored-pos)
+		(toggle-truncate-lines 1)
 		(search-forward-regexp "^$")
+		(previous-line)
 ))
 
 
