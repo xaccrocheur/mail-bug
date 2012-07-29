@@ -675,10 +675,13 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 	;; 		(imapua-part-list-assoc 'type '(("text" . "plain")) parts)
 	;; 	      bs)))
 
-		(setq gnus-visible-headers "^From:\\|^Subject:"
-					gnus-treat-hide-boring-headers 'head
-					gnus-ignored-headers "*."
-					)
+
+;; ??
+
+		;; (setq gnus-visible-headers "^From:\\|^Subject:"
+		;; 			gnus-treat-hide-boring-headers 'head
+		;; 			gnus-ignored-headers "*."
+		;; 			)
 
 		(setq message-header-format-alist
 					`(
@@ -704,7 +707,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
     ;; First insert the header.
     (let ((hdr (imap-message-get uid 'RFC822.HEADER imapua-connection)))
       (with-current-buffer buf
-				(setq inhibit-read-only t)
+				;; (setq inhibit-read-only t)
 				;; (insert "\nplop\n")
 
 				;; pX : Short header
@@ -717,26 +720,19 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 				(make-local-variable 'imapua-message-text-end-of-headers)
 				(setq imapua-message-text-end-of-headers (point))
 
-				(message "line is %s" (what-line))
-				;; (setq inhibit-read-only t)
+				(put 'imapua-message-text-end-of-headers 'permanent-local 't)
+				(insert "\n--text follows this line--\n\n")
+				))
 
-				;; (insert "\n--text follows this line--\n\n")
-
-				(message "line is now %s" (what-line))
-				;; (kill-line 15)
-				;; (goto-line 1)
-
-))
-
-		(with-current-buffer buf
-			(setq inhibit-read-only t)
-			(goto-line 5)
-			(kill-line 25)
-			;; (goto-line 5)
-			(put 'imapua-message-text-end-of-headers 'permanent-local 't)
-			(insert "\n--text follows this line--\n\n")
-			;; (insert "\n snip \n")
-			)
+		;; (with-current-buffer buf
+		;; 	(setq inhibit-read-only t)
+		;; 	(goto-line 5)
+		;; 	(kill-line 25)
+		;; 	;; (goto-line 5)
+		;; 	(put 'imapua-message-text-end-of-headers 'permanent-local 't)
+		;; 	(insert "\n--text follows this line--\n\n")
+		;; 	;; (insert "\n snip \n")
+		;; 	)
 
     ;; Now insert the first text part we have
     (when text-part
@@ -747,7 +743,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
       (set-buffer-modified-p nil)
       ;; (goto-char imapua-message-text-end-of-headers)
       (imapua-message-mode)
-			(kill-paragraph 5)
+			;; (kill-paragraph 5)
 			)
 
     ;; Display the list of other parts (if there are any) here
