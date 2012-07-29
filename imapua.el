@@ -56,6 +56,30 @@
 ;; pX : line hilite
 (add-hook 'imapua-mode-hook (lambda () (hl-line-mode t)))
 
+(add-to-list 'mm-attachment-override-types "image/.*")
+(setq mm-discouraged-alternatives '("text/html" "text/richtext"))
+
+;; SMTP configs.
+(require 'smtpmail)
+
+(setq send-mail-function 'smtpmail-send-it
+      message-send-mail-function 'smtpmail-send-it
+      mail-from-style nil
+      smtpmail-debug-info t
+      smtpmail-debug-verb t)
+
+(setq starttls-use-gnutls t
+      starttls-gnutls-program "gnutls-cli"
+      starttls-extra-arguments '("--insecure"))
+
+(setq message-send-mail-function 'smtpmail-send-it
+      smtpmail-smtp-server "imap.gmail.com"
+      smtpmail-default-smtp-server "imap.gmail.com"
+      smtpmail-smtp-service 465
+      smtpmail-starttls-credentials '(("imap.gmail.com" 465 nil nil)))
+
+
+
 ;; Imap logging management. Very useful for debug.
 
 ;; Imap debugging is another GNUs IMAP library feature:
@@ -642,46 +666,16 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
   (imap-fetch uid "(BODYSTRUCTURE ENVELOPE RFC822.HEADER)" 't nil imapua-connection)
   (let* ((buf (let ((buf-name (concat "message-" folder-name "-" (number-to-string uid))))
                 (when (get-buffer buf-name)
-									;; (message "oy")
 									(switch-to-buffer buf-name)
 									(error "imapua: message already opened"))
-								;; (get-buffer-create buf-name)
 								(progn
-									(get-buffer-create buf-name)
-									;; (message "buffer : %s" buf-name)
-									;; (generate-new-buffer buf-name)
-									;; (pop-to-buffer buf-name)
-)))
+									(get-buffer-create buf-name))))
          (bs-def (imap-message-get uid 'BODYSTRUCTURE imapua-connection))
          (bs (imapua-parse-bs bs-def))
 				 (parts (imapua-bs-to-part-list bs))
 				 (text-part (if parts
 												(imapua-part-list-assoc 'type '(("text" . "plain")) parts)
 											bs)))
-
-		;; (get-buffer-create (pop-to-buffer "plop"))
-
-  ;; (imap-mailbox-select folder-name nil imapua-connection)
-  ;; (imap-fetch uid "(BODYSTRUCTURE ENVELOPE RFC822.HEADER)" 't nil imapua-connection)
-  ;; (let* ((buf (let ((buf-name (concat "message-" folder-name "-" (number-to-string uid))))
-  ;;               (when (get-buffer buf-name)
-  ;;                 (switch-to-buffer buf-name)
-  ;;                 (error "imapua: message already opened"))
-  ;;               (get-buffer-create buf-name)))
-  ;;        (bs-def (imap-message-get uid 'BODYSTRUCTURE imapua-connection))
-  ;;        (bs (imapua-parse-bs bs-def))
-	;;  (parts (imapua-bs-to-part-list bs))
-	;;  (text-part (if parts
-	;; 		(imapua-part-list-assoc 'type '(("text" . "plain")) parts)
-	;; 	      bs)))
-
-
-;; ??
-
-		;; (setq gnus-visible-headers "^From:\\|^Subject:"
-		;; 			gnus-treat-hide-boring-headers 'head
-		;; 			gnus-ignored-headers "*."
-		;; 			)
 
 		(setq message-header-format-alist
 					`(
