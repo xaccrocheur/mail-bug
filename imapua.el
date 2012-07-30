@@ -60,25 +60,29 @@
 (setq mm-discouraged-alternatives '("text/html" "text/richtext"))
 
 ;; SMTP configs.
-(require 'smtpmail)
 
 (setq send-mail-function 'smtpmail-send-it
       message-send-mail-function 'smtpmail-send-it
       mail-from-style nil
       smtpmail-debug-info t
-      smtpmail-debug-verb t)
+      smtpmail-debug-verb t
+      smtpmail-smtp-server "smtp.gmx.com"
+      smtpmail-default-smtp-server "smtp.gmx.com"
+      smtpmail-smtp-service 465
+			smtpmail-stream-type 'plain
+)
+
+(require 'smtpmail)
+(setq mail-host-address "gnu.org")
+(setq user-full-name "philcm")
+(setq user-mail-address "philcm@gnu.org")
+(setq mail-archive-file-name (expand-file-name "~/Mail/outgoing"))
 
 (setq starttls-use-gnutls t
       starttls-gnutls-program "gnutls-cli"
       starttls-extra-arguments '("--insecure"))
 
-(setq message-send-mail-function 'smtpmail-send-it
-      smtpmail-smtp-server "imap.gmail.com"
-      smtpmail-default-smtp-server "imap.gmail.com"
-      smtpmail-smtp-service 465
-      smtpmail-starttls-credentials '(("imap.gmail.com" 465 nil nil)))
-
-
+;; (setq smtpmail-starttls-credentials '(("imap.gmail.com" 465 nil nil)))
 
 ;; Imap logging management. Very useful for debug.
 
