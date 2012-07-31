@@ -53,9 +53,8 @@
 
 ;; (require 'gnus)
 
-;; pX : line hilite
+;; HACK: : line hilite
 (add-hook 'imapua-mode-hook (lambda () (hl-line-mode t)))
-
 (add-to-list 'mm-attachment-override-types "image/.*")
 (setq mm-discouraged-alternatives '("text/html" "text/richtext"))
 
@@ -114,6 +113,11 @@
   "an IMAP based MUA."
   :group 'applications)
 
+(defcustom imapua-modal 't
+  "* should the message open in a dedicated windowpane?"
+  :type '(boolean)
+  :group 'imap-mail-user-agent)
+
 ;; Customization for the agent's behaviour
 (defcustom imapua-host-name ""
   "* the name of server to connect to"
@@ -145,6 +149,13 @@
 (defgroup imap-mail-user-agent-colors nil
   "colors for the IMAP user agent."
   :group 'imap-mail-user-agent)
+
+
+;; (defface imapua-folder-color
+;;   '((t :inherits "default"
+;; 							:weight 'ultra-bold))
+;;   "Face used for topics."
+;;   :group 'imap-mail-user-agent-colors)
 
 (defcustom imapua-folder-color "#eeeeec"
   "* color for folders"
@@ -500,15 +511,14 @@ This means you can have multiple imapua sessions in one emacs session."
 															(if (not (match-string 2 host-str))
 																			143
 																	(string-to-number (match-string 2 host-str)))))))
-  ;; Setup buffer.
+
+		;; Setup buffer.
   (let ((folder-buffer (get-buffer-create
 																								(concat "mail-folders"
 																																(if host-name
 																																				(concat host-name ":" (number-to-string tcp-port)))))))
     (switch-to-buffer folder-buffer)
 
-				;; px
-				;; (set-window-dedicated-p (get-buffer-window (current-buffer)) 1)
     (if (not imapua-mode-initialized-p)
 								(progn
 										(imapua-mode)
@@ -594,7 +604,8 @@ The keys defined are:
   (make-local-variable 'imapua-username)
   (make-local-variable 'imapua-password)
   ;;run the mode hooks
-  (run-hooks 'imapua-mode-hook))
+  (run-hooks 'imapua-mode-hook)
+)
 
 
 (define-derived-mode imapua-message-mode message-mode "IMAP UA Message" "IMPAUA Msg \\{imapua-message-mode-map}"
@@ -626,6 +637,7 @@ The keys defined are:
   (print (imap-message-get uid 'BODYSTRUCTURE imapua-connection))
   )
 
+
 (defun imapua-open ()
   "expand/contract the folder or open the message that point is on.
 Messages are opened with the first found text part displayed. If
@@ -640,38 +652,32 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
   (if (looking-at "^[^ \t\n\r]+")
       ;; Must be a folder... expand or contract according to current state.
       (let ((folder-name (match-string-no-properties 0)))
-				(if (imap-mailbox-get 'OPENED folder-name imapua-connection)
-						;; Mark the mailbox
-						(imap-mailbox-put 'OPENED nil folder-name imapua-connection)
-					;; Mark the folder opened
-					(imap-mailbox-put 'OPENED 't folder-name imapua-connection))
-				(imapua-redraw))
+								(if (imap-mailbox-get 'OPENED folder-name imapua-connection)
+												;; Mark the mailbox
+												(imap-mailbox-put 'OPENED nil folder-name imapua-connection)
+										;; Mark the folder opened
+										(imap-mailbox-put 'OPENED 't folder-name imapua-connection))
+								(imapua-redraw))
     ;; Must be a message, mark it seen and then open it.
     (let ((msg nil)
-					(folder-name (get-text-property (point) 'FOLDER))
-					(uid (get-text-property (point) 'UID)))
+										(folder-name (get-text-property (point) 'FOLDER))
+										(uid (get-text-property (point) 'UID)))
       (setq msg (cons uid (imapua-date-format
-													 (imap-message-envelope-date uid imapua-connection))))
+																											(imap-message-envelope-date uid imapua-connection))))
       (imap-message-flags-add (number-to-string uid) "\\Seen" nil imapua-connection)
 
-			;; px
-      (message "imma open da msg in buffer ")
-						(setq init t)
-			;; (setq split-height-threshold 10)
-			(set-window-dedicated-p (selected-window) (not current-prefix-arg))
-			;; px
-			;; (display-buffer (imapua-message-open folder-name uid))
-			(imapua-message-open folder-name uid)
-			;; (pop-to-buffer (imapua-message-open folder-name uid) 1)
-			;; (my-display-buffers (imapua-message-open folder-name uid))
-)))
+						;; HACK:
+						(if imapua-modal
+										(progn
+												(setq w (selected-window))
+												(set-window-dedicated-p (selected-window) (not current-prefix-arg))
+												(setq w2 (split-window w 15))))
+
+						(imapua-message-open folder-name uid))))
 
 
 (defun imapua-message-open (folder-name uid)
   (interactive "Mfolder-name:\nnUid:")
-
-		(if (not init)
-						(enlarge-window 10))
 
 		(defun lookup (key lst) ; This function is used via dynamic scope in some funcs called from here
     "Find the value following the key, eg:
@@ -720,10 +726,16 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
     ;; First insert the header.
     (let ((hdr (imap-message-get uid 'RFC822.HEADER imapua-connection)))
       (with-current-buffer buf
+
+								;; (if imapua-init
+								;; 				(progn
+								;; 						(enlarge-window 10)
+								;; 						(setq imapua-init nil)))
+
 								;; (setq inhibit-read-only t)
 								;; (insert "\nplop\n")
 
-								;; pX : Short header
+								;; HACK: : Short header
 								;; (insert (substring hdr 0 100))
 								(insert hdr)
 
@@ -756,12 +768,20 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
       (set-buffer-modified-p nil)
       ;; (goto-char imapua-message-text-end-of-headers)
       (imapua-message-mode)
+
+						;; (if imapua-init
+						;; 				(progn
+						;; 						(enlarge-window 10)
+						;; 						(setq imapua-init nil)))
+
+
 						;; (kill-paragraph 5)
 						)
 
     ;; Display the list of other parts (if there are any) here
     (imapua-part-list-display imapua-connection folder-name uid buf parts)
     ))
+
 
 (defun imapua-part-list-display (connection folder uid buffer part-list)
   "Display the list of parts."
@@ -1163,6 +1183,14 @@ This ensures that deleted messages are removed from the obarray."
 
 ;;;; The display logic.
 
+;; (defface my-tushi-face
+;;   '((t :inherits "default"
+;; 							:weight 'ultra-bold))
+;;   "Face used for topics."
+;;   :group 'faces)
+
+;; (insert (propertize "Gah! I'm green!" 'face 'my-tushi-face))
+
 (defun imapua-redraw ()
   "redraw the buffer based on the imap state.
 Opened folders have their messages re-read and re-drawn."
@@ -1220,6 +1248,65 @@ Opened folders have their messages re-read and re-drawn."
 		(search-forward-regexp "^$")
 		(previous-line)
 ))
+
+
+;; (defun imapua-redraw ()
+;;   "redraw the buffer based on the imap state.
+;; Opened folders have their messages re-read and re-drawn."
+;;   (interactive)
+;;   (defun insert-with-prop (text prop-list)
+;;     (let ((pt (point)))
+;;       (insert text)
+;;       (add-text-properties pt (point) prop-list)))
+;;   ;; Main function.
+;;   (imapua-ensure-connected)
+;;   (let ((stored-pos (point-marker))
+;; 	(inhibit-read-only 't)
+;; 	(display-buffer (current-buffer)))
+;;     (delete-region (point-min) (point-max))
+;;     (imapua-refresh-folder-list)
+;;     ;; Map the folder display over the sorted folder list.
+;;     (mapc
+;;      (lambda (folder-name)
+;;        (with-current-buffer display-buffer
+;; 	 (insert-with-prop folder-name `(face (foreground-color . ,imapua-folder-color)))
+;; 	 (if (imapua-has-recent-p folder-name)
+;; 	     (insert-with-prop " * " `(face (foreground-color . ,imapua-unseen-message-color))))
+;; 	 (insert " \n")
+;; 	 (if (imap-mailbox-get 'OPENED folder-name imapua-connection)
+;; 	     (let* ((selection
+;; 		     ;; Force the re-selection of the folder before local vars
+;; 		     (progn
+;; 		       (imap-mailbox-unselect imapua-connection)
+;; 		       (imap-mailbox-select folder-name nil imapua-connection)))
+;; 		    (existing (imap-mailbox-get 'exists folder-name imapua-connection))
+;; 		    (message-range (concat "1:" (number-to-string existing))))
+;; 	       (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't imapua-connection)
+;; 	       ;; Map the message redraw over each message in the folder.
+;; 	       (mapc
+;; 		(lambda (msg)
+;; 		  (let ((msg-redraw-func (imapua-get-msg-redraw-func folder-name)))
+;; 		    (funcall msg-redraw-func display-buffer folder-name msg)))
+;; 		;; The message list is sorted before being output
+;; 		(sort
+;; 		 (imap-message-map
+;; 		  (lambda (uid property)
+;; 		    (cons uid
+;;                           (condition-case nil
+;;                               (timezone-make-date-sortable (imapua-date-format (elt property 0)) "GMT" "GMT")
+;;                             ;; Ensures that strange dates don't cause a problem.
+;;                             (range-error nil))))
+;; 		  'ENVELOPE imapua-connection)
+;; 		 ;; Compare the sort elements by date
+;; 		 (lambda (left right)
+;; 		   (string< (cdr left) (cdr right)))))
+;; 	       (insert "\n")))))
+;;      imapua-folder-list)
+;; 		(goto-char stored-pos)
+;; 		(toggle-truncate-lines 1)
+;; 		(search-forward-regexp "^$")
+;; 		(previous-line)
+;; ))
 
 
 (defun imapua-get-msg-redraw-func (folder-name)
@@ -1284,25 +1371,25 @@ msg is a dotted pair such that:
 
 (ad-activate 'message-mail)
 
-(defun message-reply (&optional to-address wide switch-function)
+;; (defun message-reply (&optional to-address wide switch-function)
 
-		(defadvice message-reply (around imapua-message-reply-yank)
-				"Yank original mail in a reply"
-				(message "advicing")
+;; 		(defadvice message-reply (around imapua-message-reply-yank)
+;; 				"Yank original mail in a reply"
+;; 				(message "advicing")
 
-				(with-current-buffer (current-buffer)
-						(search-forward-regexp "--text follows this line--")
-						(next-line)
-						)
-				(save-excursion
-						message-yank-original
+;; 				(with-current-buffer (current-buffer)
+;; 						(search-forward-regexp "--text follows this line--")
+;; 						(next-line)
+;; 						)
+;; ;;				(save-excursion
+;; ;;				  message-yank-original
 
-				(ad-set-arg 2 (append (ad-get-arg 2) `(("BCC" . ,user-mail-address))))
-				ad-do-it
-				(message "adviced")
-				(message-sort-headers))
+;; 				(ad-set-arg 2 (append (ad-get-arg 2) `(("BCC" . ,user-mail-address))))
+;; 				ad-do-it
+;; 				(message "adviced")
+;; 				(message-sort-headers))
 
-(ad-activate 'message-mail)
+;; (ad-activate 'message-mail)
 
 
 (provide 'imapua)
