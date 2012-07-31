@@ -98,13 +98,15 @@
 ;; (setq imap-debug (get-buffer-create "imap-debug"))
 ;; It isn't so generally useful.
 
-(setq imap-log nil)
+(setq imap-log t)
 
 (defun imapua-toggle-imap-logging ()
   (interactive)
   (if imap-log
       (setq imap-log nil)
     (setq imap-log (get-buffer-create "imapua-log"))))
+
+(imapua-toggle-imap-logging)
 
 ;; Customization.
 
@@ -491,35 +493,35 @@ This means you can have multiple imapua sessions in one emacs session."
   (interactive
    (if current-prefix-arg
        (let ((host-str (read-from-minibuffer "Imap server host name: ")))
-	 (string-match "\\(.+\\) \\([0-9]+\\)" host-str 0)
-	 (list (if (not (match-string 1 host-str))
-		   "localhost"
-		 (match-string 1 host-str))
-	       (if (not (match-string 2 host-str))
-		   143
-		 (string-to-number (match-string 2 host-str)))))))
+									(string-match "\\(.+\\) \\([0-9]+\\)" host-str 0)
+									(list (if (not (match-string 1 host-str))
+																			"localhost"
+																	(match-string 1 host-str))
+															(if (not (match-string 2 host-str))
+																			143
+																	(string-to-number (match-string 2 host-str)))))))
   ;; Setup buffer.
   (let ((folder-buffer (get-buffer-create
-			(concat "mail-folders"
-				(if host-name
-				    (concat host-name ":" (number-to-string tcp-port)))))))
+																								(concat "mail-folders"
+																																(if host-name
+																																				(concat host-name ":" (number-to-string tcp-port)))))))
     (switch-to-buffer folder-buffer)
 
-		;; px
-		;; (set-window-dedicated-p (get-buffer-window (current-buffer)) 1)
+				;; px
+				;; (set-window-dedicated-p (get-buffer-window (current-buffer)) 1)
     (if (not imapua-mode-initialized-p)
-	(progn
-	  (imapua-mode)
-	  ;; If a host has been specified then make the host name local.
-	  (if host-name
-	      (progn
-		(make-local-variable 'imapua-host)
-		(setq imapua-host host-name)
-		(make-local-variable 'imapua-port)
-		(setq imapua-port tcp-port)))))
+								(progn
+										(imapua-mode)
+										;; If a host has been specified then make the host name local.
+										(if host-name
+														(progn
+																(make-local-variable 'imapua-host)
+																(setq imapua-host host-name)
+																(make-local-variable 'imapua-port)
+																(setq imapua-port tcp-port)))))
     (imapua-redraw))
-	t
-)
+		;; t
+		)
 
 
 (defun imapua-check-mail ()
@@ -667,91 +669,92 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 
 (defun imapua-message-open (folder-name uid)
   (interactive "Mfolder-name:\nnUid:")
-  (defun lookup (key lst) ; This function is used via dynamic scope in some funcs called from here
+  ;; (enlarge-window 10)
+		(defun lookup (key lst) ; This function is used via dynamic scope in some funcs called from here
     "Find the value following the key, eg:
  (lookup 'nic '(bob 12 fred 73 mike 18 nic 34 jim 22))
  => 34"
     (if (member key lst)
-				(cadr (member key lst))))
+								(cadr (member key lst))))
 
   ;; Main func.
   (imap-mailbox-select folder-name nil imapua-connection)
   (imap-fetch uid "(BODYSTRUCTURE ENVELOPE RFC822.HEADER)" 't nil imapua-connection)
   (let* ((buf (let ((buf-name (concat "message-" folder-name "-" (number-to-string uid))))
                 (when (get-buffer buf-name)
-									(switch-to-buffer buf-name)
-									(error "imapua: message already opened"))
-								(progn
-									(get-buffer-create buf-name))))
+																		(switch-to-buffer buf-name)
+																		(error "imapua: message already opened"))
+																(progn
+																		(get-buffer-create buf-name))))
          (bs-def (imap-message-get uid 'BODYSTRUCTURE imapua-connection))
          (bs (imapua-parse-bs bs-def))
-				 (parts (imapua-bs-to-part-list bs))
-				 (text-part (if parts
-												(imapua-part-list-assoc 'type '(("text" . "plain")) parts)
-											bs)))
+									(parts (imapua-bs-to-part-list bs))
+									(text-part (if parts
+																								(imapua-part-list-assoc 'type '(("text" . "plain")) parts)
+																						bs)))
 
-		(setq message-header-format-alist
-					`(
-						(From)
-						;; (Newsgroups)
-						(To)
-						;; (Cc)
-						(Date)
-						(Subject)
-						;; (User-Agent)
-						;; (In-Reply-To)
-						;; (Fcc)
-						;; (Bcc)
-						;; (Date)
-						;; (Organization)
-						;; (Distribution)
-						;; (Lines)
-						;; (Expires)
-						;; (Message-ID)
-						;; (References . message-shorten-references)
-						))
+				(setq message-header-format-alist
+										`(
+												(From)
+												;; (Newsgroups)
+												(To)
+												;; (Cc)
+												(Bcc)
+												(Date)
+												(Subject)
+												;; (User-Agent)
+												;; (In-Reply-To)
+												;; (Fcc)
+												;; (Date)
+												;; (Organization)
+												;; (Distribution)
+												;; (Lines)
+												;; (Expires)
+												;; (Message-ID)
+												;; (References . message-shorten-references)
+												))
 
     ;; First insert the header.
     (let ((hdr (imap-message-get uid 'RFC822.HEADER imapua-connection)))
       (with-current-buffer buf
-				;; (setq inhibit-read-only t)
-				;; (insert "\nplop\n")
+								;; (setq inhibit-read-only t)
+								;; (insert "\nplop\n")
 
-				;; pX : Short header
-				;; (insert (substring hdr 0 100))
-				(insert hdr)
+								;; pX : Short header
+								;; (insert (substring hdr 0 100))
+								(insert hdr)
 
-				;; Do SMTP transport decoding on the message header.
-				(subst-char-in-region (point-min) (point-max) ?\r ?\ )
-				(message-sort-headers)
-				(make-local-variable 'imapua-message-text-end-of-headers)
-				(setq imapua-message-text-end-of-headers (point))
+								;; Do SMTP transport decoding on the message header.
+								(subst-char-in-region (point-min) (point-max) ?\r ?\ )
+								(message-sort-headers)
+								(make-local-variable 'imapua-message-text-end-of-headers)
+								(setq imapua-message-text-end-of-headers (point))
 
-				(put 'imapua-message-text-end-of-headers 'permanent-local 't)
-				(insert "\n--text follows this line--\n\n")
-				))
+								(put 'imapua-message-text-end-of-headers 'permanent-local 't)
+								(insert "\n--text follows this line--\n\n")
+								))
 
-		;; (with-current-buffer buf
-		;; 	(setq inhibit-read-only t)
-		;; 	(goto-line 5)
-		;; 	(kill-line 25)
-		;; 	;; (goto-line 5)
-		;; 	(put 'imapua-message-text-end-of-headers 'permanent-local 't)
-		;; 	(insert "\n--text follows this line--\n\n")
-		;; 	;; (insert "\n snip \n")
-		;; 	)
+				;; (with-current-buffer buf
+				;; 	(setq inhibit-read-only t)
+				;; 	(goto-line 5)
+				;; 	(kill-line 25)
+				;; 	;; (goto-line 5)
+				;; 	(put 'imapua-message-text-end-of-headers 'permanent-local 't)
+				;; 	(insert "\n--text follows this line--\n\n")
+				;; 	;; (insert "\n snip \n")
+				;; 	)
 
     ;; Now insert the first text part we have
     (when text-part
       (imapua-message-fill-text uid (if text-part text-part bs) buf))
     (save-excursion
-			(message "in open, buffer is %s" buf)
+						(message "in open, buffer is %s" buf)
       (switch-to-buffer buf)
       (set-buffer-modified-p nil)
       ;; (goto-char imapua-message-text-end-of-headers)
       (imapua-message-mode)
-			;; (kill-paragraph 5)
-			)
+						;; (kill-paragraph 5)
+						)
 
     ;; Display the list of other parts (if there are any) here
     (imapua-part-list-display imapua-connection folder-name uid buf parts)
@@ -942,10 +945,10 @@ buffer. Programs can pass the imap-con in directly though."
 (defun imapua-decode-string (content transfer-encoding char-encoding)
   "Decode the specified content string."
   (let* ((transfer-enc (if transfer-encoding
-			   (upcase transfer-encoding)
-			 'NONE))
+																											(upcase transfer-encoding)
+																									'NONE))
 
-	 (char-enc (let ((encoding
+									(char-enc (let ((encoding
                           (if char-encoding
                               (intern (downcase
                                        (if (stringp char-encoding)
@@ -960,7 +963,7 @@ buffer. Programs can pass the imap-con in directly though."
       (decode-coding-string
        (quoted-printable-decode-string
         (replace-regexp-in-string "\r" "" content))
-        char-enc))
+							char-enc))
      ((equal transfer-enc "BASE64")
       (decode-coding-string (base64-decode-string content) char-enc))
      ;; else
@@ -980,12 +983,12 @@ buffer. Programs can pass the imap-con in directly though."
 
 (defvar imapua-message-line-regex
   (concat "^[\t ]+"
-	  imapua-message-date-regex
-	  imapua-message-time-regex
-	  ;; email address match
-	  "[\t ]+\\([^\t\n ]+\\)"
-	  ;; subject match
-	  "[\t ]+\\([^\t\n]+\\)$")
+										imapua-message-date-regex
+										imapua-message-time-regex
+										;; email address match
+										"[\t ]+\\([^\t\n ]+\\)"
+										;; subject match
+										"[\t ]+\\([^\t\n]+\\)$")
   "Regex for matching an imapua message.
 Broadly this is: date time from subject")
 
@@ -1005,12 +1008,12 @@ is set to true."
     (goto-char (imapua-beginning-of-folder (get-text-property (point) 'FOLDER)))
     (while (re-search-forward regex nil 't)
       (progn
-	(let ((inhibit-read-only 't))
-	  (add-text-properties
-	   (point-at-bol)
-	   (point-at-eol)
-	   `(marked t
-		    face (foreground-color . ,imapua-marked-message-color))))))))
+								(let ((inhibit-read-only 't))
+										(add-text-properties
+											(point-at-bol)
+											(point-at-eol)
+											`(marked t
+																				face (foreground-color . ,imapua-marked-message-color))))))))
 
 (defun imapua-beginning-of-folder (folder-name)
   "Find the folder and move point to the start of it"
@@ -1269,12 +1272,14 @@ msg is a dotted pair such that:
 (add-hook 'kill-emacs (lambda () (imapua-logout)))
 
 ;; Advice to help with always having a BCC to your own email address
-;; (defadvice message-mail (around imapua-message-mail-add-bcc)
-;;   "Add a BCC header around the message-mail mailer"
-;;   (ad-set-arg 2 (append (ad-get-arg 2) `(("BCC" . ,user-mail-address))))
-;;   ad-do-it
-;;   (message-sort-headers))
+(defadvice message-mail (around imapua-message-mail-add-bcc)
+  "Add a BCC header around the message-mail mailer"
+		(message "advicing")
+  (ad-set-arg 2 (append (ad-get-arg 2) `(("BCC" . ,user-mail-address))))
+  ad-do-it
+		(message "adviced")
+  (message-sort-headers))
 
-;; (ad-deactivate 'message-mail)
+(ad-activate 'message-mail)
 
 (provide 'imapua)
