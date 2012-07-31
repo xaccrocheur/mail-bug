@@ -656,7 +656,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 
 			;; px
       (message "imma open da msg in buffer ")
-
+						(setq init t)
 			;; (setq split-height-threshold 10)
 			(set-window-dedicated-p (selected-window) (not current-prefix-arg))
 			;; px
@@ -669,7 +669,10 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 
 (defun imapua-message-open (folder-name uid)
   (interactive "Mfolder-name:\nnUid:")
-  ;; (enlarge-window 10)
+
+		(if (not init)
+						(enlarge-window 10))
+
 		(defun lookup (key lst) ; This function is used via dynamic scope in some funcs called from here
     "Find the value following the key, eg:
  (lookup 'nic '(bob 12 fred 73 mike 18 nic 34 jim 22))
@@ -764,35 +767,34 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
   "Display the list of parts."
   (defun mime-to-string (mimetypeheader)
     (if (listp mimetypeheader)
-				(concat (car (car mimetypeheader))
-								"/"
-								(cdr (car mimetypeheader)))
+								(concat (car (car mimetypeheader))
+																"/"
+																(cdr (car mimetypeheader)))
       mimetypeheader))
   (with-current-buffer buffer
     (make-local-variable 'imapua-connection)
     (setq imapua-connection connection)
     (let ((buffer-read-only nil))
       (save-excursion
-				(goto-char (point-max))
-				(insert "\n\n--attachment links follows this line--\n\n")
-				(mapc (lambda (part)
-								(let ((partnum (cdr (assoc 'partnum part)))
-											(name (lookup "name" (cadr (assoc 'body part)))))
-									(if (> (- (point) (line-beginning-position)) 72)
-											(insert "\n"))
-									(let ((pt (point)))
-										(insert "Attached:"
-														(if name
-																(concat "'" name "' {" (mime-to-string (cdr (assoc 'type part))) "}")
+								(goto-char (point-max))
+								(insert "\n\n--attachment links follows this line--\n\n")
+								(mapc (lambda (part)
+																(let ((partnum (cdr (assoc 'partnum part)))
+																						(name (lookup "name" (cadr (assoc 'body part)))))
+																		(if (> (- (point) (line-beginning-position)) 72)
+																						(insert "\n"))
+																		(let ((pt (point)))
+																				(insert "Attached:"
+																												(if name
+																																(concat "'" name "' {" (mime-to-string (cdr (assoc 'type part))) "}")
                               (mime-to-string (cdr (assoc 'type part))))
-														"[" partnum "]\t")
-										(add-text-properties pt (point) `(PARTNUM ,partnum FOLDER ,folder UID ,uid)))))
-							part-list)
-				(set-buffer-modified-p nil))))
-	)
+																												"[" partnum "]\t")
+																				(add-text-properties pt (point) `(PARTNUM ,partnum FOLDER ,folder UID ,uid)))))
+														part-list)
+								(set-buffer-modified-p nil)))))
 
 (defun imapua-message-fill-text (uid text-part buffer)
-  "Insert the text-part for rhe specified uid in the buffer provided."
+  "Insert the text-part for the specified uid in the buffer provided."
   ;; Main function.
   (imap-fetch uid
 	      (format "(BODY[%s])" (or (cdr (assoc 'partnum text-part)) "1"))
@@ -1281,5 +1283,26 @@ msg is a dotted pair such that:
   (message-sort-headers))
 
 (ad-activate 'message-mail)
+
+(defun message-reply (&optional to-address wide switch-function)
+
+		(defadvice message-reply (around imapua-message-reply-yank)
+				"Yank original mail in a reply"
+				(message "advicing")
+
+				(with-current-buffer (current-buffer)
+						(search-forward-regexp "--text follows this line--")
+						(next-line)
+						)
+				(save-excursion
+						message-yank-original
+
+				(ad-set-arg 2 (append (ad-get-arg 2) `(("BCC" . ,user-mail-address))))
+				ad-do-it
+				(message "adviced")
+				(message-sort-headers))
+
+(ad-activate 'message-mail)
+
 
 (provide 'imapua)
