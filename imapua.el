@@ -504,34 +504,34 @@ This means you can have multiple imapua sessions in one emacs session."
   (interactive
    (if current-prefix-arg
        (let ((host-str (read-from-minibuffer "Imap server host name: ")))
-									(string-match "\\(.+\\) \\([0-9]+\\)" host-str 0)
-									(list (if (not (match-string 1 host-str))
-																			"localhost"
-																	(match-string 1 host-str))
-															(if (not (match-string 2 host-str))
-																			143
-																	(string-to-number (match-string 2 host-str)))))))
-
-		;; Setup buffer.
+	 (string-match "\\(.+\\) \\([0-9]+\\)" host-str 0)
+	 (list (if (not (match-string 1 host-str))
+		   "localhost"
+		 (match-string 1 host-str))
+	       (if (not (match-string 2 host-str))
+		   143
+		 (string-to-number (match-string 2 host-str)))))))
+  
+  ;; Setup buffer.
   (let ((folder-buffer (get-buffer-create
-																								(concat "mail-folders"
-																																(if host-name
-																																				(concat host-name ":" (number-to-string tcp-port)))))))
+			(concat "mail-folders"
+				(if host-name
+				    (concat host-name ":" (number-to-string tcp-port)))))))
     (switch-to-buffer folder-buffer)
-
+    
     (if (not imapua-mode-initialized-p)
-								(progn
-										(imapua-mode)
-										;; If a host has been specified then make the host name local.
-										(if host-name
-														(progn
-																(make-local-variable 'imapua-host)
-																(setq imapua-host host-name)
-																(make-local-variable 'imapua-port)
-																(setq imapua-port tcp-port)))))
+	(progn
+	  (imapua-mode)
+	  ;; If a host has been specified then make the host name local.
+	  (if host-name
+	      (progn
+		(make-local-variable 'imapua-host)
+		(setq imapua-host host-name)
+		(make-local-variable 'imapua-port)
+		(setq imapua-port tcp-port)))))
     (imapua-redraw))
-		;; t
-		)
+  ;; t
+  )
 
 
 (defun imapua-check-mail ()
@@ -652,29 +652,40 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
   (if (looking-at "^[^ \t\n\r]+")
       ;; Must be a folder... expand or contract according to current state.
       (let ((folder-name (match-string-no-properties 0)))
-								(if (imap-mailbox-get 'OPENED folder-name imapua-connection)
-												;; Mark the mailbox
-												(imap-mailbox-put 'OPENED nil folder-name imapua-connection)
-										;; Mark the folder opened
-										(imap-mailbox-put 'OPENED 't folder-name imapua-connection))
-								(imapua-redraw))
+	(if (imap-mailbox-get 'OPENED folder-name imapua-connection)
+	    ;; Mark the mailbox
+	    (imap-mailbox-put 'OPENED nil folder-name imapua-connection)
+	  ;; Mark the folder opened
+	  (imap-mailbox-put 'OPENED 't folder-name imapua-connection))
+	(imapua-redraw))
     ;; Must be a message, mark it seen and then open it.
     (let ((msg nil)
-										(folder-name (get-text-property (point) 'FOLDER))
-										(uid (get-text-property (point) 'UID)))
+	  (folder-name (get-text-property (point) 'FOLDER))
+	  (uid (get-text-property (point) 'UID)))
       (setq msg (cons uid (imapua-date-format
-																											(imap-message-envelope-date uid imapua-connection))))
+			   (imap-message-envelope-date uid imapua-connection))))
       (imap-message-flags-add (number-to-string uid) "\\Seen" nil imapua-connection)
-
-						;; HACK:
-						(if imapua-modal
-										(progn
-												(setq w (selected-window))
-												(set-window-dedicated-p (selected-window) (not current-prefix-arg))
-												(setq w2 (split-window w 15))))
-
-						(imapua-message-open folder-name uid))))
-
+      
+      ;; split-height-threshold
+      
+      ;; HACK:
+      (if imapua-modal
+	  (progn
+	    (setq w (selected-window))
+	    (window-edges)
+	    (set-window-dedicated-p (selected-window) (not current-prefix-arg))
+	    
+	    (setq window-lines (fourth (window-edges)))
+	    (setq one-third (/ window-lines 3)
+		  ;; (setq w2 (split-window w 15))
+		  (when (= (length (window-list)) 1)
+		    (setq w2 (split-window w one-third)))
+		  
+		  ;; (split-window-sensibly w)
+		  ))
+	
+	(imapua-message-open folder-name uid)))))
+  
 
 (defun imapua-message-open (folder-name uid)
   (interactive "Mfolder-name:\nnUid:")
