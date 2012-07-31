@@ -61,28 +61,36 @@
 
 ;; SMTP configs.
 
-(setq send-mail-function 'smtpmail-send-it
-      message-send-mail-function 'smtpmail-send-it
-      mail-from-style nil
-      smtpmail-debug-info t
-      smtpmail-debug-verb t
-      smtpmail-smtp-server "smtp.gmx.com"
-      smtpmail-default-smtp-server "smtp.gmx.com"
-      smtpmail-smtp-service 465
-			smtpmail-stream-type 'plain
+(require 'smtpmail)
+
+(setq smtpmail-default-smtp-server "mail.gmx.com")
+(load-library "smtpmail")
+
+(setq
+ auth-source-debug 'trivia
+ send-mail-function 'smtpmail-send-it
+ message-send-mail-function 'smtpmail-send-it
+ smtpmail-debug-info t
+ smtpmail-debug-verb t)
+
+(setq user-full-name "Phil CM")
+(setq user-mail-address "philcm@gmx.com")
+
+;; (setq
+;;  starttls-use-gnutls t
+;;  starttls-gnutls-program "gnutls-cli"
+;;  ;; starttls-extra-arguments '("--insecure")
+;; )
+
+(setq
+ smtpmail-smtp-server "mail.gmx.com"
+ smtpmail-smtp-service 465
+ smtpmail-stream-type 'ssl
+;; smtpmail-auth-credentials '(("mail.gmx.com" "philcm@gmx.com" 465 "Amiga260."))
+;; smtpmail-auth-credentials '(("mail.gmx.com" 465 "philcm@gmx.com" "Amiga260."))
+;; smtpmail-starttls-credentials '(("mail.gmx.com" 465 nil nil)))
 )
 
-(require 'smtpmail)
-(setq mail-host-address "gnu.org")
-(setq user-full-name "philcm")
-(setq user-mail-address "philcm@gnu.org")
-(setq mail-archive-file-name (expand-file-name "~/Mail/outgoing"))
-
-(setq starttls-use-gnutls t
-      starttls-gnutls-program "gnutls-cli"
-      starttls-extra-arguments '("--insecure"))
-
-;; (setq smtpmail-starttls-credentials '(("imap.gmail.com" 465 nil nil)))
 
 ;; Imap logging management. Very useful for debug.
 
@@ -96,8 +104,7 @@
   (interactive)
   (if imap-log
       (setq imap-log nil)
-    (setq imap-log (get-buffer-create "*imap-log*"))))
-
+    (setq imap-log (get-buffer-create "imapua-log"))))
 
 ;; Customization.
 
@@ -510,7 +517,9 @@ This means you can have multiple imapua sessions in one emacs session."
 		(setq imapua-host host-name)
 		(make-local-variable 'imapua-port)
 		(setq imapua-port tcp-port)))))
-    (imapua-redraw)))
+    (imapua-redraw))
+	t
+)
 
 
 (defun imapua-check-mail ()
