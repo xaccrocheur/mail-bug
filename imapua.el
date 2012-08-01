@@ -51,12 +51,148 @@
 (require 'message)
 (require 'cl)
 
+(require 'hide-region nil 'noerror)
+
 ;; (require 'gnus)
 
 ;; HACK: : line hilite
 (add-hook 'imapua-mode-hook (lambda () (hl-line-mode t)))
-(add-to-list 'mm-attachment-override-types "image/.*")
-(setq mm-discouraged-alternatives '("text/html" "text/richtext"))
+
+(defun replace-pairs-in-string (str pairs)
+  "Replace string STR by find/replace PAIRS sequence."
+  ;; code outline. Replace first item in each pair to a unique random string, then replace this list to the desired string.
+  (let (ξi (myStr str) (tempMapPoints '()))
+    ;; generate a random string list for intermediate replacement
+    (setq ξi 0)
+    (while (< ξi (length pairs))
+      ;; use rarely used unicode char to prevent match in input string
+      ;; was using random number for the intermediate string. The problem is: ① there might be collision if there are hundreds or thousands of pairs. ② the random number are too long, even in hex notation, and slows down string replacement.
+      (setq tempMapPoints (cons (format "⚎ด%x" ξi) tempMapPoints ))
+      (setq ξi (1+ ξi))
+      )
+
+    ;; replace each find string by corresponding item in random string list
+    (setq ξi 0)
+    (while (< ξi (length pairs))
+      (setq myStr (replace-regexp-in-string
+                   (regexp-quote (elt (elt pairs ξi) 0))
+                   (elt tempMapPoints ξi)
+                   myStr t t))
+      (setq ξi (1+ ξi))
+      )
+
+    ;; replace each random string by corresponding replacement string
+    (setq ξi 0)
+    (while (< ξi (length pairs))
+      (setq myStr (replace-regexp-in-string
+                   (elt tempMapPoints ξi)
+                   (elt (elt pairs ξi) 1)
+                   myStr t t))
+      (setq ξi (1+ ξi))
+      )
+
+    myStr))
+
+(replace-pairs-in-string "c=C3=A9l=C3=A9rit=C3=A9" [["=C3=A9" "é"] ["x" "2"] ["z" "3"]])
+
+(imapua-french "Esta =C3=9Cbercool c=C3=A9l=C3=A8rit=C3=A9!")
+
+(defun my-aput (alist key value)
+  (let ((al (symbol-value alist))
+        cell)
+    (cond ((null al) (set alist (list (cons key value))))
+          ((setq cell (assoc key al)) (setcdr cell value))
+          (t (set alist (cons (cons key value) al))))))
+
+
+(defun imapua-french (string)
+	(setq newString (replace-regexp-in-string "=C3=A9" "é" string))
+	(message "newString: %s" newString)
+	(setq wowa (replace-regexp-in-string "=C3=A8" "è" newString))
+	;; (replace-regexp-in-string "=C3=BC" "ü" wowa 't)
+	(replace-regexp-in-string "=C3=9C" "Ü" wowa 't)
+	)
+
+;; (replace-regexp-in-string REGEXP REP STRING &optional FIXEDCASE
+;; LITERAL SUBEXP START)
+
+;; (defvar entities-french
+;; 	"The list of entities and the correct match for french."
+;; 	'((=C3=A9 é)
+;; 		(=C3=89 É)
+;; 		(=C3=A8 è)
+;; 		(=C3=88 È)
+;; 		(=C3=A7 ç)
+;; 		(=C3=87 Ç)
+;; 		(=C3=A0 à)
+;; 		(=C3=80 À)
+;; 		(=C3=B9 ù)
+;; 		(=C3=99 Ù)
+;; 		(=C3=AA ê)
+;; 		(=C3=8A Ê)
+;; 		(=C3=BB û)
+;; 		(=C3=9B Û)
+;; 		(=C3=AB ë)
+;; 		(=C3=8B Ë)
+;; 		(=C3=BC ü)
+;; 		(=C3=9C Ü)
+;; 		))
+
+(defvar entities-french
+	"The list of entities and the correct match for french.
+plop."
+	(("=C3=A9" "é")
+		("=C3=89" "É")
+		("=C3=A8" "è")
+		("=C3=88" "È")
+		("=C3=A7" "ç")
+		("=C3=87" "Ç")
+		("=C3=A0" "à")
+		("=C3=80" "À")
+		("=C3=B9" "ù")
+		("=C3=99" "Ù")
+		("=C3=AA" "ê")
+		("=C3=8A" "Ê")
+		("=C3=BB" "û")
+		("=C3=9B" "Û")
+		("=C3=AB" "ë")
+		("=C3=8B" "Ë")
+		("=C3=BC" "ü")
+		("=C3=9C" "Ü")
+		))
+
+(defun imapua-px-decode-string (string entities)
+
+	(setq i 0)
+
+	(while (< i (length entities))
+		(setq my-pair (car (nthcdr i entities)))
+		(setq my-operand (format "%s" (car (car (nthcdr i entities)))))
+		(setq my-char (format "%s" (car (cdr (car (nthcdr i entities))))))
+		;; (message "pair: %s operand: %s char: %s" my-pair my-operand my-char)
+		(setq string (replace-regexp-in-string my-operand my-char string 't))
+		(setq i (1+ i))
+		)
+	(message "srting: %s" string)
+
+	;; (mapc
+	;;  (lambda (x)
+	;; 	 ;; (message "Replace %s with %s in %s" (car x) (car (cdr x)) string)
+	;; 	 (setq prov (replace-regexp-in-string (format "%s" (car x)) (format "%s" (car (cdr x))) string 't))
+	;; 	 ;; (setq prov (replace-regexp-in-string (format "%s" (car x)) (format "%s" (car (cdr x))) prov 't))
+	;; 	 ;; (car (replace-regexp-in-string (format "%s" (car x)) (format "%s" (car (cdr x))) provisoire 't))
+	;; 	 )
+	;;  entities)
+	;; (message "Prov is %s" prov)
+	)
+
+(setq prov (replace-regexp-in-string "=C3=A9" "é" "l'int=C3=A9rimaire est b=C3=A8te, c'est un cr=C3=A9tin" 't))
+(setq prov (replace-regexp-in-string "=C3=A8" "oo" prov 't))
+(setq prov (replace-regexp-in-string "est" "estoit" prov 't))
+
+(imapua-px-decode-string "l'int=C3=A9rimaire est b=C3=A8te, c'est un cr=C3=A9tin" entities-french)
+
+;; l'int=C3=A9rimaire est b=C3=A8te, c'est un cr=C3=AAtin
 
 ;; SMTP configs.
 
@@ -115,6 +251,11 @@
 
 (defcustom imapua-modal 't
   "* should the message open in a dedicated windowpane?"
+  :type '(boolean)
+  :group 'imap-mail-user-agent)
+
+(defcustom imapua-short-headers 't
+  "* should the headers show only the standard values?"
   :type '(boolean)
   :group 'imap-mail-user-agent)
 
@@ -504,31 +645,31 @@ This means you can have multiple imapua sessions in one emacs session."
   (interactive
    (if current-prefix-arg
        (let ((host-str (read-from-minibuffer "Imap server host name: ")))
-	 (string-match "\\(.+\\) \\([0-9]+\\)" host-str 0)
-	 (list (if (not (match-string 1 host-str))
-		   "localhost"
-		 (match-string 1 host-str))
-	       (if (not (match-string 2 host-str))
-		   143
-		 (string-to-number (match-string 2 host-str)))))))
-  
+				 (string-match "\\(.+\\) \\([0-9]+\\)" host-str 0)
+				 (list (if (not (match-string 1 host-str))
+									 "localhost"
+								 (match-string 1 host-str))
+							 (if (not (match-string 2 host-str))
+									 143
+								 (string-to-number (match-string 2 host-str)))))))
+
   ;; Setup buffer.
   (let ((folder-buffer (get-buffer-create
-			(concat "mail-folders"
-				(if host-name
-				    (concat host-name ":" (number-to-string tcp-port)))))))
+												(concat "mail-folders"
+																(if host-name
+																		(concat host-name ":" (number-to-string tcp-port)))))))
     (switch-to-buffer folder-buffer)
-    
+
     (if (not imapua-mode-initialized-p)
-	(progn
-	  (imapua-mode)
-	  ;; If a host has been specified then make the host name local.
-	  (if host-name
-	      (progn
-		(make-local-variable 'imapua-host)
-		(setq imapua-host host-name)
-		(make-local-variable 'imapua-port)
-		(setq imapua-port tcp-port)))))
+				(progn
+					(imapua-mode)
+					;; If a host has been specified then make the host name local.
+					(if host-name
+							(progn
+								(make-local-variable 'imapua-host)
+								(setq imapua-host host-name)
+								(make-local-variable 'imapua-port)
+								(setq imapua-port tcp-port)))))
     (imapua-redraw))
   ;; t
   )
@@ -607,6 +748,11 @@ The keys defined are:
   (run-hooks 'imapua-mode-hook)
 )
 
+;; HACK:
+(defun imapua-kill-buffer ()
+	(interactive)
+	(kill-buffer (current-buffer))
+	(delete-window))
 
 (define-derived-mode imapua-message-mode message-mode "IMAP UA Message" "IMPAUA Msg \\{imapua-message-mode-map}"
   (unless imapua-message-keymap-initializedp
@@ -627,11 +773,14 @@ The keys defined are:
   ;;run the mode hooks
   (run-hooks 'imapua-message-mode-hook))
 
+;; HACK:
+(define-key imapua-message-mode-map "q" 'imapua-kill-buffer)
+
 
 ;; Functions for opening messages and parts (and folders).
 (defun imapua-show-structure (folder-name uid)
   (interactive (list (get-text-property (point) 'FOLDER)
-		     (get-text-property (point) 'UID)))
+										 (get-text-property (point) 'UID)))
   (imap-mailbox-select folder-name nil imapua-connection)
   (imap-fetch uid "(BODYSTRUCTURE)" 't nil imapua-connection)
   (print (imap-message-get uid 'BODYSTRUCTURE imapua-connection))
@@ -652,200 +801,234 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
   (if (looking-at "^[^ \t\n\r]+")
       ;; Must be a folder... expand or contract according to current state.
       (let ((folder-name (match-string-no-properties 0)))
-	(if (imap-mailbox-get 'OPENED folder-name imapua-connection)
-	    ;; Mark the mailbox
-	    (imap-mailbox-put 'OPENED nil folder-name imapua-connection)
-	  ;; Mark the folder opened
-	  (imap-mailbox-put 'OPENED 't folder-name imapua-connection))
-	(imapua-redraw))
+				(if (imap-mailbox-get 'OPENED folder-name imapua-connection)
+						;; Mark the mailbox
+						(imap-mailbox-put 'OPENED nil folder-name imapua-connection)
+					;; Mark the folder opened
+					(imap-mailbox-put 'OPENED 't folder-name imapua-connection))
+				(imapua-redraw))
     ;; Must be a message, mark it seen and then open it.
     (let ((msg nil)
-	  (folder-name (get-text-property (point) 'FOLDER))
-	  (uid (get-text-property (point) 'UID)))
+					(folder-name (get-text-property (point) 'FOLDER))
+					(uid (get-text-property (point) 'UID)))
       (setq msg (cons uid (imapua-date-format
-			   (imap-message-envelope-date uid imapua-connection))))
+													 (imap-message-envelope-date uid imapua-connection))))
       (imap-message-flags-add (number-to-string uid) "\\Seen" nil imapua-connection)
-      
-      ;; split-height-threshold
-      
+
       ;; HACK:
       (if imapua-modal
-	  (progn
-	    (setq w (selected-window))
-	    (window-edges)
-	    (set-window-dedicated-p (selected-window) (not current-prefix-arg))
-	    
-	    (setq window-lines (fourth (window-edges)))
-	    (setq one-third (/ window-lines 3)
-		  ;; (setq w2 (split-window w 15))
-		  (when (= (length (window-list)) 1)
-		    (setq w2 (split-window w one-third)))
-		  
-		  ;; (split-window-sensibly w)
-		  ))
-	
-	(imapua-message-open folder-name uid)))))
-  
+
+					;; (let ((folders-window (selected-window))
+					;; 			(window-lines (fourth (window-edges)))
+					;; 			(one-third (/ window-lines 3)))
+					;; 	((set-window-dedicated-p folders-window (not current-prefix-arg))
+					;; 	 (when (= (length (window-list)) 1)
+					;; 		 (setq w2 (split-window w one-third)))))
+
+					(progn
+						(setq w (selected-window))
+						;; (window-edges)
+						(set-window-dedicated-p (selected-window) (not current-prefix-arg))
+
+						(setq window-lines (fourth (window-edges)))
+						(setq one-third (/ window-lines 3))
+						(when (= (length (window-list)) 1)
+							(setq w2 (split-window w one-third)))))
+			(imapua-message-open folder-name uid))))
+
+;; HACK:
+(defun imapua-toggle-headers ()
+	"Toggle headers."
+	(interactive)
+	(beginning-of-buffer)
+	(message "point is %s" (point))
+	;; (widen)
+	;; (save-excursion
+	(search-forward-regexp "Subject")
+	;; (toggle-read-only)
+	(end-of-line)
+	(newline 2)
+	;; (next-line 2)
+	;; (insert "ha! -- ")
+	(next-line 2)
+	(mark-paragraph 1)
+	(hide-region-hide)
+	(right-char)
+	(deactivate-mark)
+		;; (toggle-read-only)
+		(set-buffer-modified-p nil)
+;; )
+		)
 
 (defun imapua-message-open (folder-name uid)
   (interactive "Mfolder-name:\nnUid:")
 
-		(defun lookup (key lst) ; This function is used via dynamic scope in some funcs called from here
+	(defun lookup (key lst) ; This function is used via dynamic scope in some funcs called from here
     "Find the value following the key, eg:
  (lookup 'nic '(bob 12 fred 73 mike 18 nic 34 jim 22))
  => 34"
     (if (member key lst)
-								(cadr (member key lst))))
+				(cadr (member key lst))))
 
-  ;; Main func.
-  (imap-mailbox-select folder-name nil imapua-connection)
-  (imap-fetch uid "(BODYSTRUCTURE ENVELOPE RFC822.HEADER)" 't nil imapua-connection)
-  (let* ((buf (let ((buf-name (concat "message-" folder-name "-" (number-to-string uid))))
-                (when (get-buffer buf-name)
-																		(switch-to-buffer buf-name)
-																		(error "imapua: message already opened"))
-																(progn
-																		(get-buffer-create buf-name))))
-         (bs-def (imap-message-get uid 'BODYSTRUCTURE imapua-connection))
-         (bs (imapua-parse-bs bs-def))
-									(parts (imapua-bs-to-part-list bs))
-									(text-part (if parts
-																								(imapua-part-list-assoc 'type '(("text" . "plain")) parts)
-																						bs)))
+	;; Main func.
+	(imap-mailbox-select folder-name nil imapua-connection)
+	(imap-fetch uid "(BODYSTRUCTURE ENVELOPE RFC822.HEADER)" 't nil imapua-connection)
+	(let* ((buf (let ((buf-name (concat "message-" folder-name "-" (number-to-string uid))))
+								(when (get-buffer buf-name)
+									(switch-to-buffer buf-name)
+									(error "imapua: message already opened"))
+								(progn
+									(get-buffer-create buf-name))))
+				 (bs-def (imap-message-get uid 'BODYSTRUCTURE imapua-connection))
+				 (bs (imapua-parse-bs bs-def))
+				 (parts (imapua-bs-to-part-list bs))
+				 (text-part (if parts
+												(imapua-part-list-assoc 'type '(("text" . "plain")) parts)
+											bs)))
 
-				(setq message-header-format-alist
-										`(
-												(From)
-												;; (Newsgroups)
-												(To)
-												;; (Cc)
-												(Bcc)
-												(Date)
-												(Subject)
-												;; (User-Agent)
-												;; (In-Reply-To)
-												;; (Fcc)
-												;; (Date)
-												;; (Organization)
-												;; (Distribution)
-												;; (Lines)
-												;; (Expires)
-												;; (Message-ID)
-												;; (References . message-shorten-references)
-												))
+		(setq message-header-format-alist
+					`(
+						(To)
+						(From)
+						(Bcc)
+						(Date)
+						(Subject)
+						;; (Newsgroups)
+						;; (Cc)
+						;; (User-Agent)
+						;; (In-Reply-To)
+						;; (Fcc)
+						;; (Date)
+						;; (Organization)
+						;; (Distribution)
+						;; (Lines)
+						;; (Expires)
+						;; (Message-ID)
+						;; (References . message-shorten-references)
+						))
 
     ;; First insert the header.
     (let ((hdr (imap-message-get uid 'RFC822.HEADER imapua-connection)))
       (with-current-buffer buf
 
-								;; (if imapua-init
-								;; 				(progn
-								;; 						(enlarge-window 10)
-								;; 						(setq imapua-init nil)))
 
-								;; (setq inhibit-read-only t)
-								;; (insert "\nplop\n")
+				(insert hdr)
 
-								;; HACK: : Short header
-								;; (insert (substring hdr 0 100))
-								(insert hdr)
+				;; Do SMTP transport decoding on the message header.
+				(subst-char-in-region (point-min) (point-max) ?\r ?\ )
+				(message-sort-headers)
+				(make-local-variable 'imapua-message-text-end-of-headers)
+				(setq imapua-message-text-end-of-headers (point))
 
-								;; Do SMTP transport decoding on the message header.
-								(subst-char-in-region (point-min) (point-max) ?\r ?\ )
-								(message-sort-headers)
-								(make-local-variable 'imapua-message-text-end-of-headers)
-								(setq imapua-message-text-end-of-headers (point))
+				(put 'imapua-message-text-end-of-headers 'permanent-local 't)
+				(insert "\n--text follows this line--\n\n")
+				))
 
-								(put 'imapua-message-text-end-of-headers 'permanent-local 't)
-								(insert "\n--text follows this line--\n\n")
-								))
-
-				;; (with-current-buffer buf
-				;; 	(setq inhibit-read-only t)
-				;; 	(goto-line 5)
-				;; 	(kill-line 25)
-				;; 	;; (goto-line 5)
-				;; 	(put 'imapua-message-text-end-of-headers 'permanent-local 't)
-				;; 	(insert "\n--text follows this line--\n\n")
-				;; 	;; (insert "\n snip \n")
-				;; 	)
+		;; (with-current-buffer buf
+		;; 	(setq inhibit-read-only t)
+		;; 	(goto-line 5)
+		;; 	(kill-line 25)
+		;; 	;; (goto-line 5)
+		;; 	(put 'imapua-message-text-end-of-headers 'permanent-local 't)
+		;; 	(insert "\n--text follows this line--\n\n")
+		;; 	;; (insert "\n snip \n")
+		;; 	)
 
     ;; Now insert the first text part we have
     (when text-part
       (imapua-message-fill-text uid (if text-part text-part bs) buf))
     (save-excursion
-						(message "in open, buffer is %s" buf)
+			(message "in open, buffer is %s" buf)
+
       (switch-to-buffer buf)
-      (set-buffer-modified-p nil)
+
+
+			;; HACK:
+			;; (if imapua-short-headers
+			;; 		(imapua-toggle-headers))
+
+			(set-buffer-modified-p nil)
       ;; (goto-char imapua-message-text-end-of-headers)
       (imapua-message-mode)
 
-						;; (if imapua-init
-						;; 				(progn
-						;; 						(enlarge-window 10)
-						;; 						(setq imapua-init nil)))
+			;; (if imapua-init
+			;; 				(progn
+			;; 						(enlarge-window 10)
+			;; 						(setq imapua-init nil)))
 
 
-						;; (kill-paragraph 5)
-						)
+			;; (kill-paragraph 5)
+			)
 
     ;; Display the list of other parts (if there are any) here
     (imapua-part-list-display imapua-connection folder-name uid buf parts)
-    ))
+))
 
 
 (defun imapua-part-list-display (connection folder uid buffer part-list)
   "Display the list of parts."
   (defun mime-to-string (mimetypeheader)
     (if (listp mimetypeheader)
-								(concat (car (car mimetypeheader))
-																"/"
-																(cdr (car mimetypeheader)))
+				(concat (car (car mimetypeheader))
+								"/"
+								(cdr (car mimetypeheader)))
       mimetypeheader))
   (with-current-buffer buffer
     (make-local-variable 'imapua-connection)
     (setq imapua-connection connection)
     (let ((buffer-read-only nil))
       (save-excursion
-								(goto-char (point-max))
-								(insert "\n\n--attachment links follows this line--\n\n")
-								(mapc (lambda (part)
-																(let ((partnum (cdr (assoc 'partnum part)))
-																						(name (lookup "name" (cadr (assoc 'body part)))))
-																		(if (> (- (point) (line-beginning-position)) 72)
-																						(insert "\n"))
-																		(let ((pt (point)))
-																				(insert "Attached:"
-																												(if name
-																																(concat "'" name "' {" (mime-to-string (cdr (assoc 'type part))) "}")
+				(goto-char (point-max))
+				(insert "\n\n--attachment links follows this line--\n\n")
+				(mapc (lambda (part)
+								(let ((partnum (cdr (assoc 'partnum part)))
+											(name (lookup "name" (cadr (assoc 'body part)))))
+									(if (> (- (point) (line-beginning-position)) 72)
+											(insert "\n"))
+									(let ((pt (point)))
+										(insert "Attached:"
+														(if name
+																(concat "'" name "' {" (mime-to-string (cdr (assoc 'type part))) "}")
                               (mime-to-string (cdr (assoc 'type part))))
-																												"[" partnum "]\t")
-																				(add-text-properties pt (point) `(PARTNUM ,partnum FOLDER ,folder UID ,uid)))))
-														part-list)
-								(set-buffer-modified-p nil)))))
+														"[" partnum "]\t")
+										(add-text-properties pt (point) `(PARTNUM ,partnum FOLDER ,folder UID ,uid)))))
+							part-list)
+				(set-buffer-modified-p nil)))))
 
 (defun imapua-message-fill-text (uid text-part buffer)
   "Insert the text-part for the specified uid in the buffer provided."
   ;; Main function.
   (imap-fetch uid
-	      (format "(BODY[%s])" (or (cdr (assoc 'partnum text-part)) "1"))
-	      't nil imapua-connection)
+							(format "(BODY[%s])" (or (cdr (assoc 'partnum text-part)) "1"))
+							't nil imapua-connection)
   (let* ((transfer-encoding (cadr (assoc 'transfer-encoding text-part)))
-	 (body-details (cadr (assoc 'body text-part)))
-	 (charset (lookup "charset" body-details))
-	 (start-of-body 0)
-	 (body (elt (car (imap-message-get uid 'BODYDETAIL imapua-connection)) 2)))
+				 (body-details (cadr (assoc 'body text-part)))
+				 (charset (lookup "charset" body-details))
+				 (start-of-body 0)
+				 (body (elt (car (imap-message-get uid 'BODYDETAIL imapua-connection)) 2)))
     (save-excursion
       (switch-to-buffer buffer)
       (setq start-of-body (point))
-      (insert (imapua-decode-string body
+
+;; l'int=C3=A9rimaire est b=C3=A8te, c'est un cr=C3=AAtin
+
+
+      ;; HACK:
+			(message "body is %s, encoding is %s and charset is %s" body transfer-encoding charset)
+			;; (insert body)
+
+			(insert (imapua-decode-string body
                                     transfer-encoding
                                     ;; A nasty company in redmond make this complicated.
                                     (cond
                                      ((and (equal charset "us-ascii")
                                            (equal transfer-encoding "8bit")) 'utf-8)
                                      (charset charset)
-                                     ('t 'emacs-mule)))))))
+                                     ('t 'emacs-mule))))
+
+			)))
+
+
 
 ;; Sub-part handling
 (defun imapua-message-open-attachment ()
@@ -882,11 +1065,11 @@ buffer. Programs can pass the imap-con in directly though."
   (let ((multipart (imapua-parse-bs (imap-message-get uid 'BODYSTRUCTURE imap-con))))
     (let* ((msg-buffer (current-buffer)) ; only needed so we can associate attachment processes with it
            (part-list (imapua-bs-to-part-list multipart))
-	   (part (imapua-part-list-assoc 'partnum partnum part-list))
-	   (mimetype (cadr (assoc 'type part)))
-	   (start-of-body 0)
+					 (part (imapua-part-list-assoc 'partnum partnum part-list))
+					 (mimetype (cadr (assoc 'type part)))
+					 (start-of-body 0)
            (mimetype-str (concat (car mimetype) "/" (cdr mimetype)))
-	   (buffer (get-buffer-create "*attached*")))
+					 (buffer (get-buffer-create "*attached*")))
       (switch-to-buffer buffer)
       (setq start-of-body (point))
       ;; Do a mailcap view if we have a viewer
@@ -904,7 +1087,7 @@ buffer. Programs can pass the imap-con in directly though."
           (string-match re string)
           (replace-match replace nil nil string))
         ;; Display in the viewer.
-	(if mailcap-viewer
+				(if mailcap-viewer
             (progn
               (imapua-attachment-emacs-handle)
               (kill-buffer buffer))
@@ -916,10 +1099,10 @@ buffer. Programs can pass the imap-con in directly though."
                    (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
                    (cadr (assoc 'transfer-encoding part))
                    (lookup "charset" (cadr (assoc 'body part)))))
-	  (normal-mode)
-	  ;; (setq buffer-read-only 't)
-	  (set-buffer-modified-p nil)
-	  (goto-char (point-min)))))))
+					(normal-mode)
+					;; (setq buffer-read-only 't)
+					(set-buffer-modified-p nil)
+					(goto-char (point-min)))))))
 
 (defun imapua-attachment-emacs-handle ()
   "Handle an attachment with some inline emacs viewer"
@@ -978,10 +1161,10 @@ buffer. Programs can pass the imap-con in directly though."
 (defun imapua-decode-string (content transfer-encoding char-encoding)
   "Decode the specified content string."
   (let* ((transfer-enc (if transfer-encoding
-																											(upcase transfer-encoding)
-																									'NONE))
+													 (upcase transfer-encoding)
+												 'NONE))
 
-									(char-enc (let ((encoding
+				 (char-enc (let ((encoding
                           (if char-encoding
                               (intern (downcase
                                        (if (stringp char-encoding)
@@ -996,7 +1179,7 @@ buffer. Programs can pass the imap-con in directly though."
       (decode-coding-string
        (quoted-printable-decode-string
         (replace-regexp-in-string "\r" "" content))
-							char-enc))
+			 char-enc))
      ((equal transfer-enc "BASE64")
       (decode-coding-string (base64-decode-string content) char-enc))
      ;; else
@@ -1190,8 +1373,6 @@ This ensures that deleted messages are removed from the obarray."
   (setq imapua-connection nil))
 
 
-
-
 ;;;; The display logic.
 
 ;; (defface my-tushi-face
@@ -1371,36 +1552,36 @@ msg is a dotted pair such that:
 ;; Boot strap stuff
 (add-hook 'kill-emacs (lambda () (imapua-logout)))
 
-;; Advice to help with always having a BCC to your own email address
-(defadvice message-mail (around imapua-message-mail-add-bcc)
-  "Add a BCC header around the message-mail mailer"
-		(message "advicing")
-  (ad-set-arg 2 (append (ad-get-arg 2) `(("BCC" . ,user-mail-address))))
-  ad-do-it
-		(message "adviced")
-  (message-sort-headers))
+;; ;; Advice to help with always having a BCC to your own email address
+;; (defadvice message-mail (around imapua-message-mail-add-bcc)
+;;   "Add a BCC header around the message-mail mailer"
+;; 	(message "advicing")
+;;   (ad-set-arg 2 (append (ad-get-arg 2) `(("BCC" . ,user-mail-address))))
+;;   ad-do-it
+;; 	(message "adviced")
+;; 	;; (message-yank-original)
+;; 	;; (kill-line)
+;;   (message-sort-headers))
 
-(ad-activate 'message-mail)
+;; (ad-deactivate 'message-mail)
 
-;; (defun message-reply (&optional to-address wide switch-function)
+(defadvice message-reply (after imapua-message-reply-yank-original)
+  "Quote original when replying."
+	(message-replace-header "BCC" user-mail-address "AFTER" "FORCE")
+	(message-yank-original)
+	(message "advised")
+  (message-sort-headers)
+	;; (kill-line)
+	)
 
-;; 		(defadvice message-reply (around imapua-message-reply-yank)
-;; 				"Yank original mail in a reply"
-;; 				(message "advicing")
+(ad-activate 'message-reply)
 
-;; 				(with-current-buffer (current-buffer)
-;; 						(search-forward-regexp "--text follows this line--")
-;; 						(next-line)
-;; 						)
-;; ;;				(save-excursion
-;; ;;				  message-yank-original
+;; function ReplaceImap($txt) {
+;;   $carimap = array("=C3=A9", "=C3=A8", "=C3=AA", "=C3=AB", "=C3=A7", "=C3=A0", "=20", "=C3=80", "=C3=89");
+;;   $carhtml = array("é", "è", "ê", "ë", "ç", "à", "&nbsp;", "À", "É");
+;;   $txt = str_replace($carimap, $carhtml, $txt);
 
-;; 				(ad-set-arg 2 (append (ad-get-arg 2) `(("BCC" . ,user-mail-address))))
-;; 				ad-do-it
-;; 				(message "adviced")
-;; 				(message-sort-headers))
-
-;; (ad-activate 'message-mail)
-
+;;   return $txt;
+;; }
 
 (provide 'imapua)
