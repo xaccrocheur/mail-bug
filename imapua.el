@@ -58,90 +58,8 @@
 ;; HACK: : line hilite
 (add-hook 'imapua-mode-hook (lambda () (hl-line-mode t)))
 
-(defun replace-pairs-in-string (str pairs)
-  "Replace string STR by find/replace PAIRS sequence."
-  ;; code outline. Replace first item in each pair to a unique random string, then replace this list to the desired string.
-  (let (ξi (myStr str) (tempMapPoints '()))
-    ;; generate a random string list for intermediate replacement
-    (setq ξi 0)
-    (while (< ξi (length pairs))
-      ;; use rarely used unicode char to prevent match in input string
-      ;; was using random number for the intermediate string. The problem is: ① there might be collision if there are hundreds or thousands of pairs. ② the random number are too long, even in hex notation, and slows down string replacement.
-      (setq tempMapPoints (cons (format "⚎ด%x" ξi) tempMapPoints ))
-      (setq ξi (1+ ξi))
-      )
-
-    ;; replace each find string by corresponding item in random string list
-    (setq ξi 0)
-    (while (< ξi (length pairs))
-      (setq myStr (replace-regexp-in-string
-                   (regexp-quote (elt (elt pairs ξi) 0))
-                   (elt tempMapPoints ξi)
-                   myStr t t))
-      (setq ξi (1+ ξi))
-      )
-
-    ;; replace each random string by corresponding replacement string
-    (setq ξi 0)
-    (while (< ξi (length pairs))
-      (setq myStr (replace-regexp-in-string
-                   (elt tempMapPoints ξi)
-                   (elt (elt pairs ξi) 1)
-                   myStr t t))
-      (setq ξi (1+ ξi))
-      )
-
-    myStr))
-
-(replace-pairs-in-string "c=C3=A9l=C3=A9rit=C3=A9" [["=C3=A9" "é"] ["x" "2"] ["z" "3"]])
-
-(imapua-french "Esta =C3=9Cbercool c=C3=A9l=C3=A8rit=C3=A9!")
-
-(defun my-aput (alist key value)
-  (let ((al (symbol-value alist))
-        cell)
-    (cond ((null al) (set alist (list (cons key value))))
-          ((setq cell (assoc key al)) (setcdr cell value))
-          (t (set alist (cons (cons key value) al))))))
-
-
-(defun imapua-french (string)
-	(setq newString (replace-regexp-in-string "=C3=A9" "é" string))
-	(message "newString: %s" newString)
-	(setq wowa (replace-regexp-in-string "=C3=A8" "è" newString))
-	;; (replace-regexp-in-string "=C3=BC" "ü" wowa 't)
-	(replace-regexp-in-string "=C3=9C" "Ü" wowa 't)
-	)
-
-;; (replace-regexp-in-string REGEXP REP STRING &optional FIXEDCASE
-;; LITERAL SUBEXP START)
-
-;; (defvar entities-french
-;; 	"The list of entities and the correct match for french."
-;; 	'((=C3=A9 é)
-;; 		(=C3=89 É)
-;; 		(=C3=A8 è)
-;; 		(=C3=88 È)
-;; 		(=C3=A7 ç)
-;; 		(=C3=87 Ç)
-;; 		(=C3=A0 à)
-;; 		(=C3=80 À)
-;; 		(=C3=B9 ù)
-;; 		(=C3=99 Ù)
-;; 		(=C3=AA ê)
-;; 		(=C3=8A Ê)
-;; 		(=C3=BB û)
-;; 		(=C3=9B Û)
-;; 		(=C3=AB ë)
-;; 		(=C3=8B Ë)
-;; 		(=C3=BC ü)
-;; 		(=C3=9C Ü)
-;; 		))
-
 (defvar entities-french
-	"The list of entities and the correct match for french.
-plop."
-	(("=C3=A9" "é")
+  '(("=C3=A9" "é")
 		("=C3=89" "É")
 		("=C3=A8" "è")
 		("=C3=88" "È")
@@ -159,12 +77,12 @@ plop."
 		("=C3=8B" "Ë")
 		("=C3=BC" "ü")
 		("=C3=9C" "Ü")
-		))
+		)
+	"The list of entities")
 
 (defun imapua-px-decode-string (string entities)
-
+	"decode a string against a list of entities / chars pairs."
 	(setq i 0)
-
 	(while (< i (length entities))
 		(setq my-pair (car (nthcdr i entities)))
 		(setq my-operand (format "%s" (car (car (nthcdr i entities)))))
@@ -173,26 +91,10 @@ plop."
 		(setq string (replace-regexp-in-string my-operand my-char string 't))
 		(setq i (1+ i))
 		)
-	(message "srting: %s" string)
+	(format "%s" string))
 
-	;; (mapc
-	;;  (lambda (x)
-	;; 	 ;; (message "Replace %s with %s in %s" (car x) (car (cdr x)) string)
-	;; 	 (setq prov (replace-regexp-in-string (format "%s" (car x)) (format "%s" (car (cdr x))) string 't))
-	;; 	 ;; (setq prov (replace-regexp-in-string (format "%s" (car x)) (format "%s" (car (cdr x))) prov 't))
-	;; 	 ;; (car (replace-regexp-in-string (format "%s" (car x)) (format "%s" (car (cdr x))) provisoire 't))
-	;; 	 )
-	;;  entities)
-	;; (message "Prov is %s" prov)
-	)
-
-(setq prov (replace-regexp-in-string "=C3=A9" "é" "l'int=C3=A9rimaire est b=C3=A8te, c'est un cr=C3=A9tin" 't))
-(setq prov (replace-regexp-in-string "=C3=A8" "oo" prov 't))
-(setq prov (replace-regexp-in-string "est" "estoit" prov 't))
-
-(imapua-px-decode-string "l'int=C3=A9rimaire est b=C3=A8te, c'est un cr=C3=A9tin" entities-french)
-
-;; l'int=C3=A9rimaire est b=C3=A8te, c'est un cr=C3=AAtin
+;; (imapua-px-decode-string "l'int=C3=A9rimaire est b=C3=A8te, c'est un cr=C3=A9tin" entities-french)
+;; (imapua-px-decode-string "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme" entities-french)
 
 ;; SMTP configs.
 
