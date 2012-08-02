@@ -1106,6 +1106,11 @@ buffer. Programs can pass the imap-con in directly though."
     ;; (message "my image is %s " imapua-px-image)
 
 
+		(defun imapua-px-insert-any-image (image)
+			"Insert an image using the file"
+			(insert-image (create-image image nil nil)))
+
+
     (defun imapua-px-image-from-string (image)
       "Make an image using the bytes directly in a string"
       (list 'image :type 'xbm :ascent 100 :width 8 :height 8
