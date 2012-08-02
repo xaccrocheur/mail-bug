@@ -53,7 +53,27 @@
 
 (require 'hide-region nil 'noerror)
 
-;; (require 'gnus)
+(require 'gnus-art)
+
+
+(defun imapua-article-view-part (&optional n)
+  "View MIME part N, which is the numerical prefix.
+If the part is already shown, hide the part.  If N is nil, view
+all parts."
+  (interactive "P")
+  (with-current-buffer (current-buffer)
+    (or (numberp n) (setq n (gnus-article-mime-match-handle-first
+														 gnus-article-mime-match-handle-function)))
+    (when (> n (length gnus-article-mime-handle-alist))
+      (error "No such part"))
+    (let ((handle (cdr (assq n gnus-article-mime-handle-alist))))
+      (when (gnus-article-goto-part n)
+	(if (equal (car handle) "multipart/alternative")
+	    (progn
+	      (beginning-of-line) ;; Make it toggle subparts
+	      (gnus-article-press-button))
+	  (when (eq (gnus-mm-display-part handle) 'internal)
+	    (gnus-set-window-start)))))))
 
 ;; HACK: : line hilite
 (add-hook 'imapua-mode-hook (lambda () (hl-line-mode t)))
@@ -321,7 +341,7 @@
 	  (if (not (equal imapua-host-name ""))
 	      (setq imapua-host imapua-host-name)
 	    (setq imapua-host (read-from-minibuffer "host: "))))
-			;; FIXME!!! this is a new feature of GNUS imap, you can specify different connect mechanisms
+			;; FIXME:!!! this is a new feature of GNUS imap, you can specify different connect mechanisms
       (setq imapua-connection (imap-open imapua-host imapua-port 'ssl))
       (assert imapua-connection nil "the imap connection could not be opened")
       ;; Use the default username and password if they're set
@@ -912,22 +932,24 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
       (switch-to-buffer buffer)
       (setq start-of-body (point))
 
-;; l'int=C3=A9rimaire est b=C3=A8te, c'est un cr=C3=AAtin
-
-
       ;; HACK:
-			(message "body is %s, encoding is %s and charset is %s" body transfer-encoding charset)
+			;; (insert (format "body is %s, encoding is %s and charset is %s" body transfer-encoding charset))
 			;; (insert body)
 
-			(insert (imapua-decode-string body
-                                    transfer-encoding
-                                    ;; A nasty company in redmond make this complicated.
-                                    (cond
-                                     ((and (equal charset "us-ascii")
-                                           (equal transfer-encoding "8bit")) 'utf-8)
-                                     (charset charset)
-                                     ('t 'emacs-mule))))
 
+			;; (imapua-px-decode-string "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme" entities-french)
+
+			(insert
+			 (imapua-px-decode-string
+				(imapua-decode-string
+				 body
+				 transfer-encoding
+				 ;; A nasty company in redmond make this complicated.
+				 (cond
+					((and (equal charset "us-ascii")
+								(equal transfer-encoding "8bit")) 'utf-8)
+					(charset charset)
+					('t 'emacs-mule))) entities-french))
 			)))
 
 
@@ -945,8 +967,8 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
   ;;   (read-from-minibuffer "..." ....))
   (interactive)
   (let ((folder-name (get-text-property (point) 'FOLDER))
-	(uid (get-text-property (point) 'UID))
-	(partnum (get-text-property (point) 'PARTNUM)))
+				(uid (get-text-property (point) 'UID))
+				(partnum (get-text-property (point) 'PARTNUM)))
     (imapua-message-open-part folder-name uid partnum imapua-connection)))
 
 ;; We need to modularize this so we can have a dump function as well
@@ -974,6 +996,18 @@ buffer. Programs can pass the imap-con in directly though."
 					 (buffer (get-buffer-create "*attached*")))
       (switch-to-buffer buffer)
       (setq start-of-body (point))
+
+			(message "Tiens, un attachement: %s" mimetype-str)
+
+			;; HACK:
+			;; (if (equal mimetype-str "image/jpeg")
+			;; 		(concat (read-from-minibuffer
+			;; 						 (message "wow, an image! %s" mimetype-str))
+			;; 						" %s")
+			;; 	(mailcap-mime-info mimetype-str))
+
+			;; Dodo, demain on teste les mimetypes en echoant mimetype-str
+
       ;; Do a mailcap view if we have a viewer
       (mailcap-parse-mailcaps)
       (let ((mailcap-viewer
@@ -982,26 +1016,35 @@ buffer. Programs can pass the imap-con in directly though."
                  (concat (read-from-minibuffer
                           (format "open %s with:" mimetype-str))
                          " %s")
-               (mailcap-mime-info mimetype-str)))
+               ;; HACK:
+							 (progn (mailcap-mime-info mimetype-str)
+											;; (message "wow! %s" mimetype-str)
+											)))
             (mailcap-ext-pattern (mailcap-mime-info mimetype-str "nametemplate")))
+
         ;; Simple replace function.
         (defun string-replace (re replace string)
           (string-match re string)
           (replace-match replace nil nil string))
+
         ;; Display in the viewer.
 				(if mailcap-viewer
             (progn
               (imapua-attachment-emacs-handle)
               (kill-buffer buffer))
+
           ;; else we don't have a mailcap viewer
-          ;;  --- FIXME - sure this could be integrated with viewer stuff above
+          ;;  --- FIXME: - sure this could be integrated with viewer stuff above
           ;;  --- ask for a viewer?
           (insert (imapua-decode-string
                    ;; This gets the body and can be expensive
                    (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
                    (cadr (assoc 'transfer-encoding part))
                    (lookup "charset" (cadr (assoc 'body part)))))
-					(normal-mode)
+					;; HACK:
+					;; (normal-mode)
+					(image-mode)
+					(insert "plop already")
 					;; (setq buffer-read-only 't)
 					(set-buffer-modified-p nil)
 					(goto-char (point-min)))))))
@@ -1017,12 +1060,28 @@ buffer. Programs can pass the imap-con in directly though."
         (fname (if mailcap-ext-pattern
                    (string-replace "%" (make-temp-file "imapua") mailcap-ext-pattern)
                  (make-temp-file "imapua"))))
+
     ;; Function to split a string into a car / cdr
     (defun split-string-into-cons (str)
       "Splits the string into a cons cell."
       (let ((matchpt (string-match split-string-default-separators str)))
         (cons (substring str 0 matchpt)
               (list (substring str (- (match-end 0) 1))))))
+
+		;; HACK:
+		(setq imapua-px-image (imapua-decode-string
+             ;; This gets the body and can be expensive
+             (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
+             enc charset))
+		(message "my image is %s " imapua-px-image)
+
+
+		(defun imapua-image-from-string ()
+			;; Make an image using the bytes directly in a string
+			(list 'image :type 'xbm :ascent 100 :width 8 :height 8
+						:data (apply 'string imapua-px-image)))
+
+
     ;; Setup the buffer
     (insert (imapua-decode-string
              ;; This gets the body and can be expensive
@@ -1030,6 +1089,10 @@ buffer. Programs can pass the imap-con in directly though."
              enc charset))
     (write-region (point-min) (point-max) fname)
 
+		;; HACK:
+		;; (insert "------you ordered it!------\n")
+		(image-mode)
+		(insert-image (imapua-image-from-string))
     ;; Set the filename of the buffer
     (setq buffer-file-name fname)
 
