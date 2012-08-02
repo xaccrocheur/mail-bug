@@ -181,6 +181,11 @@ all parts."
   :type '(boolean)
   :group 'imap-mail-user-agent)
 
+(defcustom imapua-inline-images 't
+  "* should the images be displayed directly in the message windowpane?"
+  :type '(boolean)
+  :group 'imap-mail-user-agent)
+
 (defcustom imapua-short-headers 't
   "* should the headers show only the standard values?"
   :type '(boolean)
@@ -996,14 +1001,19 @@ buffer. Programs can pass the imap-con in directly though."
            (part-list (imapua-bs-to-part-list multipart))
            (part (imapua-part-list-assoc 'partnum partnum part-list))
            (mimetype (cadr (assoc 'type part)))
-           ;; pX:
+
+           ;; pX: We need this to name the attachment buffer (needed for both inline and mailcap)
            (name (lookup "name" (cadr (assoc 'body part))))
+
            (start-of-body 0)
            (mimetype-str (concat (car mimetype) "/" (cdr mimetype)))
            ;; (buffer (get-buffer-create "*attached*"))
            (buffer (get-buffer-create (concat "*attached-" name "*"))
 ))
+
+			;; pX: This was a swith-to-buffer
       (set-buffer buffer)
+
       (setq start-of-body (point))
       (message "mimetype-str: %s" mimetype-str)
       ;; Do a mailcap view if we have a viewer
@@ -1048,7 +1058,7 @@ buffer. Programs can pass the imap-con in directly though."
               (imapua-attachment-emacs-handle msg-buffer)
               (setq buffer-read-only 't)
               (set-buffer-modified-p nil)
-              (kill-buffer buffer)
+              ;; (kill-buffer buffer)
               )
 
           ;; else we don't have a mailcap viewer
@@ -1097,15 +1107,6 @@ buffer. Programs can pass the imap-con in directly though."
         (cons (substring str 0 matchpt)
               (list (substring str (- (match-end 0) 1))))))
 
-    ;; pX:
-    ;; (setq imapua-px-image
-    ;;      (imapua-decode-string
-    ;;       ;; This gets the body and can be expensive
-    ;;       (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
-    ;;       enc charset))
-    ;; (message "my image is %s " imapua-px-image)
-
-
     ;; Setup the buffer
     (insert (imapua-decode-string
              ;; This gets the body and can be expensive
@@ -1114,23 +1115,6 @@ buffer. Programs can pass the imap-con in directly though."
 
     ;; pX:
     (write-region (point-min) (point-max) fname)
-    ;; (write-region (point-min) (point-max) imapua-px-full-attachment-name)
-
-
-    ;; (message "Calling buffer is %s " px-calling-buffer)
-    ;; (insert "------you ordered it!------\n")
-    ;; (with-current-buffer )
-
-
-    ;; (let ((imapua-px-let-image
-    ;;     (imapua-decode-string
-    ;;      ;; This gets the body and can be expensive
-    ;;      (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
-    ;;      enc charset)))
-    ;;  (insert-image (imapua-px-image-from-string)))
-
-
-    ;; (insert-image fname)
 
     ;; pX:
     ;; Set the filename of the buffer
@@ -1147,7 +1131,6 @@ buffer. Programs can pass the imap-con in directly though."
           ;; Else we run it passing it the buffer
           (funcall mailcap-viewer buffer))
 
-
 			(defun imapua-px-create-image (image)
 				"Insert an image from a file"
 				(create-image image nil nil))
@@ -1156,22 +1139,18 @@ buffer. Programs can pass the imap-con in directly though."
       (progn
         (message "Called from: %s, fname is %s and mailcap-viewer is" px-calling-buffer fname mailcap-viewer)
 
-				;; (insert-image (imapua-px-create-image fname))
-				(switch-to-buffer px-calling-buffer)
-				;; (image-mode)
-				(setq inhibit-read-only 't)
-				;; (insert-image (imapua-px-create-image fname))
-				(insert "plop")
-				(message "buffer is %s" (current-buffer))
-				;; (insert-image fname)
-
-        (set-buffer-modified-p nil)
-
-        ;; (let* ((proc-buf (generate-new-buffer "*imapua-attachment*"))
-        ;;       (proc (apply 'start-process-shell-command
-        ;;                    `("*imapua-detachment*" ,proc-buf
-        ;;                      ,@(split-string (format mailcap-viewer fname)) )) ))
-        ;;  (set-process-sentinel proc 'imapua-attachment-sentinel))
+				(if imapua-inline-images
+						(progn
+							(switch-to-buffer px-calling-buffer)
+							(setq inhibit-read-only 't)
+							(insert "\n")
+							(insert-image (imapua-px-create-image fname))
+							(message "buffer is %s" (current-buffer)))
+					(let* ((proc-buf (generate-new-buffer "*imapua-attachment*"))
+								 (proc (apply 'start-process-shell-command
+															`("*imapua-detachment*" ,proc-buf
+																,@(split-string (format mailcap-viewer fname)) )) ))
+						(set-process-sentinel proc 'imapua-attachment-sentinel)))
         ))))
 
 (defun imapua-attachment-sentinel (process event)
