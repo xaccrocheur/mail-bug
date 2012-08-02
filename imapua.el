@@ -1003,7 +1003,7 @@ buffer. Programs can pass the imap-con in directly though."
            ;; (buffer (get-buffer-create "*attached*"))
            (buffer (get-buffer-create (concat "*attached-" name "*"))
 ))
-      (switch-to-buffer buffer)
+      (set-buffer buffer)
       (setq start-of-body (point))
       (message "mimetype-str: %s" mimetype-str)
       ;; Do a mailcap view if we have a viewer
@@ -1106,11 +1106,6 @@ buffer. Programs can pass the imap-con in directly though."
     ;; (message "my image is %s " imapua-px-image)
 
 
-    (defun imapua-px-image-from-string (image)
-      "Make an image using the bytes directly in a string"
-      (list 'image :type 'xbm :ascent 100 :width 8 :height 8
-            :data image))
-
     ;; Setup the buffer
     (insert (imapua-decode-string
              ;; This gets the body and can be expensive
@@ -1152,13 +1147,23 @@ buffer. Programs can pass the imap-con in directly though."
           ;; Else we run it passing it the buffer
           (funcall mailcap-viewer buffer))
 
+
+			(defun imapua-px-create-image (image)
+				"Insert an image from a file"
+				(create-image image nil nil))
+
       ;; We need a unix process
       (progn
         (message "Called from: %s, fname is %s and mailcap-viewer is" px-calling-buffer fname mailcap-viewer)
 
-        (image-mode)
-        ;; (find-file fname)
-        (insert-image fname)
+				;; (insert-image (imapua-px-create-image fname))
+				;; (switch-to-buffer px-calling-buffer)
+				;; (image-mode)
+				(setq inhibit-read-only 't)
+				;; (insert-image (imapua-px-create-image fname))
+				(insert "plop")
+				;; (insert-image fname)
+
         (set-buffer-modified-p nil)
 
         ;; (let* ((proc-buf (generate-new-buffer "*imapua-attachment*"))
