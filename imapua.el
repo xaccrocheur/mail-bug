@@ -75,7 +75,7 @@ all parts."
 	  (when (eq (gnus-mm-display-part handle) 'internal)
 	    (gnus-set-window-start)))))))
 
-;; HACK: : line hilite
+;; pX: : line hilite
 (add-hook 'imapua-mode-hook (lambda () (hl-line-mode t)))
 
 (defvar entities-french
@@ -670,7 +670,7 @@ The keys defined are:
   (run-hooks 'imapua-mode-hook)
 )
 
-;; HACK:
+;; pX:
 (defun imapua-kill-buffer ()
 	(interactive)
 	(kill-buffer (current-buffer))
@@ -695,7 +695,7 @@ The keys defined are:
   ;;run the mode hooks
   (run-hooks 'imapua-message-mode-hook))
 
-;; HACK:
+;; pX:
 (define-key imapua-message-mode-map "q" 'imapua-kill-buffer)
 
 
@@ -737,7 +737,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 													 (imap-message-envelope-date uid imapua-connection))))
       (imap-message-flags-add (number-to-string uid) "\\Seen" nil imapua-connection)
 
-      ;; HACK:
+      ;; pX:
       (if imapua-modal
 
 					;; (let ((folders-window (selected-window))
@@ -758,7 +758,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 							(setq w2 (split-window w one-third)))))
 			(imapua-message-open folder-name uid))))
 
-;; HACK:
+;; pX:
 (defun imapua-toggle-headers ()
 	"Toggle headers."
 	(interactive)
@@ -865,7 +865,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
       (switch-to-buffer buf)
 
 
-			;; HACK:
+			;; pX:
 			;; (if imapua-short-headers
 			;; 		(imapua-toggle-headers))
 
@@ -932,7 +932,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
       (switch-to-buffer buffer)
       (setq start-of-body (point))
 
-      ;; HACK:
+      ;; pX:
 			;; (insert (format "body is %s, encoding is %s and charset is %s" body transfer-encoding charset))
 			;; (insert body)
 
@@ -991,6 +991,8 @@ buffer. Programs can pass the imap-con in directly though."
            (part-list (imapua-bs-to-part-list multipart))
 					 (part (imapua-part-list-assoc 'partnum partnum part-list))
 					 (mimetype (cadr (assoc 'type part)))
+					 ;; pX:
+					 (name (lookup "name" (cadr (assoc 'body part))))
 					 (start-of-body 0)
            (mimetype-str (concat (car mimetype) "/" (cdr mimetype)))
 					 (buffer (get-buffer-create "*attached*")))
@@ -999,18 +1001,32 @@ buffer. Programs can pass the imap-con in directly though."
 			(message "mimetype-str: %s" mimetype-str)
       ;; Do a mailcap view if we have a viewer
       (mailcap-parse-mailcaps)
-      (let ((mailcap-viewer
-             ;; emacs mailcap has some odd defaults; override them here
+      (let (
 
-             (if (equal mimetype-str "application/octet-stream")
-                 (concat (read-from-minibuffer
-                          (format "open %s with:" mimetype-str))
-                         " %s")
-               ;; HACK:
+						(mailcap-viewer
+             ;; emacs mailcap has some odd defaults; override them here
+						 (if (equal mimetype-str "application/octet-stream")
+								 (progn
+									 ;; pX:
+									 (setq extension ".gz")
+									 ;; (concat (read-from-minibuffer
+									 ;; 					(format "Open %s (%s) with: " name mimetype-str))
+									 ;; 				 " %s" extension)
+									 (concat (read-from-minibuffer
+														(format "Open %s (%s) with: " name mimetype-str))
+													 " %s")
+									 )
+							 ;; pX:
 							 (progn (mailcap-mime-info mimetype-str)
 											;; (message "wow! %s" mimetype-str)
 											)))
-            (mailcap-ext-pattern (mailcap-mime-info mimetype-str "nametemplate")))
+
+						;; (if (equal mimetype-str "APPLICATION/x-gzip")
+;; 		(setq imapua-px-attachment-extension ".gz"))
+
+            (mailcap-ext-pattern (mailcap-mime-info mimetype-str "nametemplate"))
+            (mailcap-ext-pattern-all (mailcap-mime-info mimetype-str "all"))
+)
 
         ;; Simple replace function.
         (defun string-replace (re replace string)
@@ -1020,24 +1036,50 @@ buffer. Programs can pass the imap-con in directly though."
         ;; Display in the viewer.
 				(if mailcap-viewer
             (progn
+							;; pX:
+							(message "yes, mailcap-viewer and it is %s " mailcap-viewer)
               (imapua-attachment-emacs-handle)
-              (kill-buffer buffer))
+							(setq buffer-read-only 't)
+							(set-buffer-modified-p nil)
+              (kill-buffer buffer)
+							)
 
           ;; else we don't have a mailcap viewer
           ;;  --- FIXME: - sure this could be integrated with viewer stuff above
           ;;  --- ask for a viewer?
-          (insert (imapua-decode-string
+					(insert (imapua-decode-string
                    ;; This gets the body and can be expensive
                    (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
                    (cadr (assoc 'transfer-encoding part))
                    (lookup "charset" (cadr (assoc 'body part)))))
-					;; HACK:
 					;; (normal-mode)
-					(image-mode)
-					(insert "plop already")
-					;; (setq buffer-read-only 't)
-					(set-buffer-modified-p nil)
+					;; pX:
+					;; (image-mode)
 					(goto-char (point-min)))))))
+
+;; pX:
+;; (defun cur-file ()
+;;   "Return the filename (without directory) of the current buffer"
+;;   (file-name-nondirectory (buffer-file-name (current-buffer)))
+;;   )
+
+;; (defun mark-generated-as-read-only ()
+;;   "Mark generated source files as read only.
+;; Mark generated files (lzz or gz) read only to avoid accidental updates."
+;;   (if
+;;       (or (string= (file-name-extension (cur-file)) "h")
+;;           (string= (file-name-extension (cur-file)) "cpp"))
+;;       (cond
+;;        (
+;;         (file-exists-p (concat (file-name-sans-extension (cur-file)) ".lzz"))
+;;         (toggle-read-only))
+;;        (
+;;         (file-exists-p (concat (file-name-sans-extension (cur-file)) ".gz") )
+;;         (toggle-read-only))
+;;        )
+;;     )
+;;   )
+
 
 (defun imapua-attachment-emacs-handle ()
   "Handle an attachment with some inline emacs viewer"
@@ -1046,10 +1088,26 @@ buffer. Programs can pass the imap-con in directly though."
   (let ((charset (or (lookup "charset" (cadr (assoc 'body part)))
                      (progn (set-buffer-multibyte nil)
                             'no-conversion)))
+
+				;; pX:
+				(name (lookup "name" (cadr (assoc 'body part))))
+
         (enc (cadr (assoc 'transfer-encoding part)))
+
+
+
         (fname (if mailcap-ext-pattern
-                   (string-replace "%" (make-temp-file "imapua") mailcap-ext-pattern)
-                 (make-temp-file "imapua"))))
+                   (progn
+										 (message "Yes, mailcap-ext-pattern and it is %s " mailcap-ext-pattern)
+										 (string-replace "%" (make-temp-file "imapua") mailcap-ext-pattern))
+								 (progn
+									 (message "Nope, no mailcap-ext-pattern")
+									 ;; (message "WTF no %s" (string-replace "%" (format-time-string "%A" (current-time)) name))
+									 (make-temp-file "imapua")
+									 ;; (concat "." (make-temp-file "imapua") name)
+									 ))))
+
+		(message "File name is now: " fname)
 
     ;; Function to split a string into a car / cdr
     (defun split-string-into-cons (str)
@@ -1058,9 +1116,10 @@ buffer. Programs can pass the imap-con in directly though."
         (cons (substring str 0 matchpt)
               (list (substring str (- (match-end 0) 1))))))
 
-		;; HACK:
+		;; pX:
 		(setq imapua-px-image
 					(imapua-decode-string
+
 					 ;; This gets the body and can be expensive
 					 (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
 					 enc charset))
@@ -1076,14 +1135,18 @@ buffer. Programs can pass the imap-con in directly though."
              ;; This gets the body and can be expensive
              (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
              enc charset))
-    (write-region (point-min) (point-max) fname)
 
-		;; HACK:
+		;; pX:
+    (write-region (point-min) (point-max) fname)
+		;; (write-region (point-min) (point-max) imapua-px-full-attachment-name)
+
 		;; (insert "------you ordered it!------\n")
 		;; (image-mode)
 		;; (insert-image (imapua-px-image-from-string))
 
+		;; pX:
     ;; Set the filename of the buffer
+    ;; (setq buffer-file-name imapua-px-full-attachment-name)
     (setq buffer-file-name fname)
 
     ;; Now decide what sort of viewer came out of mailcap - unix process or elisp function?
@@ -1095,23 +1158,31 @@ buffer. Programs can pass the imap-con in directly though."
           ;; Else we run it passing it the buffer
           (funcall mailcap-viewer buffer))
 
+			(message "fname is: %s" fname)
+
       ;; We need a unix process
       (let* ((proc-buf (generate-new-buffer "*imapua-attachment*"))
              (proc (apply 'start-process-shell-command
-                          `("*imapua*" ,proc-buf
+                          `("*imapua-detachment*" ,proc-buf
                             ,@(split-string (format mailcap-viewer fname)) )) ))
         (set-process-sentinel proc 'imapua-attachment-sentinel)))))
-
 
 (defun imapua-attachment-sentinel (process event)
   "Sentinel monitors attachement processes"
   (let ((buf (process-buffer process))
         (state (process-status process)))
-    (if (and (not (eq state 'run))
+
+		(if (and (not (eq state 'run))
              (not (eq state 'stop))
              (< (buffer-size buf) 1))
-        (kill-buffer buf)
-      (switch-to-buffer buf))))
+        (progn
+					;; pX:
+					(setq buffer-read-only 't)
+					(set-buffer-modified-p nil)
+					(if (kill-buffer buf)
+							(progn (message "buffer dead")
+										 (kill-matching-buffers "imapua-attachment.*"))))
+			(switch-to-buffer buf))))
 
 (defun imapua-decode-string (content transfer-encoding char-encoding)
   "Decode the specified content string."
