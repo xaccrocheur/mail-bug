@@ -1007,6 +1007,7 @@ buffer. Programs can pass the imap-con in directly though."
 
            (start-of-body 0)
            (mimetype-str (concat (car mimetype) "/" (cdr mimetype)))
+					 (mimetype-px (car mimetype))
            ;; (buffer (get-buffer-create "*attached*"))
            (buffer (get-buffer-create (concat "*attached-" name "*"))
 ))
@@ -1055,7 +1056,7 @@ buffer. Programs can pass the imap-con in directly though."
             (progn
               ;; pX:
               (message "yes, mailcap-viewer and it is %s " mailcap-viewer)
-              (imapua-attachment-emacs-handle msg-buffer)
+              (imapua-attachment-emacs-handle msg-buffer mimetype-px)
               (setq buffer-read-only 't)
               (set-buffer-modified-p nil)
               ;; (kill-buffer buffer)
@@ -1075,7 +1076,7 @@ buffer. Programs can pass the imap-con in directly though."
           (goto-char (point-min)))))))
 
 
-(defun imapua-attachment-emacs-handle (px-calling-buffer)
+(defun imapua-attachment-emacs-handle (px-calling-buffer mimetype)
   "Handle an attachment with some inline emacs viewer"
   ;; Extract the part and shove it in a buffer
   (message "entering imapua-attachment-emacs-handle")
@@ -1139,7 +1140,14 @@ buffer. Programs can pass the imap-con in directly though."
       (progn
         (message "Called from: %s, fname is %s and mailcap-viewer is" px-calling-buffer fname mailcap-viewer)
 
-				(if imapua-inline-images
+				;; (message "mimetype: %s" mimetype)
+
+
+				;; (if (string= "IMAGE" mimetype)
+				;; 		(message "Hey this is an image yeah?"))
+
+				(if (and imapua-inline-images
+								 (string= "IMAGE" mimetype))
 						(progn
 							(switch-to-buffer px-calling-buffer)
 							(setq inhibit-read-only 't)
@@ -1452,66 +1460,6 @@ Opened folders have their messages re-read and re-drawn."
     (previous-line)
 ))
 
-
-;; (defun imapua-redraw ()
-;;   "redraw the buffer based on the imap state.
-;; Opened folders have their messages re-read and re-drawn."
-;;   (interactive)
-;;   (defun insert-with-prop (text prop-list)
-;;     (let ((pt (point)))
-;;       (insert text)
-;;       (add-text-properties pt (point) prop-list)))
-;;   ;; Main function.
-;;   (imapua-ensure-connected)
-;;   (let ((stored-pos (point-marker))
-;;  (inhibit-read-only 't)
-;;  (display-buffer (current-buffer)))
-;;     (delete-region (point-min) (point-max))
-;;     (imapua-refresh-folder-list)
-;;     ;; Map the folder display over the sorted folder list.
-;;     (mapc
-;;      (lambda (folder-name)
-;;        (with-current-buffer display-buffer
-;;   (insert-with-prop folder-name `(face (foreground-color . ,imapua-folder-color)))
-;;   (if (imapua-has-recent-p folder-name)
-;;       (insert-with-prop " * " `(face (foreground-color . ,imapua-unseen-message-color))))
-;;   (insert " \n")
-;;   (if (imap-mailbox-get 'OPENED folder-name imapua-connection)
-;;       (let* ((selection
-;;         ;; Force the re-selection of the folder before local vars
-;;         (progn
-;;           (imap-mailbox-unselect imapua-connection)
-;;           (imap-mailbox-select folder-name nil imapua-connection)))
-;;        (existing (imap-mailbox-get 'exists folder-name imapua-connection))
-;;        (message-range (concat "1:" (number-to-string existing))))
-;;         (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't imapua-connection)
-;;         ;; Map the message redraw over each message in the folder.
-;;         (mapc
-;;    (lambda (msg)
-;;      (let ((msg-redraw-func (imapua-get-msg-redraw-func folder-name)))
-;;        (funcall msg-redraw-func display-buffer folder-name msg)))
-;;    ;; The message list is sorted before being output
-;;    (sort
-;;     (imap-message-map
-;;      (lambda (uid property)
-;;        (cons uid
-;;                           (condition-case nil
-;;                               (timezone-make-date-sortable (imapua-date-format (elt property 0)) "GMT" "GMT")
-;;                             ;; Ensures that strange dates don't cause a problem.
-;;                             (range-error nil))))
-;;      'ENVELOPE imapua-connection)
-;;     ;; Compare the sort elements by date
-;;     (lambda (left right)
-;;       (string< (cdr left) (cdr right)))))
-;;         (insert "\n")))))
-;;      imapua-folder-list)
-;;    (goto-char stored-pos)
-;;    (toggle-truncate-lines 1)
-;;    (search-forward-regexp "^$")
-;;    (previous-line)
-;; ))
-
-
 (defun imapua-get-msg-redraw-func (folder-name)
   'imapua-msg-redraw)
 
@@ -1526,37 +1474,37 @@ msg is a dotted pair such that:
   ;; imapua-date-format which is perhaps slow.
   (with-current-buffer display-buffer
     (let* ((inhibit-read-only 't)
-     (uid (car msg))
-     (date (imapua-date-format (imap-message-envelope-date uid imapua-connection)))
-     ;; (date (cdr msg))
-     (from-addr
-      (imapua-from-format
-       (let ((env-from (imap-message-envelope-from uid imapua-connection)))
-         (if (consp env-from)
-       (car env-from)
-     ;; Make up an address
-     `("-" "unknown email" "-" "-")))))
-     (subject
-      (imapua-field-format 1 (imap-message-envelope-subject uid imapua-connection) 't))
-     (line-start (point))
-     (color (cond
-       ((imapua-deletedp uid) imapua-deleted-message-color)
-       ((not (imapua-seenp uid)) imapua-unseen-message-color)
-       (t 'black))))
+					 (uid (car msg))
+					 (date (imapua-date-format (imap-message-envelope-date uid imapua-connection)))
+					 ;; (date (cdr msg))
+					 (from-addr
+						(imapua-from-format
+						 (let ((env-from (imap-message-envelope-from uid imapua-connection)))
+							 (if (consp env-from)
+									 (car env-from)
+								 ;; Make up an address
+								 `("-" "unknown email" "-" "-")))))
+					 (subject
+						(imapua-field-format 1 (imap-message-envelope-subject uid imapua-connection) 't))
+					 (line-start (point))
+					 (color (cond
+									 ((imapua-deletedp uid) imapua-deleted-message-color)
+									 ((not (imapua-seenp uid)) imapua-unseen-message-color)
+									 (t 'black))))
       (beginning-of-line)
       (if (> (- (line-end-position) (point)) 0)
-    (progn
-      ;; Ensure the current line is deleted
-      (delete-region (line-beginning-position) (line-end-position))
-      (delete-char 1)))
+					(progn
+						;; Ensure the current line is deleted
+						(delete-region (line-beginning-position) (line-end-position))
+						(delete-char 1)))
       ;; Put in the new line.
       (insert
        "  " (imapua-field-format 20 date)
        "  " (imapua-field-format 30 from-addr)
        "  " subject "\n")
       (add-text-properties line-start (point)
-         `(UID ,uid FOLDER ,folder-name
-         face (foreground-color . ,color))))))
+													 `(UID ,uid FOLDER ,folder-name
+																 face (foreground-color . ,color))))))
 
 
 
