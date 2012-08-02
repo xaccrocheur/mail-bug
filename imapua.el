@@ -1080,8 +1080,9 @@ buffer. Programs can pass the imap-con in directly though."
 
 		;; HACK:
 		;; (insert "------you ordered it!------\n")
-		(image-mode)
-		(insert-image (imapua-px-image-from-string))
+		;; (image-mode)
+		;; (insert-image (imapua-px-image-from-string))
+
     ;; Set the filename of the buffer
     (setq buffer-file-name fname)
 
