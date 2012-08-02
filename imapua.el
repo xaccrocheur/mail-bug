@@ -995,7 +995,9 @@ buffer. Programs can pass the imap-con in directly though."
 					 (name (lookup "name" (cadr (assoc 'body part))))
 					 (start-of-body 0)
            (mimetype-str (concat (car mimetype) "/" (cdr mimetype)))
-					 (buffer (get-buffer-create "*attached*")))
+					 ;; (buffer (get-buffer-create "*attached*"))
+					 (buffer (get-buffer-create (concat "*attached-" name "*"))
+)
       (switch-to-buffer buffer)
       (setq start-of-body (point))
 			(message "mimetype-str: %s" mimetype-str)
@@ -1061,6 +1063,7 @@ buffer. Programs can pass the imap-con in directly though."
 (defun imapua-attachment-emacs-handle (px-calling-buffer)
   "Handle an attachment with some inline emacs viewer"
   ;; Extract the part and shove it in a buffer
+	(message "entering imapua-attachment-emacs-handle")
   (let ((charset (or (lookup "charset" (cadr (assoc 'body part)))
                      (progn (set-buffer-multibyte nil)
                             'no-conversion)))
@@ -1144,18 +1147,21 @@ buffer. Programs can pass the imap-con in directly though."
           ;; Else we run it passing it the buffer
           (funcall mailcap-viewer buffer))
 
-			(message "fname is: %s" fname)
-
-			;; (image-mode)
-			;; (insert-image fname)
-
-
       ;; We need a unix process
-      (let* ((proc-buf (generate-new-buffer "*imapua-attachment*"))
-             (proc (apply 'start-process-shell-command
-                          `("*imapua-detachment*" ,proc-buf
-                            ,@(split-string (format mailcap-viewer fname)) )) ))
-        (set-process-sentinel proc 'imapua-attachment-sentinel)))))
+      (progn
+				(message "Called from: %s, fname is %s and mailcap-viewer is" px-calling-buffer fname mailcap-viewer)
+
+				(image-mode)
+				;; (find-file fname)
+				(insert-image fname)
+				(set-buffer-modified-p nil)
+
+				;; (let* ((proc-buf (generate-new-buffer "*imapua-attachment*"))
+				;; 			 (proc (apply 'start-process-shell-command
+				;; 										`("*imapua-detachment*" ,proc-buf
+				;; 											,@(split-string (format mailcap-viewer fname)) )) ))
+				;; 	(set-process-sentinel proc 'imapua-attachment-sentinel))
+				))))
 
 (defun imapua-attachment-sentinel (process event)
   "Sentinel monitors attachement processes"
