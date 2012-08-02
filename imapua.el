@@ -996,22 +996,12 @@ buffer. Programs can pass the imap-con in directly though."
 					 (buffer (get-buffer-create "*attached*")))
       (switch-to-buffer buffer)
       (setq start-of-body (point))
-
-			(message "Tiens, un attachement: %s" mimetype-str)
-
-			;; HACK:
-			;; (if (equal mimetype-str "image/jpeg")
-			;; 		(concat (read-from-minibuffer
-			;; 						 (message "wow, an image! %s" mimetype-str))
-			;; 						" %s")
-			;; 	(mailcap-mime-info mimetype-str))
-
-			;; Dodo, demain on teste les mimetypes en echoant mimetype-str
-
+			(message "mimetype-str: %s" mimetype-str)
       ;; Do a mailcap view if we have a viewer
       (mailcap-parse-mailcaps)
       (let ((mailcap-viewer
              ;; emacs mailcap has some odd defaults; override them here
+
              (if (equal mimetype-str "application/octet-stream")
                  (concat (read-from-minibuffer
                           (format "open %s with:" mimetype-str))
@@ -1069,18 +1059,17 @@ buffer. Programs can pass the imap-con in directly though."
               (list (substring str (- (match-end 0) 1))))))
 
 		;; HACK:
-		(setq imapua-px-image (imapua-decode-string
-             ;; This gets the body and can be expensive
-             (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
-             enc charset))
-		(message "my image is %s " imapua-px-image)
+		(setq imapua-px-image
+					(imapua-decode-string
+					 ;; This gets the body and can be expensive
+					 (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
+					 enc charset))
+		;; (message "my image is %s " imapua-px-image)
 
-
-		(defun imapua-image-from-string ()
+		(defun imapua-px-image-from-string ()
 			;; Make an image using the bytes directly in a string
 			(list 'image :type 'xbm :ascent 100 :width 8 :height 8
 						:data (apply 'string imapua-px-image)))
-
 
     ;; Setup the buffer
     (insert (imapua-decode-string
@@ -1092,7 +1081,7 @@ buffer. Programs can pass the imap-con in directly though."
 		;; HACK:
 		;; (insert "------you ordered it!------\n")
 		(image-mode)
-		(insert-image (imapua-image-from-string))
+		(insert-image (imapua-px-image-from-string))
     ;; Set the filename of the buffer
     (setq buffer-file-name fname)
 
