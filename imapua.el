@@ -1157,11 +1157,12 @@ buffer. Programs can pass the imap-con in directly though."
         (message "Called from: %s, fname is %s and mailcap-viewer is" px-calling-buffer fname mailcap-viewer)
 
 				;; (insert-image (imapua-px-create-image fname))
-				;; (switch-to-buffer px-calling-buffer)
+				(switch-to-buffer px-calling-buffer)
 				;; (image-mode)
 				(setq inhibit-read-only 't)
 				;; (insert-image (imapua-px-create-image fname))
 				(insert "plop")
+				(message "buffer is %s" (current-buffer))
 				;; (insert-image fname)
 
         (set-buffer-modified-p nil)
