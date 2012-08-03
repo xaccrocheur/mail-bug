@@ -640,6 +640,13 @@ If you want to know about updates this is the function to use."
                      (setq imapua-connection nil)))))))))
 
 
+(defun imapua-click ()
+  "Click!"
+  (interactive)
+  (mouse-set-point)
+  (beginning-of-line)
+  (imapua-open))
+
 (defun imapua-mode ()
   "A mail user agent based on IMAP folders.
 You can open many folders and messages simultaneously. Folders can be
@@ -651,25 +658,24 @@ The keys defined are:
   (kill-all-local-variables)
   (unless imapua-mode-map
     (setq imapua-mode-map (make-sparse-keymap))
+		(define-key imapua-mode-map [down-mouse-1] 'imapua-click)
     (define-key imapua-mode-map "\r" 'imapua-open)
-		(define-key imapua-mode-map [down-mouse-1] 'imapua-open)
-    (define-key imapua-mode-map "h" 'imapua-open)
     (define-key imapua-mode-map "+" 'imapua-create-folder)
     (define-key imapua-mode-map "/" 'isearch-forward-regexp)
     (define-key imapua-mode-map "B" 'bury-buffer)
-    (define-key imapua-mode-map "K" 'imapua-kill-folder)
-    (define-key imapua-mode-map "X" 'imapua-spam)
     (define-key imapua-mode-map "d" 'imapua-delete)
     (define-key imapua-mode-map "g" 'imapua-redraw)
+    (define-key imapua-mode-map "h" 'imapua-toggle-headers)
+    (define-key imapua-mode-map "K" 'imapua-kill-folder)
     ;; (define-key imapua-mode-map "r" 'imapua-reply-to)
-    ;; (define-key imapua-mode-map "m" 'imapua-move)
     (define-key imapua-mode-map "n" 'next-line)
     (define-key imapua-mode-map "m" 'imapua-move)
     (define-key imapua-mode-map "p" 'previous-line)
     (define-key imapua-mode-map "s" 'imapua-send-mail)
     (define-key imapua-mode-map "S" 'imapua-show-structure)
     (define-key imapua-mode-map "u" 'imapua-undelete)
-    (define-key imapua-mode-map "x" 'imapua-expunge))
+    (define-key imapua-mode-map "x" 'imapua-expunge)
+    (define-key imapua-mode-map "X" 'imapua-spam))
   (use-local-map imapua-mode-map)
   ;;set the mode as a non-editor mode
   (put 'imapua-mode 'mode-class 'special)
@@ -695,8 +701,7 @@ The keys defined are:
   (make-local-variable 'imapua-username)
   (make-local-variable 'imapua-password)
   ;;run the mode hooks
-  (run-hooks 'imapua-mode-hook)
-)
+  (run-hooks 'imapua-mode-hook))
 
 ;; pX:
 (defun imapua-kill-buffer ()
