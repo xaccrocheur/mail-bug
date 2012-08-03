@@ -261,6 +261,10 @@ all parts."
   :group 'imap-mail-user-agent-colors)
 
 
+(defcustom imapua-px-test-message-color "#ffaaff"
+  "* color for tests"
+  :type '(string)
+  :group 'imap-mail-user-agent-colors)
 
 
 
@@ -1391,74 +1395,118 @@ This ensures that deleted messages are removed from the obarray."
       (imap-close imapua-connection))
   (setq imapua-connection nil))
 
-
 ;;;; The display logic.
 
-;; (defface my-tushi-face
-;;   '((t :inherits "default"
-;;              :weight 'ultra-bold))
-;;   "Face used for topics."
-;;   :group 'faces)
+(defface imapua-px-face-one
+  `((((type tty) (class color))
+     (:background "gray10" :foreground "white"))
+    (((type tty) (class mono))
+     (:inverse-video t))
+    (((class color) (background dark))
+     (:background "gray10"))
+    (((class color) (background light))
+     (:background "gray10"))
+    (t (:background "gray")))
+  "Basic face for unread mails."
+  :group 'basic-faces)
 
-;; (insert (propertize "Gah! I'm green!" 'face 'my-tushi-face))
+(defface imapua-px-face-two
+  `((((type tty) (class color))
+     (:background "gray20" :foreground "white"))
+    (((type tty) (class mono))
+     (:inverse-video t))
+    (((class color) (background dark))
+     (:background "gray20"))
+    (((class color) (background light))
+     (:background "gray20"))
+    (t (:background "gray")))
+  "Basic face for unread mails."
+  :group 'basic-faces)
+
+(defface imapua-px-face-tre
+  `((((type tty) (class color))
+     (:background "gray30" :foreground "white"))
+    (((type tty) (class mono))
+     (:inverse-video t))
+    (((class color) (background dark))
+     (:background "gray30"))
+    (((class color) (background light))
+     (:background "gray30"))
+    (t (:background "gray")))
+  "Basic face for unread mails."
+  :group 'basic-faces)
+
+;; (insert (propertize "Gah! I'm green!" 'face 'imapua-px-unread-face))
+
+;; (insert (propertize "Gah! I'm green!" 'face '(:foreground "#00ff00" :background "#005000")))
 
 (defun imapua-redraw ()
   "redraw the buffer based on the imap state.
-Opened folders have their messages re-read and re-drawn."
+Opened folders have their messages re-read and re-drawn.
+pX: I think we gonna use this for the collecting of unread/seen mails"
   (interactive)
+
   (defun insert-with-prop (text prop-list)
     (let ((pt (point)))
       (insert text)
       (add-text-properties pt (point) prop-list)))
+
   ;; Main function.
   (imapua-ensure-connected)
   (let ((stored-pos (point-marker))
-  (inhibit-read-only 't)
-  (display-buffer (current-buffer)))
+				(inhibit-read-only 't)
+				(display-buffer (current-buffer)))
     (delete-region (point-min) (point-max))
     (imapua-refresh-folder-list)
     ;; Map the folder display over the sorted folder list.
     (mapc
      (lambda (folder-name)
        (with-current-buffer display-buffer
-   (insert-with-prop folder-name `(face (foreground-color . ,imapua-folder-color)))
-   (if (imapua-has-recent-p folder-name)
-       (insert-with-prop " * " `(face (foreground-color . ,imapua-unseen-message-color))))
-   (insert " \n")
-   (if (imap-mailbox-get 'OPENED folder-name imapua-connection)
-       (let* ((selection
-         ;; Force the re-selection of the folder before local vars
-         (progn
-           (imap-mailbox-unselect imapua-connection)
-           (imap-mailbox-select folder-name nil imapua-connection)))
-        (existing (imap-mailbox-get 'exists folder-name imapua-connection))
-        (message-range (concat "1:" (number-to-string existing))))
-         (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't imapua-connection)
-         ;; Map the message redraw over each message in the folder.
-         (mapc
-    (lambda (msg)
-      (let ((msg-redraw-func (imapua-get-msg-redraw-func folder-name)))
-        (funcall msg-redraw-func display-buffer folder-name msg)))
-    ;; The message list is sorted before being output
-    (sort
-     (imap-message-map
-      (lambda (uid property)
-        (cons uid
+
+				 ;; pX:
+				 ;; (insert-with-prop folder-name `(face (foreground-color . ,imapua-folder-color)))
+				 (insert (propertize folder-name 'face 'imapua-px-face-one))
+
+				 (if (imapua-has-recent-p folder-name)
+
+						 ;; pX:
+						 ;; (insert-with-prop " * " `(face (foreground-color . ,imapua-unseen-message-color)))
+						 (insert (propertize " * " 'face 'imapua-px-face-two))
+					 )
+				 (insert " \n")
+				 (if (imap-mailbox-get 'OPENED folder-name imapua-connection)
+						 (let* ((selection
+										 ;; Force the re-selection of the folder before local vars
+										 (progn
+											 (imap-mailbox-unselect imapua-connection)
+											 (imap-mailbox-select folder-name nil imapua-connection)))
+										(existing (imap-mailbox-get 'exists folder-name imapua-connection))
+										(message-range (concat "1:" (number-to-string existing))))
+							 (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't imapua-connection)
+							 ;; Map the message redraw over each message in the folder.
+							 (mapc
+								(lambda (msg)
+									(let ((msg-redraw-func (imapua-get-msg-redraw-func folder-name)))
+										(funcall msg-redraw-func display-buffer folder-name msg)))
+								;; The message list is sorted before being output
+								(sort
+								 (imap-message-map
+									(lambda (uid property)
+										(cons uid
                           (condition-case nil
                               (timezone-make-date-sortable (imapua-date-format (elt property 0)) "GMT" "GMT")
                             ;; Ensures that strange dates don't cause a problem.
                             (range-error nil))))
-      'ENVELOPE imapua-connection)
-     ;; Compare the sort elements by date
-     (lambda (left right)
-       (string< (cdr left) (cdr right)))))
-         (insert "\n")))))
+									'ENVELOPE imapua-connection)
+								 ;; Compare the sort elements by date
+								 (lambda (left right)
+									 (string< (cdr left) (cdr right)))))
+							 (insert "\n")))))
      imapua-folder-list)
     (goto-char stored-pos)
     (toggle-truncate-lines 1)
     (search-forward-regexp "^$")
-    (previous-line)
-))
+    (previous-line)))
 
 (defun imapua-get-msg-redraw-func (folder-name)
   'imapua-msg-redraw)
@@ -1490,7 +1538,12 @@ msg is a dotted pair such that:
 					 (color (cond
 									 ((imapua-deletedp uid) imapua-deleted-message-color)
 									 ((not (imapua-seenp uid)) imapua-unseen-message-color)
-									 (t 'black))))
+
+									 ;; pX:
+									 ;; (t 'black)
+									 (t imapua-px-test-message-color)
+
+									 )))
       (beginning-of-line)
       (if (> (- (line-end-position) (point)) 0)
 					(progn
