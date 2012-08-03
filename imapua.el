@@ -84,7 +84,8 @@ all parts."
 (add-hook 'imapua-mode-hook (lambda () (hl-line-mode t)))
 
 (defvar entities-french
-  '(("=C3=A9" "é")
+  '(
+		("=C3=A9" "é")
     ("=C3=89" "É")
     ("=C3=A8" "è")
     ("=C3=88" "È")
@@ -102,6 +103,7 @@ all parts."
     ("=C3=8B" "Ë")
     ("=C3=BC" "ü")
     ("=C3=9C" "Ü")
+		("=20" "")
     )
   "The list of entities")
 
@@ -120,6 +122,14 @@ all parts."
 
 ;; (imapua-px-decode-string "l'int=C3=A9rimaire est b=C3=A8te, c'est un cr=C3=A9tin" entities-french)
 ;; (imapua-px-decode-string "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme" entities-french)
+
+
+;; (mail-decode-encoded-word-region 3995 4055)
+;; (point)
+;; "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme"(point)
+
+
+(gnus-multi-decode-encoded-word-string "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme")
 
 ;; SMTP configs.
 
@@ -192,7 +202,7 @@ all parts."
   :group 'imap-mail-user-agent)
 
 ;; Customization for the agent's behaviour
-(defcustom imapua-host-name ""
+(defcustom imapua-host-name "imap.gmx.com"
   "* the name of server to connect to"
   :type '(string)
   :group 'imap-mail-user-agent)
@@ -261,11 +271,10 @@ all parts."
   :group 'imap-mail-user-agent-colors)
 
 
-(defcustom imapua-px-test-message-color "#ffaaff"
+(defcustom imapua-px-message-color "#ffffff"
   "* color for tests"
   :type '(string)
   :group 'imap-mail-user-agent-colors)
-
 
 
 ;; The buffer used for the IMAP process
@@ -301,7 +310,7 @@ all parts."
   "the imap server port")
 
 ;; The cached username
-(defvar imapua-username nil
+(defvar imapua-username "philcm@gmx.com"
   "the user's name")
 
 ;; The cached password
@@ -637,9 +646,12 @@ The keys defined are:
  \\{imapua-mode-map}"
   (interactive)
   (kill-all-local-variables)
+	;; (local-set-key [M-mouse-1] '(message "plop"))
   (unless imapua-mode-map
     (setq imapua-mode-map (make-sparse-keymap))
     (define-key imapua-mode-map "\r" 'imapua-open)
+		(define-key imapua-mode-map [down-mouse-1] 'imapua-open)
+    (define-key imapua-mode-map "h" 'imapua-open)
     (define-key imapua-mode-map "+" 'imapua-create-folder)
     (define-key imapua-mode-map "/" 'isearch-forward-regexp)
     (define-key imapua-mode-map "B" 'bury-buffer)
@@ -953,6 +965,21 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 
       ;; (imapua-px-decode-string "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme" entities-french)
 
+			(message "transfer-encoding: %s" transfer-encoding)
+
+			(insert "\n---Undecoded--\n")
+      (insert
+			 (imapua-decode-string
+				body
+				transfer-encoding
+				;; A nasty company in redmond make this complicated.
+				(cond
+				 ((and (equal charset "us-ascii")
+							 (equal transfer-encoding "8bit")) 'utf-8)
+				 (charset charset)
+				 ('t 'emacs-mule))))
+
+			(insert "\n---Decoded--\n")
       (insert
        (imapua-px-decode-string
         (imapua-decode-string
@@ -964,6 +991,22 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
                 (equal transfer-encoding "8bit")) 'utf-8)
           (charset charset)
           ('t 'emacs-mule))) entities-french))
+
+			;; (insert "\n---RAW--\n")
+      ;; (insert
+			;; 	body
+			;; 	transfer-encoding
+			;; 	;; A nasty company in redmond make this complicated.
+			;; 	(cond
+			;; 	 ((and (equal charset "us-ascii")
+			;; 				 (equal transfer-encoding "8bit")) 'utf-8)
+			;; 	 (charset charset)
+			;; 	 ('t 'emacs-mule)))
+
+
+
+			(insert "\n---body fini--\n")
+
       )))
 
 
@@ -1074,9 +1117,8 @@ buffer. Programs can pass the imap-con in directly though."
                    (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
                    (cadr (assoc 'transfer-encoding part))
                    (lookup "charset" (cadr (assoc 'body part)))))
-          ;; (normal-mode)
           ;; pX:
-          ;; (image-mode)
+          ;; (normal-mode)
           (goto-char (point-min)))))))
 
 
@@ -1103,8 +1145,6 @@ buffer. Programs can pass the imap-con in directly though."
                    ;; (concat "." (make-temp-file "imapua") name)
                    ))))
 
-    (message "enc: %s (charset: %s)" enc charset)
-
     ;; Function to split a string into a car / cdr
     (defun split-string-into-cons (str)
       "Splits the string into a cons cell."
@@ -1118,12 +1158,8 @@ buffer. Programs can pass the imap-con in directly though."
              (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
              enc charset))
 
-    ;; pX:
     (write-region (point-min) (point-max) fname)
 
-    ;; pX:
-    ;; Set the filename of the buffer
-    ;; (setq buffer-file-name imapua-px-full-attachment-name)
     (setq buffer-file-name fname)
 
 
@@ -1136,6 +1172,7 @@ buffer. Programs can pass the imap-con in directly though."
           ;; Else we run it passing it the buffer
           (funcall mailcap-viewer buffer))
 
+			;; pX:
 			(defun imapua-px-create-image (image)
 				"Insert an image from a file"
 				(create-image image nil nil))
@@ -1150,6 +1187,7 @@ buffer. Programs can pass the imap-con in directly though."
 				;; (if (string= "IMAGE" mimetype)
 				;; 		(message "Hey this is an image yeah?"))
 
+				;; pX:
 				(if (and imapua-inline-images
 								 (string= "IMAGE" mimetype))
 						(progn
@@ -1541,7 +1579,7 @@ msg is a dotted pair such that:
 
 									 ;; pX:
 									 ;; (t 'black)
-									 (t imapua-px-test-message-color)
+									 (t imapua-px-message-color)
 
 									 )))
       (beginning-of-line)
@@ -1587,13 +1625,5 @@ msg is a dotted pair such that:
   )
 
 (ad-activate 'message-reply)
-
-;; function ReplaceImap($txt) {
-;;   $carimap = array("=C3=A9", "=C3=A8", "=C3=AA", "=C3=AB", "=C3=A7", "=C3=A0", "=20", "=C3=80", "=C3=89");
-;;   $carhtml = array("é", "è", "ê", "ë", "ç", "à", "&nbsp;", "À", "É");
-;;   $txt = str_replace($carimap, $carhtml, $txt);
-
-;;   return $txt;
-;; }
 
 (provide 'imapua)
