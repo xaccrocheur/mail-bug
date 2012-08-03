@@ -51,11 +51,12 @@
 (require 'message)
 (require 'cl)
 
-(require 'hide-region nil 'noerror)
+;; (require 'hide-region)
 
-(require 'gnus-art)
+;; (require 'gnus-art)
 
 (require 'w3m nil 'noerror)
+
 (setq mm-text-html-renderer 'w3m)
 (setq mm-inline-text-html-with-images t)
 (setq mm-inline-text-html-with-w3m-keymap nil)
@@ -104,6 +105,8 @@ all parts."
     ("=C3=BC" "ü")
     ("=C3=9C" "Ü")
 		("=20" "")
+		("=3D\"" "=\"")
+		("\^M" " plop ")
     )
   "The list of entities")
 
@@ -129,7 +132,7 @@ all parts."
 ;; "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme"(point)
 
 
-(gnus-multi-decode-encoded-word-string "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme")
+;; (gnus-multi-decode-encoded-word-string "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme")
 
 ;; SMTP configs.
 
@@ -646,7 +649,6 @@ The keys defined are:
  \\{imapua-mode-map}"
   (interactive)
   (kill-all-local-variables)
-	;; (local-set-key [M-mouse-1] '(message "plop"))
   (unless imapua-mode-map
     (setq imapua-mode-map (make-sparse-keymap))
     (define-key imapua-mode-map "\r" 'imapua-open)
@@ -784,29 +786,6 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
               (setq w2 (split-window w one-third)))))
       (imapua-message-open folder-name uid))))
 
-;; pX:
-(defun imapua-toggle-headers ()
-  "Toggle headers."
-  (interactive)
-  (beginning-of-buffer)
-  (message "point is %s" (point))
-  ;; (widen)
-  ;; (save-excursion
-  (search-forward-regexp "Subject")
-  ;; (toggle-read-only)
-  (end-of-line)
-  (newline 2)
-  ;; (next-line 2)
-  ;; (insert "ha! -- ")
-  (next-line 2)
-  (mark-paragraph 1)
-  (hide-region-hide)
-  (right-char)
-  (deactivate-mark)
-    ;; (toggle-read-only)
-    (set-buffer-modified-p nil)
-;; )
-    )
 
 (defun imapua-message-open (folder-name uid)
   (interactive "Mfolder-name:\nnUid:")
@@ -967,17 +946,21 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 
 			(message "transfer-encoding: %s" transfer-encoding)
 
-			(insert "\n---Undecoded--\n")
-      (insert
-			 (imapua-decode-string
-				body
-				transfer-encoding
-				;; A nasty company in redmond make this complicated.
-				(cond
-				 ((and (equal charset "us-ascii")
-							 (equal transfer-encoding "8bit")) 'utf-8)
-				 (charset charset)
-				 ('t 'emacs-mule))))
+			;; (insert "\n---Undecoded--\n")
+      ;; (insert
+			;;  (imapua-decode-string
+			;; 	body
+			;; 	transfer-encoding
+			;; 	;; A nasty company in redmond make this complicated.
+			;; 	(cond
+			;; 	 ((and (equal charset "us-ascii")
+			;; 				 (equal transfer-encoding "8bit")) 'utf-8)
+			;; 	 (charset charset)
+			;; 	 ('t 'emacs-mule))))
+
+			;; (insert "\n---Semi-decoded--\n")
+      ;; (insert
+      ;;  (imapua-px-decode-string body entities-french))
 
 			(insert "\n---Decoded--\n")
       (insert
@@ -994,7 +977,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 
 			;; (insert "\n---RAW--\n")
       ;; (insert
-			;; 	body
+			;;  body
 			;; 	transfer-encoding
 			;; 	;; A nasty company in redmond make this complicated.
 			;; 	(cond
@@ -1002,8 +985,6 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 			;; 				 (equal transfer-encoding "8bit")) 'utf-8)
 			;; 	 (charset charset)
 			;; 	 ('t 'emacs-mule)))
-
-
 
 			(insert "\n---body fini--\n")
 
@@ -1597,24 +1578,7 @@ msg is a dotted pair such that:
 													 `(UID ,uid FOLDER ,folder-name
 																 face (foreground-color . ,color))))))
 
-
-
-;; Boot strap stuff
-(add-hook 'kill-emacs (lambda () (imapua-logout)))
-
-;; ;; Advice to help with always having a BCC to your own email address
-;; (defadvice message-mail (around imapua-message-mail-add-bcc)
-;;   "Add a BCC header around the message-mail mailer"
-;;  (message "advicing")
-;;   (ad-set-arg 2 (append (ad-get-arg 2) `(("BCC" . ,user-mail-address))))
-;;   ad-do-it
-;;  (message "adviced")
-;;  ;; (message-yank-original)
-;;  ;; (kill-line)
-;;   (message-sort-headers))
-
-;; (ad-deactivate 'message-mail)
-
+;; Auto-BCC
 (defadvice message-reply (after imapua-message-reply-yank-original)
   "Quote original when replying."
   (message-replace-header "BCC" user-mail-address "AFTER" "FORCE")
@@ -1625,5 +1589,87 @@ msg is a dotted pair such that:
   )
 
 (ad-activate 'message-reply)
+
+
+;; Hide headers
+
+(defun imapua-toggle-headers ()
+  "Toggle headers."
+  (interactive)
+  (if (car hide-region-overlays)
+      (progn
+        (message "shown")
+        (imapua-show-headers))
+    (progn
+      (message "hidden")
+      (beginning-of-buffer)
+      (message "point is %s" (point))
+      (search-forward-regexp "Subject")
+      ;; (toggle-read-only)
+      (end-of-line)
+      (setq buffer-read-only nil)
+      (next-line)
+      (beginning-of-line)
+      (push-mark)
+      (forward-paragraph)
+      (imapua-hide-headers)
+      (deactivate-mark)
+      ;; (toggle-read-only)
+      ;; (setq buffer-read-only 't)
+      ;; (set-buffer-modified-p nil)
+      )))
+
+(defvar hide-region-before-string "[headers"
+  "String to mark the beginning of an invisible region. This string is
+not really placed in the text, it is just shown in the overlay")
+
+(defvar hide-region-after-string "]"
+  "String to mark the beginning of an invisible region. This string is
+not really placed in the text, it is just shown in the overlay")
+
+(defvar hide-region-propertize-markers t
+  "If non-nil, add text properties to the region markers.")
+
+(defface hide-region-before-string-face
+  '((t (:inherit region)))
+  "Face for the before string.")
+
+(defface hide-region-after-string-face
+  '((t (:inherit region)))
+  "Face for the after string.")
+
+(defvar hide-region-overlays nil
+  "Variable to store the regions we put an overlay on.")
+
+(defun imapua-show-headers ()
+  "Unhide a region at a time, starting with the last one hidden and
+deleting the overlay from the hide-region-overlays \"ring\"."
+  (interactive)
+  (when (car hide-region-overlays)
+    (delete-overlay (car hide-region-overlays))
+    (setq hide-region-overlays (cdr hide-region-overlays))))
+
+(defun imapua-hide-headers ()
+  "Hides a region by making an invisible overlay over it and save the
+overlay on the hide-region-overlays \"ring\""
+  (interactive)
+  (let ((new-overlay (make-overlay (mark) (point))))
+    (push new-overlay hide-region-overlays)
+    (overlay-put new-overlay 'invisible t)
+    (overlay-put new-overlay 'intangible t)
+    (overlay-put new-overlay 'before-string
+                 (if hide-region-propertize-markers
+                     (propertize hide-region-before-string
+                                 'font-lock-face 'hide-region-before-string-face)
+                   hide-region-before-string))
+    (overlay-put new-overlay 'after-string
+                 (if hide-region-propertize-markers
+                     (propertize hide-region-after-string
+                                 'font-lock-face 'hide-region-after-string-face)
+                   hide-region-after-string))))
+
+
+;; Boot strap stuff
+(add-hook 'kill-emacs (lambda () (imapua-logout)))
 
 (provide 'imapua)
