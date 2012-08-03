@@ -607,7 +607,7 @@ This means you can have multiple imapua sessions in one emacs session."
                                 (if host-name
                                     (concat host-name ":" (number-to-string tcp-port)))))))
     (switch-to-buffer folder-buffer)
-
+    (animate-string "Welcome to mail-bug 0.1b" 2 2)
     (if (not imapua-mode-initialized-p)
         (progn
           (imapua-mode)
@@ -621,7 +621,6 @@ This means you can have multiple imapua sessions in one emacs session."
     (imapua-redraw))
   ;; t
   )
-
 
 (defun imapua-check-mail ()
   "Set this to be the 'display-time-mail-function'.
@@ -639,13 +638,23 @@ If you want to know about updates this is the function to use."
                  (if imapua-connection
                      (setq imapua-connection nil)))))))))
 
-
 (defun imapua-click ()
   "Click!"
   (interactive)
-  (mouse-set-point)
+  (kbd "<mouse-1>")
+  ;; (sleep-for 1)
+
+  (message "point is %s" (point))
   (beginning-of-line)
-  (imapua-open))
+  (message "point is now %s" (point))
+;; (goto-line (cdr (sixth (cdr (posn-at-point)))))
+  ;; (deactivate-mark)
+  ;; (line)
+  ;; (sleep-for 1)
+  ;; ;; (mouse-drag-region (point))
+  ;; ;; (beginning-of-line)
+  (imapua-open)
+  )
 
 (defun imapua-mode ()
   "A mail user agent based on IMAP folders.
@@ -658,7 +667,7 @@ The keys defined are:
   (kill-all-local-variables)
   (unless imapua-mode-map
     (setq imapua-mode-map (make-sparse-keymap))
-		(define-key imapua-mode-map [down-mouse-1] 'imapua-click)
+		;; (define-key imapua-mode-map [down-mouse-1] 'imapua-click)
     (define-key imapua-mode-map "\r" 'imapua-open)
     (define-key imapua-mode-map "+" 'imapua-create-folder)
     (define-key imapua-mode-map "/" 'isearch-forward-regexp)
@@ -1421,43 +1430,30 @@ This ensures that deleted messages are removed from the obarray."
 
 ;;;; The display logic.
 
-(defface imapua-px-face-one
-  `((((type tty) (class color))
-     (:background "gray10" :foreground "white"))
-    (((type tty) (class mono))
-     (:inverse-video t))
-    (((class color) (background dark))
-     (:background "gray10"))
+(defface imapua-px-face-folder
+  `((((class color) (background dark))
+     (:weight bold :foreground "yellow"))
     (((class color) (background light))
-     (:background "gray10"))
-    (t (:background "gray")))
-  "Basic face for unread mails."
+     (:weight bold :foreground "yellow"))
+    (((type tty) (class color))
+     (:weight bold))
+    (((type tty) (class mono))
+     (:weight bold))
+    (t (:weight bold)))
+  "Basic face for IMAP directories."
   :group 'basic-faces)
 
-(defface imapua-px-face-two
-  `((((type tty) (class color))
-     (:background "gray20" :foreground "white"))
-    (((type tty) (class mono))
-     (:inverse-video t))
-    (((class color) (background dark))
-     (:background "gray20"))
+(defface imapua-px-face-unread
+  `((((class color) (background dark))
+     (:weight bold :foreground "yellow"))
     (((class color) (background light))
-     (:background "gray20"))
-    (t (:background "gray")))
-  "Basic face for unread mails."
-  :group 'basic-faces)
-
-(defface imapua-px-face-tre
-  `((((type tty) (class color))
-     (:background "gray30" :foreground "white"))
+     (:weight bold :foreground "yellow"))
+    (((type tty) (class color))
+     (:weight bold))
     (((type tty) (class mono))
-     (:inverse-video t))
-    (((class color) (background dark))
-     (:background "gray30"))
-    (((class color) (background light))
-     (:background "gray30"))
-    (t (:background "gray")))
-  "Basic face for unread mails."
+     (:weight bold))
+    (t (:weight bold)))
+  "Basic face for IMAP directories."
   :group 'basic-faces)
 
 ;; (insert (propertize "Gah! I'm green!" 'face 'imapua-px-unread-face))
@@ -1489,13 +1485,13 @@ pX: I think we gonna use this for the collecting of unread/seen mails"
 
 				 ;; pX:
 				 ;; (insert-with-prop folder-name `(face (foreground-color . ,imapua-folder-color)))
-				 (insert (propertize folder-name 'face 'imapua-px-face-one))
+				 (insert (propertize folder-name 'face 'imapua-px-face-folder))
 
 				 (if (imapua-has-recent-p folder-name)
 
 						 ;; pX:
 						 ;; (insert-with-prop " * " `(face (foreground-color . ,imapua-unseen-message-color)))
-						 (insert (propertize " * " 'face 'imapua-px-face-two))
+						 (insert (propertize " * " 'face 'imapua-px-face-unread))
 					 )
 				 (insert " \n")
 				 (if (imap-mailbox-get 'OPENED folder-name imapua-connection)
