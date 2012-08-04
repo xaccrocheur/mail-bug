@@ -1,3 +1,42 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(progn (beginning-of-buffer)
+       (insert-image (imapua-px-create-image "~/.emacs.d/lisp/mail-bug/lego-bug.png"))
+       (animate-string (concat (string-repeat "-" (- (third (window-edges)) 35)) "> Welcome to mail-bug 0.1b ->") 2 0)
+       )
+
+
 (defconst smiley-data '(#x00 #x00 #x24 #x00 #x00 #x24 #x18 #x00))
 
 (defun smiley-from-xbm-data ()
@@ -31,4 +70,3 @@
 
 ;; this too
 (insert-image (create-image "/usr/share/apps/akonadi/contact/pics/world.jpg" 'jpeg nil :heuristic-mask t))
-

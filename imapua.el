@@ -581,6 +581,17 @@ An malist is a Multi Association LIST: a list of alists."
            (throw 'found alist))) malist))))
     found))
 
+;; pX:
+(defun imapua-px-create-image (image)
+  "Insert an image from a file"
+  (create-image image nil nil))
+
+(defun string-repeat (str n)
+"Repeat string STR N times."
+  (let ((retval ""))
+    (dotimes (i n)
+      (setq retval (concat retval str)))
+    retval))
 
 ;; The intializing proc.
 ;;;###autoload
@@ -605,7 +616,7 @@ This means you can have multiple imapua sessions in one emacs session."
                                 (if host-name
                                     (concat host-name ":" (number-to-string tcp-port)))))))
     (switch-to-buffer folder-buffer)
-    (animate-string "---------> Welcome to mail-bug 0.1b" 2 50)
+    (animate-string (concat (string-repeat "-" (- (third (window-edges)) 33)) "> Welcome to mail-bug 0.1b") 5 0)
     (if (not imapua-mode-initialized-p)
         (progn
           (imapua-mode)
@@ -1167,10 +1178,6 @@ buffer. Programs can pass the imap-con in directly though."
           ;; Else we run it passing it the buffer
           (funcall mailcap-viewer buffer))
 
-			;; pX:
-			(defun imapua-px-create-image (image)
-				"Insert an image from a file"
-				(create-image image nil nil))
 
       ;; We need a unix process
       (progn
