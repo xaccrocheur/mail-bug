@@ -15,6 +15,7 @@
   (animate-string (concat (string-repeat "-" (- (third (window-edges)) 35)) "> Welcome to mail-bug 0.1b ->") 2 0)
   )
 
+(insert-image (imapua-px-create-image "~/.emacs.d/lisp/mail-bug/lego-bug.xpm"))
 
 (defconst smiley-data '(#x00 #x00 #x24 #x00 #x00 #x24 #x18 #x00))
 
