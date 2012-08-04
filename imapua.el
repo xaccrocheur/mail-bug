@@ -616,7 +616,9 @@ This means you can have multiple imapua sessions in one emacs session."
                                 (if host-name
                                     (concat host-name ":" (number-to-string tcp-port)))))))
     (switch-to-buffer folder-buffer)
-    (animate-string (concat (string-repeat "-" (- (third (window-edges)) 33)) "> Welcome to mail-bug 0.1b") 5 0)
+
+    (insert-image (imapua-px-create-image "~/.emacs.d/lisp/mail-bug/lego-bug.png"))
+    (animate-string (concat (string-repeat "-" (- (third (window-edges)) 35)) "> Welcome to mail-bug 0.1b ->") 2 0)
     (if (not imapua-mode-initialized-p)
         (progn
           (imapua-mode)
