@@ -85,7 +85,8 @@ all parts."
 (add-hook 'imapua-mode-hook (lambda () (hl-line-mode t)))
 
 (defvar entities-french
-  '(
+  '(("=\n" "")
+		("--=20\n" "")
 		("=C3=A9" "é")
     ("=C3=89" "É")
     ("=C3=A8" "è")
@@ -103,12 +104,8 @@ all parts."
     ("=C3=AB" "ë")
     ("=C3=8B" "Ë")
     ("=C3=BC" "ü")
-    ("=C3=9C" "Ü")
-		("=20" "")
-		("=3D\"" "=\"")
-		("\^M" " plop ")
-    )
-  "The list of entities")
+    ("=C3=9C" "Ü"))
+  "The list of entities.")
 
 (defun imapua-px-decode-string (string entities)
   "decode a string against a list of entities / chars pairs."
@@ -123,7 +120,8 @@ all parts."
     )
   (format "%s" string))
 
-;; (imapua-px-decode-string "l'int=C3=A9rimaire est b=C3=A8te, c'est un cr=C3=A9tin" entities-french)
+(imapua-px-decode-string "Tiens, encore du HTML, batard rouge, et un charact=C3=A8re accentu=C3=A9, P=
+=C3=80F!" entities-french)
 ;; (imapua-px-decode-string "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme" entities-french)
 
 
@@ -190,43 +188,43 @@ all parts."
   :group 'applications)
 
 (defcustom imapua-modal 't
-  "* should the message open in a dedicated windowpane?"
+  "Should the message open in a dedicated windowpane?"
   :type '(boolean)
   :group 'imap-mail-user-agent)
 
 (defcustom imapua-inline-images 't
-  "* should the images be displayed directly in the message windowpane?"
+  "Should the images be displayed directly in the message windowpane?"
   :type '(boolean)
   :group 'imap-mail-user-agent)
 
 (defcustom imapua-short-headers 't
-  "* should the headers show only the standard values?"
+  "Should the headers show only the standard values?"
   :type '(boolean)
   :group 'imap-mail-user-agent)
 
 ;; Customization for the agent's behaviour
 (defcustom imapua-host-name "imap.gmx.com"
-  "* the name of server to connect to"
+  "The name of server to connect to"
   :type '(string)
   :group 'imap-mail-user-agent)
 
 (defcustom imapua-bcc-to-sender 't
-  "* should the sender be sent copies of all mails?"
+  "Should the sender be sent copies of all mails?"
   :type '(boolean)
   :group 'imap-mail-user-agent)
 
 (defcustom imapua-initial-folder-name ""
-  "* the name to popup when selecting a target folder for moves."
+  "The name to popup when selecting a target folder for moves."
   :type '(string)
   :group 'imap-mail-user-agent)
 
 (defcustom imapua-trash-folder-name "Trash"
-  "* the folder name of the folder to save deleted emails in."
+  "The folder name of the folder to save deleted emails in."
   :type '(string)
   :group 'imap-mail-user-agent)
 
 (defcustom imapua-spam-folder-name "Spam-today"
-  "* the folder name of the folder to save spam messages in."
+  "The folder name of the folder to save spam messages in."
   :type '(string)
   :group 'imap-mail-user-agent)
 
@@ -607,7 +605,7 @@ This means you can have multiple imapua sessions in one emacs session."
                                 (if host-name
                                     (concat host-name ":" (number-to-string tcp-port)))))))
     (switch-to-buffer folder-buffer)
-    (animate-string "Welcome to mail-bug 0.1b" 2 2)
+    (animate-string "---------> Welcome to mail-bug 0.1b" 2 50)
     (if (not imapua-mode-initialized-p)
         (progn
           (imapua-mode)
@@ -739,6 +737,7 @@ The keys defined are:
 
 ;; pX:
 (define-key imapua-message-mode-map "q" 'imapua-kill-buffer)
+(define-key imapua-message-mode-map "h" 'imapua-toggle-headers)
 
 
 ;; Functions for opening messages and parts (and folders).
@@ -862,7 +861,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
         (setq imapua-message-text-end-of-headers (point))
 
         (put 'imapua-message-text-end-of-headers 'permanent-local 't)
-        (insert "\n--text follows this line--\n\n")
+        (insert "---------------------------------------------\n")
         ))
 
     ;; (with-current-buffer buf
@@ -885,8 +884,10 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 
 
       ;; pX:
-      ;; (if imapua-short-headers
-      ;;    (imapua-toggle-headers))
+      (if imapua-short-headers
+          (progn
+            (setq hide-region-overlays ())
+            (imapua-toggle-headers)))
 
       (set-buffer-modified-p nil)
       ;; (goto-char imapua-message-text-end-of-headers)
@@ -976,7 +977,6 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
       ;; (insert
       ;;  (imapua-px-decode-string body entities-french))
 
-			(insert "\n---Decoded--\n")
       (insert
        (imapua-px-decode-string
         (imapua-decode-string
@@ -1000,7 +1000,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 			;; 	 (charset charset)
 			;; 	 ('t 'emacs-mule)))
 
-			(insert "\n---body fini--\n")
+			(insert "\n--end body--\n")
 
       )))
 
@@ -1600,13 +1600,18 @@ msg is a dotted pair such that:
   (if (car hide-region-overlays)
       (progn
         (message "shown")
-        (imapua-show-headers))
+        ;; (toggle-read-only)
+        (imapua-show-headers)
+        (beginning-of-buffer)
+        (setq hide-region-overlays ())
+        ;; (setq buffer-read-only 't)
+        ;; (set-buffer-modified-p nil)
+        )
     (progn
       (message "hidden")
       (beginning-of-buffer)
       (message "point is %s" (point))
       (search-forward-regexp "Subject")
-      ;; (toggle-read-only)
       (end-of-line)
       (setq buffer-read-only nil)
       (next-line)
@@ -1616,11 +1621,9 @@ msg is a dotted pair such that:
       (imapua-hide-headers)
       (deactivate-mark)
       ;; (toggle-read-only)
-      ;; (setq buffer-read-only 't)
-      ;; (set-buffer-modified-p nil)
       )))
 
-(defvar hide-region-before-string "[headers"
+(defvar hide-region-before-string "[(h)eaders"
   "String to mark the beginning of an invisible region. This string is
 not really placed in the text, it is just shown in the overlay")
 
