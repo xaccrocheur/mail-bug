@@ -384,6 +384,19 @@ all parts."
   "Basic face for deleted mails."
   :group 'basic-faces)
 
+(defface imapua-px-face-marked
+  `((((class color) (background dark))
+     (:weight bold :foreground "salmon"))
+    (((class color) (background light))
+     (:weight bold :foreground "salmon"))
+    (((type tty) (class color))
+     (:foreground "salmon"))
+    (((type tty) (class mono))
+     (:foreground "salmon"))
+    (t (:foreground "salmon")))
+  "Basic face for deleted mails."
+  :group 'basic-faces)
+
 
 ;; This is a function pinched from gnus-sum
 (defun imapua-trim (str)
@@ -1344,7 +1357,7 @@ is set to true."
                    (point-at-bol)
                    (point-at-eol)
                    `(marked t
-                            face (foreground-color . ,imapua-marked-message-color))))))))
+                            face ,imapua-px-face-marked)))))))
 
 (defun imapua-beginning-of-folder (folder-name)
   "Find the folder and move point to the start of it"
@@ -1619,13 +1632,21 @@ msg is a dotted pair such that:
 						(delete-char 1)))
 
       ;; Put in the new line.
+      ;; (insert
+      ;;  (propertize
+      ;;   (concat
+      ;;    "  " (imapua-field-format 20 date)
+      ;;    "  " (imapua-field-format 30 from-addr)
+      ;;    "  " subject "\n")
+      ;;   'face message-face))
+
       (insert
-       (propertize
-        (concat
-         "  " (imapua-field-format 20 date)
-         "  " (imapua-field-format 30 from-addr)
-         "  " subject "\n")
-        'face message-face))
+       "  " (imapua-field-format 20 date)
+       "  " (imapua-field-format 30 from-addr)
+       "  " subject "\n")
+      (add-text-properties line-start (point)
+													 `(UID ,uid FOLDER ,folder-name
+																 face ,message-face))
 
       ;; (insert
       ;;  "  " (imapua-field-format 20 date)
