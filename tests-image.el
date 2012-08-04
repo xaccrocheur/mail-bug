@@ -1,18 +1,13 @@
 
 
-------------------------------------------------------------------------------------------------------> Welcome to mail-bug 0.1b ->
-
-
-
-
-
+----------------------------------------------------------------------------> mail-bug 0.1b -->
 
 
 (progn
   (hl-line-mode)
   (beginning-of-buffer)
-  (insert-image (imapua-px-create-image "~/.emacs.d/lisp/mail-bug/lego-bug.png"))
-  (animate-string (concat (string-repeat "-" (- (third (window-edges)) 35)) "> Welcome to mail-bug 0.1b ->") 2 0)
+  (insert-image (create-image "~/.emacs.d/lisp/mail-bug/lego-bug.png"))
+  (animate-string (concat (string-repeat "-" (- (third (window-edges)) 25)) "> mail-bug 0.1b -->") 2 0)
   )
 
 (insert-image (imapua-px-create-image "~/.emacs.d/lisp/mail-bug/lego-bug.xpm"))

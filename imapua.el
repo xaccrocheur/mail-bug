@@ -582,10 +582,6 @@ An malist is a Multi Association LIST: a list of alists."
     found))
 
 ;; pX:
-(defun imapua-px-create-image (image)
-  "Insert an image from a file"
-  (create-image image nil nil))
-
 (defun string-repeat (str n)
 "Repeat string STR N times."
   (let ((retval ""))
@@ -617,8 +613,8 @@ This means you can have multiple imapua sessions in one emacs session."
                                     (concat host-name ":" (number-to-string tcp-port)))))))
     (switch-to-buffer folder-buffer)
 
-    (insert-image (imapua-px-create-image "~/.emacs.d/lisp/mail-bug/lego-bug.png"))
-    (animate-string (concat (string-repeat "-" (- (third (window-edges)) 35)) "> Welcome to mail-bug 0.1b ->") 2 0)
+    (insert-image (create-image "~/.emacs.d/lisp/mail-bug/lego-bug.png"))
+    (animate-string (concat (string-repeat "-" (- (third (window-edges)) 25)) "> mail-bug 0.1b -->") 2 0)
     (if (not imapua-mode-initialized-p)
         (progn
           (imapua-mode)
@@ -1198,7 +1194,7 @@ buffer. Programs can pass the imap-con in directly though."
 							(switch-to-buffer px-calling-buffer)
 							(setq inhibit-read-only 't)
 							(insert "\n")
-							(insert-image (imapua-px-create-image fname))
+							(insert-image (create-image fname))
 							(message "buffer is %s" (current-buffer)))
 					(let* ((proc-buf (generate-new-buffer "*imapua-attachment*"))
 								 (proc (apply 'start-process-shell-command
