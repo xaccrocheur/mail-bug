@@ -331,6 +331,60 @@ all parts."
   "the buffer being used.")
 
 
+;; Faces
+(defface imapua-px-face-folder
+  `((((class color) (background dark))
+     (:weight bold))
+    (((class color) (background light))
+     (:weight bold))
+    (((type tty) (class color))
+     (:weight bold))
+    (((type tty) (class mono))
+     (:weight bold))
+    (t (:weight bold)))
+  "Basic face for IMAP directories."
+  :group 'basic-faces)
+
+(defface imapua-px-face-message
+  `((((class color) (background dark))
+     (:foreground "yellow"))
+    (((class color) (background light))
+     (:foreground "yellow"))
+    (((type tty) (class color))
+     (:foreground "yellow"))
+    (((type tty) (class mono))
+     (:foreground "yellow"))
+    (t (:foreground "yellow")))
+  "Basic face."
+  :group 'basic-faces)
+
+(defface imapua-px-face-unread
+  `((((class color) (background dark))
+     (:weight bold))
+    (((class color) (background light))
+     (:weight bold))
+    (((type tty) (class color))
+     (:weight bold))
+    (((type tty) (class mono))
+     (:weight bold))
+    (t (:weight bold)))
+  "Basic face for unread mails."
+  :group 'basic-faces)
+
+(defface imapua-px-face-deleted
+  `((((class color) (background dark))
+     (:weight bold :foreground "red"))
+    (((class color) (background light))
+     (:weight bold :foreground "red"))
+    (((type tty) (class color))
+     (:foreground "red"))
+    (((type tty) (class mono))
+     (:foreground "red"))
+    (t (:foreground "red")))
+  "Basic face for deleted mails."
+  :group 'basic-faces)
+
+
 ;; This is a function pinched from gnus-sum
 (defun imapua-trim (str)
   "Remove excessive whitespace from STR."
@@ -1286,11 +1340,11 @@ is set to true."
     (while (re-search-forward regex nil 't)
       (progn
                 (let ((inhibit-read-only 't))
-                    (add-text-properties
-                      (point-at-bol)
-                      (point-at-eol)
-                      `(marked t
-                                        face (foreground-color . ,imapua-marked-message-color))))))))
+                  (add-text-properties
+                   (point-at-bol)
+                   (point-at-eol)
+                   `(marked t
+                            face (foreground-color . ,imapua-marked-message-color))))))))
 
 (defun imapua-beginning-of-folder (folder-name)
   "Find the folder and move point to the start of it"
@@ -1435,32 +1489,6 @@ This ensures that deleted messages are removed from the obarray."
 
 ;;;; The display logic.
 
-(defface imapua-px-face-folder
-  `((((class color) (background dark))
-     (:weight bold :foreground "yellow"))
-    (((class color) (background light))
-     (:weight bold :foreground "yellow"))
-    (((type tty) (class color))
-     (:weight bold))
-    (((type tty) (class mono))
-     (:weight bold))
-    (t (:weight bold)))
-  "Basic face for IMAP directories."
-  :group 'basic-faces)
-
-(defface imapua-px-face-unread
-  `((((class color) (background dark))
-     (:weight bold :foreground "yellow"))
-    (((class color) (background light))
-     (:weight bold :foreground "yellow"))
-    (((type tty) (class color))
-     (:weight bold))
-    (((type tty) (class mono))
-     (:weight bold))
-    (t (:weight bold)))
-  "Basic face for IMAP directories."
-  :group 'basic-faces)
-
 ;; (insert (propertize "Gah! I'm green!" 'face 'imapua-px-unread-face))
 
 ;; (insert (propertize "Gah! I'm green!" 'face '(:foreground "#00ff00" :background "#005000")))
@@ -1501,6 +1529,7 @@ pX: I think we gonna use this for the collecting of unread/seen mails"
 				 (insert " \n")
 				 (if (imap-mailbox-get 'OPENED folder-name imapua-connection)
 						 (let* ((selection
+
 										 ;; Force the re-selection of the folder before local vars
 										 (progn
 											 (imap-mailbox-unselect imapua-connection)
@@ -1508,11 +1537,13 @@ pX: I think we gonna use this for the collecting of unread/seen mails"
 										(existing (imap-mailbox-get 'exists folder-name imapua-connection))
 										(message-range (concat "1:" (number-to-string existing))))
 							 (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't imapua-connection)
+
 							 ;; Map the message redraw over each message in the folder.
 							 (mapc
 								(lambda (msg)
 									(let ((msg-redraw-func (imapua-get-msg-redraw-func folder-name)))
 										(funcall msg-redraw-func display-buffer folder-name msg)))
+
 								;; The message list is sorted before being output
 								(sort
 								 (imap-message-map
@@ -1560,29 +1591,50 @@ msg is a dotted pair such that:
 					 (subject
 						(imapua-field-format 1 (imap-message-envelope-subject uid imapua-connection) 't))
 					 (line-start (point))
-					 (color (cond
-									 ((imapua-deletedp uid) imapua-deleted-message-color)
-									 ((not (imapua-seenp uid)) imapua-unseen-message-color)
 
-									 ;; pX:
-									 ;; (t 'black)
-									 (t imapua-px-message-color)
+					 (color
+            (cond
+             ((imapua-deletedp uid) imapua-deleted-message-color)
+             ((not (imapua-seenp uid)) imapua-unseen-message-color)
+             ;; pX:
+             ;; (t 'black)
+             (t imapua-px-message-color)
+             ))
 
-									 )))
+					 (message-face
+            (cond
+             ((imapua-deletedp uid) 'imapua-px-face-deleted)
+             ((not (imapua-seenp uid)) 'imapua-px-face-unread)
+
+             ;; pX:
+             ;; (t 'black)
+             (t 'imapua-px-face-message)
+             ))
+           )
       (beginning-of-line)
       (if (> (- (line-end-position) (point)) 0)
 					(progn
 						;; Ensure the current line is deleted
 						(delete-region (line-beginning-position) (line-end-position))
 						(delete-char 1)))
+
       ;; Put in the new line.
       (insert
-       "  " (imapua-field-format 20 date)
-       "  " (imapua-field-format 30 from-addr)
-       "  " subject "\n")
-      (add-text-properties line-start (point)
-													 `(UID ,uid FOLDER ,folder-name
-																 face (foreground-color . ,color))))))
+       (propertize
+        (concat
+         "  " (imapua-field-format 20 date)
+         "  " (imapua-field-format 30 from-addr)
+         "  " subject "\n")
+        'face message-face))
+
+      ;; (insert
+      ;;  "  " (imapua-field-format 20 date)
+      ;;  "  " (imapua-field-format 30 from-addr)
+      ;;  "  " subject "\n")
+      ;; (add-text-properties line-start (point)
+			;; 										 `(UID ,uid FOLDER ,folder-name
+			;; 													 face (foreground-color . ,color)))
+      )))
 
 ;; Auto-BCC
 (defadvice message-reply (after imapua-message-reply-yank-original)
