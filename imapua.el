@@ -90,6 +90,8 @@ all parts."
 (defvar entities-french
   '(("=\n" "")
 		("--=20\n" "")
+		("=E9" "é")
+    ("=EA" "ê")
 		("=C3=A9" "é")
     ("=C3=89" "É")
     ("=C3=A8" "è")
@@ -900,7 +902,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
         (setq imapua-message-text-end-of-headers (point))
 
         (put 'imapua-message-text-end-of-headers 'permanent-local 't)
-        (insert "---------------------------------------------\n")
+        (insert "---------------------------------------------\n\n")
         ))
 
     ;; (with-current-buffer buf
@@ -931,7 +933,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
       (set-buffer-modified-p nil)
       ;; (goto-char imapua-message-text-end-of-headers)
       (imapua-message-mode)
-
+      (beginning-of-buffer)
       ;; (if imapua-init
       ;;        (progn
       ;;            (enlarge-window 10)
@@ -1537,12 +1539,13 @@ pX: I think we gonna use this for the collecting of unread/seen mails"
      imapua-folder-list)
     (goto-char stored-pos)
     (toggle-truncate-lines 1)
+
+    ;; pX: Get to last mail
     (search-forward-regexp "^$")
     (previous-line)))
 
 (defun imapua-get-msg-redraw-func (folder-name)
   'imapua-msg-redraw)
-
 
 (defun imapua-msg-redraw (display-buffer folder-name msg)
   "redraw a single message line.
