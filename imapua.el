@@ -230,52 +230,75 @@ all parts."
 
 
 ;; Customization for colours.
-(defgroup imap-mail-user-agent-colors nil
-  "colors for the IMAP user agent."
+(defgroup imap-mail-user-agent-faces nil
+  "Faces for the IMAP user agent."
   :group 'imap-mail-user-agent)
 
+;; Faces
+(defface imapua-px-face-folder
+  `((((class color) (background dark))
+     (:weight bold))
+    (((class color) (background light))
+     (:weight bold))
+    (((type tty) (class color))
+     (:weight bold))
+    (((type tty) (class mono))
+     (:weight bold))
+    (t (:weight bold)))
+  "Basic face for IMAP directories."
+  :group 'imap-mail-user-agent-faces)
 
-;; (defface imapua-folder-color
-;;   '((t :inherits "default"
-;;              :weight 'ultra-bold))
-;;   "Face used for topics."
-;;   :group 'imap-mail-user-agent-colors)
+(defface imapua-px-face-message
+  `((((class color) (background dark))
+     (:foreground "yellow"))
+    (((class color) (background light))
+     (:foreground "yellow"))
+    (((type tty) (class color))
+     (:foreground "yellow"))
+    (((type tty) (class mono))
+     (:foreground "yellow"))
+    (t (:foreground "yellow")))
+  "Basic face."
+  :group 'imap-mail-user-agent-faces)
 
-(defcustom imapua-folder-color "#eeeeec"
-  "* color for folders"
-  :type '(string)
-  :group 'imap-mail-user-agent-colors)
+(defface imapua-px-face-unread
+  `((((class color) (background dark))
+     (:weight bold))
+    (((class color) (background light))
+     (:weight bold))
+    (((type tty) (class color))
+     (:weight bold))
+    (((type tty) (class mono))
+     (:weight bold))
+    (t (:weight bold)))
+  "Basic face for unread mails."
+  :group 'imap-mail-user-agent-faces)
 
-(defcustom imapua-unseen-message-color "#00aaff"
-  "* color for unread messages"
-  :type '(string)
-  :group 'imap-mail-user-agent-colors)
+(defface imapua-px-face-deleted
+  `((((class color) (background dark))
+     (:weight bold :foreground "red"))
+    (((class color) (background light))
+     (:weight bold :foreground "red"))
+    (((type tty) (class color))
+     (:foreground "red"))
+    (((type tty) (class mono))
+     (:foreground "red"))
+    (t (:foreground "red")))
+  "Basic face for deleted mails."
+  :group 'imap-mail-user-agent-faces)
 
-(defcustom imapua-read-message-color "#000000"
-  "* color for read messages"
-  :type '(string)
-  :group 'imap-mail-user-agent-colors)
-
-(defcustom imapua-marked-message-color "#ffaa00"
-  "* color for marked messages"
-  :type '(string)
-  :group 'imap-mail-user-agent-colors)
-
-(defcustom imapua-deleted-message-color "#ff0000"
-  "* color for deleted messages"
-  :type '(string)
-  :group 'imap-mail-user-agent-colors)
-
-(defcustom imapua-message-header-color "#00ff00"
-  "* color for header in message buffer"
-  :type '(string)
-  :group 'imap-mail-user-agent-colors)
-
-
-(defcustom imapua-px-message-color "#ffffff"
-  "* color for tests"
-  :type '(string)
-  :group 'imap-mail-user-agent-colors)
+(defface imapua-px-face-marked
+  `((((class color) (background dark))
+     (:weight bold :foreground "salmon"))
+    (((class color) (background light))
+     (:weight bold :foreground "salmon"))
+    (((type tty) (class color))
+     (:foreground "salmon"))
+    (((type tty) (class mono))
+     (:foreground "salmon"))
+    (t (:foreground "salmon")))
+  "Basic face for deleted mails."
+  :group 'imap-mail-user-agent-faces)
 
 
 ;; The buffer used for the IMAP process
@@ -329,74 +352,6 @@ all parts."
 ;; This is useful for debugging - but might not be useful for prod.
 (defvar imapua-buffer nil
   "the buffer being used.")
-
-
-;; Faces
-(defface imapua-px-face-folder
-  `((((class color) (background dark))
-     (:weight bold))
-    (((class color) (background light))
-     (:weight bold))
-    (((type tty) (class color))
-     (:weight bold))
-    (((type tty) (class mono))
-     (:weight bold))
-    (t (:weight bold)))
-  "Basic face for IMAP directories."
-  :group 'basic-faces)
-
-(defface imapua-px-face-message
-  `((((class color) (background dark))
-     (:foreground "yellow"))
-    (((class color) (background light))
-     (:foreground "yellow"))
-    (((type tty) (class color))
-     (:foreground "yellow"))
-    (((type tty) (class mono))
-     (:foreground "yellow"))
-    (t (:foreground "yellow")))
-  "Basic face."
-  :group 'basic-faces)
-
-(defface imapua-px-face-unread
-  `((((class color) (background dark))
-     (:weight bold))
-    (((class color) (background light))
-     (:weight bold))
-    (((type tty) (class color))
-     (:weight bold))
-    (((type tty) (class mono))
-     (:weight bold))
-    (t (:weight bold)))
-  "Basic face for unread mails."
-  :group 'basic-faces)
-
-(defface imapua-px-face-deleted
-  `((((class color) (background dark))
-     (:weight bold :foreground "red"))
-    (((class color) (background light))
-     (:weight bold :foreground "red"))
-    (((type tty) (class color))
-     (:foreground "red"))
-    (((type tty) (class mono))
-     (:foreground "red"))
-    (t (:foreground "red")))
-  "Basic face for deleted mails."
-  :group 'basic-faces)
-
-(defface imapua-px-face-marked
-  `((((class color) (background dark))
-     (:weight bold :foreground "salmon"))
-    (((class color) (background light))
-     (:weight bold :foreground "salmon"))
-    (((type tty) (class color))
-     (:foreground "salmon"))
-    (((type tty) (class mono))
-     (:foreground "salmon"))
-    (t (:foreground "salmon")))
-  "Basic face for deleted mails."
-  :group 'basic-faces)
-
 
 ;; This is a function pinched from gnus-sum
 (defun imapua-trim (str)
