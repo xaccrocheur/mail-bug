@@ -6,6 +6,9 @@
 ;; Keywords: mail
 ;; Version 0.5a
 
+;; Version 0.1b
+;; Modified by xaccrocheur
+
 ;; This file is NOT part of GNU Emacs.
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -995,7 +998,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 
       ;; (imapua-px-decode-string "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme" entities-french)
 
-			(message "transfer-encoding: %s" transfer-encoding)
+			(message "transfer-encoding: %s \nBody:" transfer-encoding body)
 
 			;; (insert "\n---Undecoded--\n")
       ;; (insert
@@ -1601,9 +1604,9 @@ msg is a dotted pair such that:
       ;;   'face message-face))
 
       (insert
-       "  " (imapua-field-format 20 date)
-       "  " (imapua-field-format 30 from-addr)
-       "  " subject "\n")
+       " " (imapua-field-format 20 date)
+       " " (imapua-field-format 30 from-addr)
+       " " subject "\n")
       (add-text-properties line-start (point)
 													 `(UID ,uid FOLDER ,folder-name
 																 face ,message-face))

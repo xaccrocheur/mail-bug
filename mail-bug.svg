@@ -10,8 +10,8 @@
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    inkscape:version="0.48.2 r9819"
    sodipodi:docname="lego-bug-outlined-inkscape.svg"
-   width="800"
-   height="800"
+   width="600"
+   height="600"
    id="svg6020"
    version="1.1"
 >
@@ -19,7 +19,7 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="scale(1.4) translate(-11,-50)"
+     transform="scale(1.1) translate(-11,-50)"
 >
     <path
        style="fill:none;stroke:#ffffff;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none"
