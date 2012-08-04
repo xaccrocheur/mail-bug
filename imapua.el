@@ -638,8 +638,10 @@ This means you can have multiple imapua sessions in one emacs session."
                                 (if host-name
                                     (concat host-name ":" (number-to-string tcp-port)))))))
     (switch-to-buffer folder-buffer)
+    ;; (newline)
     (insert-image (create-image "~/.emacs.d/lisp/mail-bug/mail-bug.svg"))
     (animate-string (concat (string-repeat "-" (- (third (window-edges)) 25)) "> mail-bug 0.1b -->") 2 0)
+    ;; (beginning-of-buffer)
     (if (not imapua-mode-initialized-p)
         (progn
           (imapua-mode)
