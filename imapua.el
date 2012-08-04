@@ -229,7 +229,7 @@ all parts."
   :group 'imap-mail-user-agent)
 
 
-;; Customization for colours.
+;; Customization for Faces.
 (defgroup imap-mail-user-agent-faces nil
   "Faces for the IMAP user agent."
   :group 'imap-mail-user-agent)
@@ -248,16 +248,20 @@ all parts."
   "Basic face for IMAP directories."
   :group 'imap-mail-user-agent-faces)
 
+(defface hide-region-after-string-face
+  '((t (:inherit region)))
+  "Face for the after string.")
+
 (defface imapua-px-face-message
   `((((class color) (background dark))
-     (:foreground "yellow"))
+     (:inherits default))
     (((class color) (background light))
-     (:foreground "yellow"))
+     (:inherits default))
     (((type tty) (class color))
-     (:foreground "yellow"))
+     (:inherits default))
     (((type tty) (class mono))
-     (:foreground "yellow"))
-    (t (:foreground "yellow")))
+     (:inherits default))
+    (t (:inherits default)))
   "Basic face."
   :group 'imap-mail-user-agent-faces)
 
@@ -276,27 +280,27 @@ all parts."
 
 (defface imapua-px-face-deleted
   `((((class color) (background dark))
-     (:weight bold :foreground "red"))
+     (:weight bold :background "DarkRed"))
     (((class color) (background light))
-     (:weight bold :foreground "red"))
+     (:weight bold :foreground "DarkRed"))
     (((type tty) (class color))
-     (:foreground "red"))
+     (:weight bold :foreground "DarkRed"))
     (((type tty) (class mono))
-     (:foreground "red"))
-    (t (:foreground "red")))
+     (:weight bold :foreground "DarkRed"))
+    (t (:foreground "DarkRed")))
   "Basic face for deleted mails."
   :group 'imap-mail-user-agent-faces)
 
 (defface imapua-px-face-marked
   `((((class color) (background dark))
-     (:weight bold :foreground "salmon"))
+     (:weight bold :foreground "DarkOliveGreen"))
     (((class color) (background light))
-     (:weight bold :foreground "salmon"))
+     (:weight bold :foreground "DarkOliveGreen"))
     (((type tty) (class color))
-     (:foreground "salmon"))
+     (:weight bold :foreground "DarkOliveGreen"))
     (((type tty) (class mono))
-     (:foreground "salmon"))
-    (t (:foreground "salmon")))
+     (:weight bold :foreground "DarkOliveGreen"))
+    (t (:weight bold :foreground "DarkOliveGreen")))
   "Basic face for deleted mails."
   :group 'imap-mail-user-agent-faces)
 
@@ -634,8 +638,7 @@ This means you can have multiple imapua sessions in one emacs session."
                                 (if host-name
                                     (concat host-name ":" (number-to-string tcp-port)))))))
     (switch-to-buffer folder-buffer)
-
-    (insert-image (create-image "~/.emacs.d/lisp/mail-bug/lego-bug.png"))
+    (insert-image (create-image "~/.emacs.d/lisp/mail-bug/mail-bug.svg"))
     (animate-string (concat (string-repeat "-" (- (third (window-edges)) 25)) "> mail-bug 0.1b -->") 2 0)
     (if (not imapua-mode-initialized-p)
         (progn
@@ -1560,14 +1563,14 @@ msg is a dotted pair such that:
 						(imapua-field-format 1 (imap-message-envelope-subject uid imapua-connection) 't))
 					 (line-start (point))
 
-					 (color
-            (cond
-             ((imapua-deletedp uid) imapua-deleted-message-color)
-             ((not (imapua-seenp uid)) imapua-unseen-message-color)
-             ;; pX:
-             ;; (t 'black)
-             (t imapua-px-message-color)
-             ))
+					 ;; (color
+           ;;  (cond
+           ;;   ((imapua-deletedp uid) imapua-deleted-message-color)
+           ;;   ((not (imapua-seenp uid)) imapua-unseen-message-color)
+           ;;   ;; pX:
+           ;;   ;; (t 'black)
+           ;;   (t imapua-px-message-color)
+           ;;   ))
 
 					 (message-face
             (cond
