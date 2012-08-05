@@ -1,4 +1,4 @@
-;;; imapua.el --- a purely IMAP based email client for EMACS
+;; imapua.el --- a purely IMAP based email client for EMACS
 
 ;; Copyright (C) 2001, 2002 Tapsell-Ferrier Limited
 
@@ -1103,7 +1103,6 @@ buffer. Programs can pass the imap-con in directly though."
       ;; Do a mailcap view if we have a viewer
       (mailcap-parse-mailcaps)
       (let (
-
             (mailcap-viewer
              ;; emacs mailcap has some odd defaults; override them here
              (if (equal mimetype-str "application/octet-stream")
@@ -1177,7 +1176,7 @@ buffer. Programs can pass the imap-con in directly though."
                  (progn
                    (message "Nope, no mailcap-ext-pattern")
                    ;; (message "WTF no %s" (string-replace "%" (format-time-string "%A" (current-time)) name))
-                   (make-temp-file "imapua")
+                   (make-temp-file (concat "imapua-" name))
                    ;; (concat "." (make-temp-file "imapua") name)
                    ))))
 
