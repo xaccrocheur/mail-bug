@@ -9,7 +9,6 @@
 ;; Version 0.1b
 ;; Modified by xaccrocheur
 
-
 ;; This file is NOT part of GNU Emacs.
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -998,17 +997,17 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 
 			;; (message "transfer-encoding: %s \nBody:" transfer-encoding body)
 
-			;; (insert "\n---Undecoded--\n")
-      ;; (insert
-			;;  (imapua-decode-string
-			;; 	body
-			;; 	transfer-encoding
-			;; 	;; A nasty company in redmond make this complicated.
-			;; 	(cond
-			;; 	 ((and (equal charset "us-ascii")
-			;; 				 (equal transfer-encoding "8bit")) 'utf-8)
-			;; 	 (charset charset)
-			;; 	 ('t 'emacs-mule))))
+			(insert "\n---Undecoded--\n")
+      (insert
+			 (imapua-decode-string
+				body
+				transfer-encoding
+				;; A nasty company in redmond make this complicated.
+				(cond
+				 ((and (equal charset "us-ascii")
+							 (equal transfer-encoding "8bit")) 'utf-8)
+				 (charset charset)
+				 ('t 'emacs-mule))))
 
 			;; (insert "\n---Semi-decoded--\n")
       ;; (insert
