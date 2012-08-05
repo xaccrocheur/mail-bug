@@ -90,6 +90,8 @@ all parts."
 (defvar entities-french
   '(("=\n" "")
 		("--=20\n" "")
+		("=C2=AB" "«")
+		("=C2=BB" "»")
 		("=E9" "é")
     ("=EA" "ê")
 		("=C3=A9" "é")
@@ -100,10 +102,12 @@ all parts."
     ("=C3=87" "Ç")
     ("=C3=A0" "à")
     ("=C3=80" "À")
+    ("=C3=A2" "â")
     ("=C3=B9" "ù")
     ("=C3=99" "Ù")
     ("=C3=AA" "ê")
     ("=C3=8A" "Ê")
+    ("=C5=93" "œ")
     ("=C3=BB" "û")
     ("=C3=9B" "Û")
     ("=C3=AB" "ë")
@@ -906,18 +910,15 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
         ))
 
     (save-excursion
-      (message "in open, buffer is %s" buf)
+      ;; (message "buffer is %s" buf)
 
       ;; Now insert the first text part we have
       (when text-part
         (imapua-message-fill-text uid (if text-part text-part bs) buf))
 
+      ;; Now switch to buffer wether we're in modal mode or not
       (switch-to-buffer buf)
 
-
-      (set-buffer-modified-p nil)
-      ;; (goto-char imapua-message-text-end-of-headers)
-      (imapua-message-mode)
       ;; (beginning-of-buffer)
       ;; (if imapua-init
       ;;        (progn
@@ -930,6 +931,9 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
           (progn
             (setq hide-region-overlays ())
             (imapua-toggle-headers)))
+
+      (set-buffer-modified-p nil)
+      (imapua-message-mode)
 
       ;; (kill-paragraph 5)
       )
@@ -991,7 +995,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 
       ;; (imapua-px-decode-string "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme" entities-french)
 
-			(message "transfer-encoding: %s \nBody:" transfer-encoding body)
+			;; (message "transfer-encoding: %s \nBody:" transfer-encoding body)
 
 			;; (insert "\n---Undecoded--\n")
       ;; (insert
@@ -1242,6 +1246,7 @@ buffer. Programs can pass the imap-con in directly though."
 
 (defun imapua-decode-string (content transfer-encoding char-encoding)
   "Decode the specified content string."
+  (message "char-enc: %s transfer-enc: %s\nString: " char-encoding transfer-encoding content)
   (let* ((transfer-enc (if transfer-encoding
                            (upcase transfer-encoding)
                          'NONE))
@@ -1267,8 +1272,11 @@ buffer. Programs can pass the imap-con in directly though."
       (decode-coding-string (base64-decode-string content) char-enc))
      ;; else
      ('t
-      (decode-coding-string content char-enc)))))
-
+      ;; pX: Last resort
+      (if (string= "" char-enc)
+          (rfc2047-decode-string content)
+        (decode-coding-string content char-enc)))
+     )))
 
 ;; Other utility methods.
 
@@ -1298,7 +1306,6 @@ The mail is BCCed to the sender if the option:
 is set to true."
   (interactive)
   (message-mail))
-
 
 (defun imapua-mark-regex (regex)
   "Mark a message for some other operation"
