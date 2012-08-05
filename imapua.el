@@ -905,23 +905,24 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
         (insert "---------------------------------------------\n\n")
         ))
 
-    ;; (with-current-buffer buf
-    ;;  (setq inhibit-read-only t)
-    ;;  (goto-line 5)
-    ;;  (kill-line 25)
-    ;;  ;; (goto-line 5)
-    ;;  (put 'imapua-message-text-end-of-headers 'permanent-local 't)
-    ;;  (insert "\n--text follows this line--\n\n")
-    ;;  ;; (insert "\n snip \n")
-    ;;  )
-
-    ;; Now insert the first text part we have
-    (when text-part
-      (imapua-message-fill-text uid (if text-part text-part bs) buf))
     (save-excursion
       (message "in open, buffer is %s" buf)
 
+      ;; Now insert the first text part we have
+      (when text-part
+        (imapua-message-fill-text uid (if text-part text-part bs) buf))
+
       (switch-to-buffer buf)
+
+
+      (set-buffer-modified-p nil)
+      ;; (goto-char imapua-message-text-end-of-headers)
+      (imapua-message-mode)
+      ;; (beginning-of-buffer)
+      ;; (if imapua-init
+      ;;        (progn
+      ;;            (enlarge-window 10)
+      ;;            (setq imapua-init nil)))
 
 
       ;; pX:
@@ -929,16 +930,6 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
           (progn
             (setq hide-region-overlays ())
             (imapua-toggle-headers)))
-
-      (set-buffer-modified-p nil)
-      ;; (goto-char imapua-message-text-end-of-headers)
-      (imapua-message-mode)
-      (beginning-of-buffer)
-      ;; (if imapua-init
-      ;;        (progn
-      ;;            (enlarge-window 10)
-      ;;            (setq imapua-init nil)))
-
 
       ;; (kill-paragraph 5)
       )
