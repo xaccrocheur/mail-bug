@@ -9,7 +9,6 @@
 ;; Version 0.1b
 ;; Modified by xaccrocheur
 
-
 ;; This file is NOT part of GNU Emacs.
 
 ;; This program is free software; you can redistribute it and/or modify
