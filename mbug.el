@@ -418,11 +418,19 @@ all parts."
         (sort
          (imap-mailbox-map
           (lambda (folder-name)
-            ;; (message "folder-name: %s" folder-name)
-            folder-name)  mbug-connection) 'string<)))
+            folder-name)  mbug-connection) 'string<))
+
+  ;; pX:
+  ;; New folder list, looks like this
+  ;; (("One" . "Top/One")
+  ;;  ("INBOX" . "INBOX"))
+  (setq mbug-smart-folder-list
+        (imap-mailbox-map
+         (lambda (folder-name)
+           (cons (replace-regexp-in-string ".*/" "" folder-name) folder-name))  mbug-connection)))
+
 
 ;; Other IMAP specific utility functions.
-
 (defun mbug-field-format (width str &optional padding-only)
   "Return a string padded or truncated to fit in the field width.
 If padding-only is non-nil then truncation will not be performed."
@@ -637,7 +645,7 @@ This means you can have multiple mbug sessions in one emacs session."
 
   ;; Setup buffer.
   (let ((folder-buffer (get-buffer-create
-                        (concat "mail-folders"
+                        (concat "mail-bug"
                                 (if host-name
                                     (concat host-name ":" (number-to-string tcp-port)))))))
     (switch-to-buffer folder-buffer)
@@ -664,8 +672,8 @@ This means you can have multiple mbug sessions in one emacs session."
 If you want to know about updates this is the function to use."
   (interactive)
   (save-excursion
-    (if (get-buffer "mail-folders")
-        (with-current-buffer (get-buffer "mail-folders")
+    (if (get-buffer "mail-bug")
+        (with-current-buffer (get-buffer "mail-bug")
           (if mbug-connection
               (condition-case cause
                   (progn
@@ -1836,5 +1844,4 @@ overlay on the hide-region-overlays \"ring\""
 
 (defun makeprop ()
   (interactive)
-  (put-text-property (point) (+ 5 (point)) 'help-echo "plop"))
-
+  (put-text-property (point) (+ 1 (point)) 'help-echo "plop"))
