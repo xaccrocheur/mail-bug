@@ -55,13 +55,191 @@
 (require 'message)
 (require 'cl)
 
-(require 'nnimap)
-
-;; (require 'hide-region)
+;; (require 'nnimap)
 
 (require 'gnus)
 
 (require 'w3m nil 'noerror)
+
+
+
+;; Customization.
+
+(defcustom imapua-host-name "imap.gmx.com"
+  "The name of server to connect to"
+  :type '(string)
+  :group 'imap-mail-user-agent)
+
+;; The port for the IMAP server
+(defvar imapua-port 993
+  "the imap server port")
+
+;; The cached username
+(defvar imapua-username "philippec@gmx.com"
+  "the user's name")
+
+;; The cached password
+(defvar imapua-password nil
+  "the user's password")
+
+(defgroup imap-mail-user-agent nil
+  "an IMAP based MUA."
+  :group 'applications)
+
+(defcustom imapua-modal 't
+  "Should the message open in a dedicated windowpane?"
+  :type '(boolean)
+  :group 'imap-mail-user-agent)
+
+(defcustom imapua-inline-images 't
+  "Should the images be displayed directly in the message windowpane?"
+  :type '(boolean)
+  :group 'imap-mail-user-agent)
+
+(defcustom imapua-short-headers 't
+  "Should the headers show only the standard values?"
+  :type '(boolean)
+  :group 'imap-mail-user-agent)
+
+(defcustom imapua-bcc-to-sender 't
+  "Should the sender be sent copies of all mails?"
+  :type '(boolean)
+  :group 'imap-mail-user-agent)
+
+(defcustom imapua-initial-folder-name ""
+  "The name to popup when selecting a target folder for moves."
+  :type '(string)
+  :group 'imap-mail-user-agent)
+
+(defcustom imapua-trash-folder-name "Trash"
+  "The folder name of the folder to save deleted emails in."
+  :type '(string)
+  :group 'imap-mail-user-agent)
+
+(defcustom imapua-spam-folder-name "Spam-today"
+  "The folder name of the folder to save spam messages in."
+  :type '(string)
+  :group 'imap-mail-user-agent)
+
+
+;; Customization for Faces.
+(defgroup imap-mail-user-agent-faces nil
+  "Faces for the IMAP user agent."
+  :group 'imap-mail-user-agent)
+
+;; Faces
+(defface imapua-px-face-folder
+  `((((class color) (background dark))
+     (:weight bold))
+    (((class color) (background light))
+     (:weight bold))
+    (((type tty) (class color))
+     (:weight bold))
+    (((type tty) (class mono))
+     (:weight bold))
+    (t (:weight bold)))
+  "Basic face for IMAP directories."
+  :group 'imap-mail-user-agent-faces)
+
+(defface hide-region-after-string-face
+  '((t (:inherit region)))
+  "Face for the after string.")
+
+(defface imapua-px-face-message
+  `((((class color) (background dark))
+     (:inherits default))
+    (((class color) (background light))
+     (:inherits default))
+    (((type tty) (class color))
+     (:inherits default))
+    (((type tty) (class mono))
+     (:inherits default))
+    (t (:inherits default)))
+  "Basic face."
+  :group 'imap-mail-user-agent-faces)
+
+(defface imapua-px-face-unread
+  `((((class color) (background dark))
+     (:weight bold))
+    (((class color) (background light))
+     (:weight bold))
+    (((type tty) (class color))
+     (:weight bold))
+    (((type tty) (class mono))
+     (:weight bold))
+    (t (:weight bold)))
+  "Basic face for unread mails."
+  :group 'imap-mail-user-agent-faces)
+
+(defface imapua-px-face-deleted
+  `((((class color) (background dark))
+     (:weight bold :background "DarkRed"))
+    (((class color) (background light))
+     (:weight bold :foreground "DarkRed"))
+    (((type tty) (class color))
+     (:weight bold :foreground "DarkRed"))
+    (((type tty) (class mono))
+     (:weight bold :foreground "DarkRed"))
+    (t (:foreground "DarkRed")))
+  "Basic face for deleted mails."
+  :group 'imap-mail-user-agent-faces)
+
+(defface imapua-px-face-marked
+  `((((class color) (background dark))
+     (:weight bold :foreground "DarkOliveGreen"))
+    (((class color) (background light))
+     (:weight bold :foreground "DarkOliveGreen"))
+    (((type tty) (class color))
+     (:weight bold :foreground "DarkOliveGreen"))
+    (((type tty) (class mono))
+     (:weight bold :foreground "DarkOliveGreen"))
+    (t (:weight bold :foreground "DarkOliveGreen")))
+  "Basic face for deleted mails."
+  :group 'imap-mail-user-agent-faces)
+
+
+;; The server used for IMAP
+(defvar imapua-host nil
+  "the imap server")
+
+;; The buffer used for the IMAP process
+(defvar imapua-connection nil
+  "the imap connection is a process bound buffer")
+
+;; Is the imapua mode initialized?
+(defvar imapua-mode-initialized-p nil
+  "is the mode initialized already?")
+
+;; Hooks for the mode
+(defvar imapua-mode-hook nil
+  "the mode hooks")
+
+;; The keymap for the mode
+(defvar imapua-mode-map nil
+  "the mode map")
+
+;; The keymap for the message view mode
+(defvar imapua-message-keymap-initializedp nil
+  "is the message view mode map initialized yet?")
+
+;; Hooks for the message mode
+(defvar imapua-message-mode-hook nil
+  "the mode hooks")
+
+;; The cached list of folders
+(defvar imapua-folder-list nil
+  "the cached list of folders.")
+
+;; The history list for the message moves.
+(defvar imapua-folder-history nil
+  "the history of foldere names.")
+
+;; This is useful for debugging - but might not be useful for prod.
+(defvar imapua-buffer nil
+  "the buffer being used.")
+
+
+
 
 (setq mm-text-html-renderer 'w3m)
 (setq mm-inline-text-html-with-images t)
@@ -185,182 +363,6 @@ all parts."
     (setq imap-log (get-buffer-create "imapua-log"))))
 
 (imapua-toggle-imap-logging)
-
-;; Customization.
-
-(defgroup imap-mail-user-agent nil
-  "an IMAP based MUA."
-  :group 'applications)
-
-(defcustom imapua-modal 't
-  "Should the message open in a dedicated windowpane?"
-  :type '(boolean)
-  :group 'imap-mail-user-agent)
-
-(defcustom imapua-inline-images 't
-  "Should the images be displayed directly in the message windowpane?"
-  :type '(boolean)
-  :group 'imap-mail-user-agent)
-
-(defcustom imapua-short-headers 't
-  "Should the headers show only the standard values?"
-  :type '(boolean)
-  :group 'imap-mail-user-agent)
-
-;; Customization for the agent's behaviour
-(defcustom imapua-host-name "imap.gmx.com"
-  "The name of server to connect to"
-  :type '(string)
-  :group 'imap-mail-user-agent)
-
-(defcustom imapua-bcc-to-sender 't
-  "Should the sender be sent copies of all mails?"
-  :type '(boolean)
-  :group 'imap-mail-user-agent)
-
-(defcustom imapua-initial-folder-name ""
-  "The name to popup when selecting a target folder for moves."
-  :type '(string)
-  :group 'imap-mail-user-agent)
-
-(defcustom imapua-trash-folder-name "Trash"
-  "The folder name of the folder to save deleted emails in."
-  :type '(string)
-  :group 'imap-mail-user-agent)
-
-(defcustom imapua-spam-folder-name "Spam-today"
-  "The folder name of the folder to save spam messages in."
-  :type '(string)
-  :group 'imap-mail-user-agent)
-
-
-;; Customization for Faces.
-(defgroup imap-mail-user-agent-faces nil
-  "Faces for the IMAP user agent."
-  :group 'imap-mail-user-agent)
-
-;; Faces
-(defface imapua-px-face-folder
-  `((((class color) (background dark))
-     (:weight bold))
-    (((class color) (background light))
-     (:weight bold))
-    (((type tty) (class color))
-     (:weight bold))
-    (((type tty) (class mono))
-     (:weight bold))
-    (t (:weight bold)))
-  "Basic face for IMAP directories."
-  :group 'imap-mail-user-agent-faces)
-
-(defface hide-region-after-string-face
-  '((t (:inherit region)))
-  "Face for the after string.")
-
-(defface imapua-px-face-message
-  `((((class color) (background dark))
-     (:inherits default))
-    (((class color) (background light))
-     (:inherits default))
-    (((type tty) (class color))
-     (:inherits default))
-    (((type tty) (class mono))
-     (:inherits default))
-    (t (:inherits default)))
-  "Basic face."
-  :group 'imap-mail-user-agent-faces)
-
-(defface imapua-px-face-unread
-  `((((class color) (background dark))
-     (:weight bold))
-    (((class color) (background light))
-     (:weight bold))
-    (((type tty) (class color))
-     (:weight bold))
-    (((type tty) (class mono))
-     (:weight bold))
-    (t (:weight bold)))
-  "Basic face for unread mails."
-  :group 'imap-mail-user-agent-faces)
-
-(defface imapua-px-face-deleted
-  `((((class color) (background dark))
-     (:weight bold :background "DarkRed"))
-    (((class color) (background light))
-     (:weight bold :foreground "DarkRed"))
-    (((type tty) (class color))
-     (:weight bold :foreground "DarkRed"))
-    (((type tty) (class mono))
-     (:weight bold :foreground "DarkRed"))
-    (t (:foreground "DarkRed")))
-  "Basic face for deleted mails."
-  :group 'imap-mail-user-agent-faces)
-
-(defface imapua-px-face-marked
-  `((((class color) (background dark))
-     (:weight bold :foreground "DarkOliveGreen"))
-    (((class color) (background light))
-     (:weight bold :foreground "DarkOliveGreen"))
-    (((type tty) (class color))
-     (:weight bold :foreground "DarkOliveGreen"))
-    (((type tty) (class mono))
-     (:weight bold :foreground "DarkOliveGreen"))
-    (t (:weight bold :foreground "DarkOliveGreen")))
-  "Basic face for deleted mails."
-  :group 'imap-mail-user-agent-faces)
-
-
-;; The buffer used for the IMAP process
-(defvar imapua-connection nil
-  "the imap connection is a process bound buffer")
-
-;; Is the imapua mode initialized?
-(defvar imapua-mode-initialized-p nil
-  "is the mode initialized already?")
-
-;; Hooks for the mode
-(defvar imapua-mode-hook nil
-  "the mode hooks")
-
-;; The keymap for the mode
-(defvar imapua-mode-map nil
-  "the mode map")
-
-;; The keymap for the message view mode
-(defvar imapua-message-keymap-initializedp nil
-  "is the message view mode map initialized yet?")
-
-;; Hooks for the message mode
-(defvar imapua-message-mode-hook nil
-  "the mode hooks")
-
-;; The server used for IMAP
-(defvar imapua-host nil
-  "the imap server")
-
-;; The port for the IMAP server
-(defvar imapua-port 993
-  "the imap server port")
-
-;; The cached username
-(defvar imapua-username "philcm@gmx.com"
-  "the user's name")
-
-;; The cached password
-(defvar imapua-password nil
-  "the user's password")
-
-;; The cached list of folders
-(defvar imapua-folder-list nil
-  "the cached list of folders.")
-
-;; The history list for the message moves.
-(defvar imapua-folder-history nil
-  "the history of foldere names.")
-
-;; This is useful for debugging - but might not be useful for prod.
-(defvar imapua-buffer nil
-  "the buffer being used.")
 
 ;; This is a function pinched from gnus-sum
 (defun imapua-trim (str)
