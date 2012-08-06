@@ -1,10 +1,10 @@
 ;; mbug.el --- a purely IMAP based email client for EMACS
 
 ;; Copyright (C) 2001, 2002 Tapsell-Ferrier Limited
-;; Copyright (C) 2012 Coatmeur-Marin Limited
+;; Copyright (C) 2012 Philippe Coatmeur-Marin
 
 ;; Author: Nic Ferrier <nferrier@tapsellferrier.co.uk>
-;; Author: Philippe Coatmeur <philcm@gnu.org>
+;; Author: Philippe Coatmeur-Marin <philcm@gnu.org>
 ;; Keywords: mail
 ;; Version 0.6b
 
@@ -302,10 +302,9 @@ all parts."
   (setq i 0)
   (while (< i (length entities))
     (setq my-pair (car (nthcdr i entities)))
-    (setq my-operand (format "%s" (car (car (nthcdr i entities)))))
+    (setq my-regexp (format "%s" (car (car (nthcdr i entities)))))
     (setq my-char (format "%s" (car (cdr (car (nthcdr i entities))))))
-    ;; (message "pair: %s operand: %s char: %s" my-pair my-operand my-char)
-    (setq string (replace-regexp-in-string my-operand my-char string 't))
+    (setq string (replace-regexp-in-string my-regexp my-char string 't))
     (setq i (1+ i))
     )
   (format "%s" string))
@@ -421,22 +420,6 @@ all parts."
           (lambda (folder-name)
             ;; (message "folder-name: %s" folder-name)
             folder-name)  mbug-connection) 'string<)))
-
-(setq testlist '("rose" "violet" "buttercup"))
-
-(mapcar
- (lambda (x)
-   (message "first: %s" x)
-   (setq string (replace-regexp-in-string my-operand my-char string 't))
-   ;; (if (not (member x (symbol-value (intern (concat "mail-bug-advertised-mails-" list)))))
-   ;;     (progn
-   ;;       (mail-bug-desktop-notification
-   ;;        (format "%s" (first x))
-   ;;        (format "%s \n%s" (second x) (third x))
-   ;;        "5000" (symbol-value (intern (concat "mail-bug-new-mail-icon-" list))))
-   ;;       (add-to-list (intern (concat "mail-bug-advertised-mails-" list)) x)))
-   )
- testlist)
 
 ;; Other IMAP specific utility functions.
 
@@ -1838,3 +1821,20 @@ overlay on the hide-region-overlays \"ring\""
 (add-hook 'kill-emacs (lambda () (mbug-logout)))
 
 (provide 'mbug)
+
+;; tests
+
+;; (setq testlist '("rose" "violet" "buttercup"))
+
+;; (mapcar
+;;  (lambda (x)
+;;    (message "first: %s" x)
+;;    (setq string (replace-regexp-in-string my-operand my-char string 't)))
+;;  testlist)
+
+;; put-text-property start end prop value &optional object
+
+(defun makeprop ()
+  (interactive)
+  (put-text-property (point) (+ 5 (point)) 'help-echo "plop"))
+
