@@ -55,10 +55,9 @@
 
 ;; (require 'nnimap)
 
-(require 'gnus)
+;; (require 'gnus)
 
 (require 'w3m nil 'noerror)
-
 
 ;; Customization.
 
@@ -417,11 +416,27 @@ all parts."
   "Refresh the list of folders available from the imap server."
   (imap-mailbox-list "*" "" "." mbug-connection)
   (setq mbug-folder-list
-  (sort
-   (imap-mailbox-map
-    (lambda (folder-name)
-      folder-name)  mbug-connection) 'string<)))
+        (sort
+         (imap-mailbox-map
+          (lambda (folder-name)
+            ;; (message "folder-name: %s" folder-name)
+            folder-name)  mbug-connection) 'string<)))
 
+(setq testlist '("rose" "violet" "buttercup"))
+
+(mapcar
+ (lambda (x)
+   (message "first: %s" x)
+   (setq string (replace-regexp-in-string my-operand my-char string 't))
+   ;; (if (not (member x (symbol-value (intern (concat "mail-bug-advertised-mails-" list)))))
+   ;;     (progn
+   ;;       (mail-bug-desktop-notification
+   ;;        (format "%s" (first x))
+   ;;        (format "%s \n%s" (second x) (third x))
+   ;;        "5000" (symbol-value (intern (concat "mail-bug-new-mail-icon-" list))))
+   ;;       (add-to-list (intern (concat "mail-bug-advertised-mails-" list)) x)))
+   )
+ testlist)
 
 ;; Other IMAP specific utility functions.
 
