@@ -84,14 +84,13 @@ all parts."
     (when (eq (gnus-mm-display-part handle) 'internal)
       (gnus-set-window-start)))))))
 
-;; pX: : line hilite
-(add-hook 'imapua-mode-hook (lambda () (hl-line-mode t)))
 
-(defvar entities-french
+(defvar entities-latin
   '(("=\n" "")
 		("--=20\n" "")
 		("=C2=AB" "«")
 		("=C2=BB" "»")
+		("=E2=80=99" "’")
 		("=E9" "é")
     ("=EA" "ê")
 		("=C3=A9" "é")
@@ -101,13 +100,18 @@ all parts."
     ("=C3=A7" "ç")
     ("=C3=87" "Ç")
     ("=C3=A0" "à")
+
+    ("=C5=84" "ń")
+
     ("=C3=80" "À")
     ("=C3=A2" "â")
+    ("=C3=AE" "î")
     ("=C3=B9" "ù")
     ("=C3=99" "Ù")
     ("=C3=AA" "ê")
     ("=C3=8A" "Ê")
     ("=C5=93" "œ")
+    ("=C3=B4" "ô")
     ("=C3=BB" "û")
     ("=C3=9B" "Û")
     ("=C3=AB" "ë")
@@ -129,17 +133,6 @@ all parts."
     )
   (format "%s" string))
 
-(imapua-px-decode-string "Tiens, encore du HTML, batard rouge, et un charact=C3=A8re accentu=C3=A9, P=
-=C3=80F!" entities-french)
-;; (imapua-px-decode-string "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme" entities-french)
-
-
-;; (mail-decode-encoded-word-region 3995 4055)
-;; (point)
-;; "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme"(point)
-
-
-;; (gnus-multi-decode-encoded-word-string "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme")
 
 ;; SMTP configs.
 
@@ -699,6 +692,16 @@ If you want to know about updates this is the function to use."
   (imapua-open)
   )
 
+;; pX: : line hilite
+(add-hook 'imapua-mode-hook
+          (lambda ()
+            (hl-line-mode t)))
+
+(add-hook 'imapua-message-mode-hook
+          (lambda ()
+            (goto-address-mode t)))
+
+
 (defun imapua-mode ()
   "A mail user agent based on IMAP folders.
 You can open many folders and messages simultaneously. Folders can be
@@ -897,7 +900,8 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
       (with-current-buffer buf
 
 
-        (insert hdr)
+        (insert (rfc2047-decode-string hdr))
+        ;; (insert hdr)
 
         ;; Do SMTP transport decoding on the message header.
         (subst-char-in-region (point-min) (point-max) ?\r ?\ )
@@ -993,7 +997,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
       ;; (insert body)
 
 
-      ;; (imapua-px-decode-string "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme" entities-french)
+      ;; (imapua-px-decode-string "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme" entities-latin)
 
 			;; (message "transfer-encoding: %s \nBody:" transfer-encoding body)
 
@@ -1011,7 +1015,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 
 			;; (insert "\n---Semi-decoded--\n")
       ;; (insert
-      ;;  (imapua-px-decode-string body entities-french))
+      ;;  (imapua-px-decode-string body entities-latin))
 
       (insert
        (imapua-px-decode-string
@@ -1023,7 +1027,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
           ((and (equal charset "us-ascii")
                 (equal transfer-encoding "8bit")) 'utf-8)
           (charset charset)
-          ('t 'emacs-mule))) entities-french))
+          ('t 'emacs-mule))) entities-latin))
 
 			;; (insert "\n---RAW--\n")
       ;; (insert
@@ -1606,7 +1610,9 @@ msg is a dotted pair such that:
       (insert
        " " (imapua-field-format 20 date)
        " " (imapua-field-format 30 from-addr)
-       " " subject "\n")
+
+       ;; pX: decode the subject
+       " " (rfc2047-decode-string subject) "\n")
       (add-text-properties line-start (point)
 													 `(UID ,uid FOLDER ,folder-name
 																 face ,message-face))
@@ -1669,7 +1675,7 @@ msg is a dotted pair such that:
 not really placed in the text, it is just shown in the overlay")
 
 (defvar hide-region-after-string "]"
-  "String to mark the beginning of an invisible region. This string is
+  "String to mark the end of an invisible region. This string is
 not really placed in the text, it is just shown in the overlay")
 
 (defvar hide-region-propertize-markers t
