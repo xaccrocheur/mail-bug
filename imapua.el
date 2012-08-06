@@ -1566,30 +1566,24 @@ pX: I think we gonna use this for the collecting of unread/seen mails"
 (defun imapua-get-msg-redraw-func (folder-name)
   'imapua-msg-redraw)
 
+;; pX:
+(defun imapua-get-msg-recount-func (folder-name)
+  'imapua-msg-recount)
+
 (defvar imapua-unread-mails nil)
 
 (defun imapua-recount ()
-  "redraw the buffer based on the imap state.
-Opened folders have their messages re-read and re-drawn.
-pX: I think we gonna use this for the collecting of unread/seen mails"
+  "Recount.
+Use `imapua-msg-recount' to get the un/seen status of every messages."
   (interactive)
-
-  ;; Main function.
   (imapua-ensure-connected)
   (let ((display-buffer (current-buffer)))
     (imapua-refresh-folder-list)
 
-    ;; Map the folder display over the sorted folder list.
+    ;; Map the folder counting over the sorted folder list.
     (mapc
      (lambda (folder-name)
        (with-current-buffer display-buffer
-
-				 (if (imapua-has-recent-p folder-name)
-
-						 ;; pX:
-						 ;; (insert-with-prop " * " `(face (foreground-color . ,imapua-unseen-message-color)))
-						 (insert (propertize " * " 'face 'imapua-px-face-unread))
-					 )
 
 				 (if (imap-mailbox-get 'OPENED folder-name imapua-connection)
 						 (let* ((selection
@@ -1605,9 +1599,8 @@ pX: I think we gonna use this for the collecting of unread/seen mails"
 							 ;; Map the message redraw over each message in the folder.
 							 (mapc
 								(lambda (msg)
-									(let ((msg-redraw-func (imapua-get-msg-redraw-func folder-name)))
-										(funcall msg-redraw-func display-buffer folder-name msg)))
-
+									(let ((msg-recount-func (imapua-get-msg-recount-func folder-name)))
+										(funcall msg-recount-func display-buffer folder-name msg)))
 								;; The message list is sorted before being output
 								(sort
 								 (imap-message-map
@@ -1615,22 +1608,46 @@ pX: I think we gonna use this for the collecting of unread/seen mails"
 										(cons uid
                           (condition-case nil
                               (timezone-make-date-sortable (imapua-date-format (elt property 0)) "GMT" "GMT")
-
-                            ;; Ensures that strange dates don't cause a problem.
+                            ;; Ensure that strange dates don't cause a problem.
                             (range-error nil))))
 									'ENVELOPE imapua-connection)
 
 								 ;; Compare the sort elements by date
 								 (lambda (left right)
 									 (string< (cdr left) (cdr right)))))
-							 (insert "\n")))))
-     imapua-folder-list)
-    (goto-char stored-pos)
-    (toggle-truncate-lines 1)
+               ))))
+     imapua-folder-list)))
 
-    ;; pX: Go to last mail in this folder
-    (search-forward-regexp "^$")
-    (previous-line)))
+
+(defun imapua-msg-recount (display-buffer folder-name msg)
+  "recheck a msg for counting."
+  (with-current-buffer display-buffer
+    (let* ((uid (car msg))
+					 (date (imapua-date-format (imap-message-envelope-date uid imapua-connection)))
+					 ;; (date (cdr msg))
+					 (from-addr
+						(imapua-from-format
+						 (let ((env-from (imap-message-envelope-from uid imapua-connection)))
+							 (if (consp env-from)
+									 (car env-from)
+								 ;; Make up an address
+								 `("-" "unknown email" "-" "-")))))
+					 (subject
+						(imapua-field-format 1 (imap-message-envelope-subject uid imapua-connection) 't))
+
+					 (message-status
+            (cond
+             ((not (imapua-seenp uid)) 'imapua-status-unread)
+             (t 'imapua-status-read)))
+           )
+
+      (message "display-buffer: %s folder-name: %s msg: %s" display-buffer folder-name msg)
+
+      (if (eq message-status 'imapua-status-unread)
+          (progn (add-to-list 'imapua-unread-mails msg)
+                 (message "new one: %s" (car imapua-unread-mails)))
+        )
+      )))
 
 (defun imapua-msg-redraw (display-buffer folder-name msg)
   "redraw a single message line.
