@@ -1,6 +1,7 @@
 ;; imapua.el --- a purely IMAP based email client for EMACS
 
 ;; Copyright (C) 2001, 2002 Tapsell-Ferrier Limited
+;; Copyright (C) 2012 Coatmeur-Marin Limited
 
 ;; Author: Nic Ferrier <nferrier@tapsellferrier.co.uk>
 ;; Keywords: mail
@@ -54,9 +55,11 @@
 (require 'message)
 (require 'cl)
 
+(require 'nnimap)
+
 ;; (require 'hide-region)
 
-;; (require 'gnus-art)
+(require 'gnus)
 
 (require 'w3m nil 'noerror)
 
@@ -475,18 +478,19 @@ The timezone package is used to parse the string."
 (defun imapua-recentp (uid)
   "Return true if the flag list contains the \\Recent flag."
   (if uid
-      (let ((flag-list (imap-message-get uid 'FLAGS imapua-connection))
-      (recentp
-       (lambda (flag-list fn)
-         (if (listp flag-list)
-       (if flag-list
-           (let ((flag (car flag-list)))
-       (if (string= "\\Recent" flag)
-           't
-         (funcall fn (cdr flag-list) fn)))
-         nil)
-     nil))))
-  (funcall recentp flag-list recentp))))
+      (let ((flag-list
+             (imap-message-get uid 'FLAGS imapua-connection))
+            (recentp
+             (lambda (flag-list fn)
+               (if (listp flag-list)
+                   (if flag-list
+                       (let ((flag (car flag-list)))
+                         (if (string= "\\Recent" flag)
+                             't
+                           (funcall fn (cdr flag-list) fn)))
+                     nil)
+                 nil))))
+        (funcall recentp flag-list recentp))))
 
 
 (defun imapua-seenp (uid)
@@ -668,6 +672,7 @@ If you want to know about updates this is the function to use."
           (if imapua-connection
               (condition-case cause
                   (progn
+                    (message "cause: %s" cause)
                     (imapua-refresh-folder-list)
                     (imapua-has-recent-p "INBOX"))
                 (error
@@ -1001,17 +1006,17 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 
 			;; (message "transfer-encoding: %s \nBody:" transfer-encoding body)
 
-			(insert "\n---Undecoded--\n")
-      (insert
-			 (imapua-decode-string
-				body
-				transfer-encoding
-				;; A nasty company in redmond make this complicated.
-				(cond
-				 ((and (equal charset "us-ascii")
-							 (equal transfer-encoding "8bit")) 'utf-8)
-				 (charset charset)
-				 ('t 'emacs-mule))))
+			;; (insert "\n---Undecoded--\n")
+      ;; (insert
+			;;  (imapua-decode-string
+			;; 	body
+			;; 	transfer-encoding
+			;; 	;; A nasty company in redmond make this complicated.
+			;; 	(cond
+			;; 	 ((and (equal charset "us-ascii")
+			;; 				 (equal transfer-encoding "8bit")) 'utf-8)
+			;; 	 (charset charset)
+			;; 	 ('t 'emacs-mule))))
 
 			;; (insert "\n---Semi-decoded--\n")
       ;; (insert
@@ -1040,7 +1045,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 			;; 	 (charset charset)
 			;; 	 ('t 'emacs-mule)))
 
-			(insert "\n--end body--\n")
+			;; (insert "\n--end body--\n")
 
       )))
 
@@ -1303,6 +1308,7 @@ buffer. Programs can pass the imap-con in directly though."
   "Regex for matching an imapua message.
 Broadly this is: date time from subject")
 
+
 (defun imapua-send-mail ()
   "send a mail.
 The mail is BCCed to the sender if the option:
@@ -1310,6 +1316,7 @@ The mail is BCCed to the sender if the option:
 is set to true."
   (interactive)
   (message-mail))
+
 
 (defun imapua-mark-regex (regex)
   "Mark a message for some other operation"
@@ -1325,10 +1332,12 @@ is set to true."
                    `(marked t
                             face ,imapua-px-face-marked)))))))
 
+
 (defun imapua-beginning-of-folder (folder-name)
   "Find the folder and move point to the start of it"
   (beginning-of-buffer)
   (re-search-forward (concat "^" folder-name " $")))
+
 
 (defun imapua-delete-marked ()
   "Delete messages that have been marked in the current folder."
@@ -1348,6 +1357,7 @@ is set to true."
          (imapua-date-format
           (imap-message-envelope-date uid imapua-connection)))))
       (imapua-msg-redraw (current-buffer) folder-name msg)))))))))
+
 
 (defun imapua-undelete (folder-name uid)
   "undelete a message.
@@ -1472,12 +1482,17 @@ This ensures that deleted messages are removed from the obarray."
 
 ;; (insert (propertize "Gah! I'm green!" 'face '(:foreground "#00ff00" :background "#005000")))
 
+;; (defvar imapua-unread-mails '())
+
+;; (setq plop "ployp")
+
+;; (add-to-list 'imapua-unread-mails plop)
+
 (defun imapua-redraw ()
   "redraw the buffer based on the imap state.
 Opened folders have their messages re-read and re-drawn.
 pX: I think we gonna use this for the collecting of unread/seen mails"
   (interactive)
-
   (defun insert-with-prop (text prop-list)
     (let ((pt (point)))
       (insert text)
@@ -1490,6 +1505,7 @@ pX: I think we gonna use this for the collecting of unread/seen mails"
 				(display-buffer (current-buffer)))
     (delete-region (point-min) (point-max))
     (imapua-refresh-folder-list)
+
     ;; Map the folder display over the sorted folder list.
     (mapc
      (lambda (folder-name)
@@ -1530,9 +1546,11 @@ pX: I think we gonna use this for the collecting of unread/seen mails"
 										(cons uid
                           (condition-case nil
                               (timezone-make-date-sortable (imapua-date-format (elt property 0)) "GMT" "GMT")
+
                             ;; Ensures that strange dates don't cause a problem.
                             (range-error nil))))
 									'ENVELOPE imapua-connection)
+
 								 ;; Compare the sort elements by date
 								 (lambda (left right)
 									 (string< (cdr left) (cdr right)))))
@@ -1541,12 +1559,78 @@ pX: I think we gonna use this for the collecting of unread/seen mails"
     (goto-char stored-pos)
     (toggle-truncate-lines 1)
 
-    ;; pX: Get to last mail
+    ;; pX: Go to last mail in this folder
     (search-forward-regexp "^$")
     (previous-line)))
 
 (defun imapua-get-msg-redraw-func (folder-name)
   'imapua-msg-redraw)
+
+(defvar imapua-unread-mails nil)
+
+(defun imapua-recount ()
+  "redraw the buffer based on the imap state.
+Opened folders have their messages re-read and re-drawn.
+pX: I think we gonna use this for the collecting of unread/seen mails"
+  (interactive)
+
+  ;; Main function.
+  (imapua-ensure-connected)
+  (let ((display-buffer (current-buffer)))
+    (imapua-refresh-folder-list)
+
+    ;; Map the folder display over the sorted folder list.
+    (mapc
+     (lambda (folder-name)
+       (with-current-buffer display-buffer
+
+				 (if (imapua-has-recent-p folder-name)
+
+						 ;; pX:
+						 ;; (insert-with-prop " * " `(face (foreground-color . ,imapua-unseen-message-color)))
+						 (insert (propertize " * " 'face 'imapua-px-face-unread))
+					 )
+
+				 (if (imap-mailbox-get 'OPENED folder-name imapua-connection)
+						 (let* ((selection
+
+										 ;; Force the re-selection of the folder before local vars
+										 (progn
+											 (imap-mailbox-unselect imapua-connection)
+											 (imap-mailbox-select folder-name nil imapua-connection)))
+										(existing (imap-mailbox-get 'exists folder-name imapua-connection))
+										(message-range (concat "1:" (number-to-string existing))))
+							 (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't imapua-connection)
+
+							 ;; Map the message redraw over each message in the folder.
+							 (mapc
+								(lambda (msg)
+									(let ((msg-redraw-func (imapua-get-msg-redraw-func folder-name)))
+										(funcall msg-redraw-func display-buffer folder-name msg)))
+
+								;; The message list is sorted before being output
+								(sort
+								 (imap-message-map
+									(lambda (uid property)
+										(cons uid
+                          (condition-case nil
+                              (timezone-make-date-sortable (imapua-date-format (elt property 0)) "GMT" "GMT")
+
+                            ;; Ensures that strange dates don't cause a problem.
+                            (range-error nil))))
+									'ENVELOPE imapua-connection)
+
+								 ;; Compare the sort elements by date
+								 (lambda (left right)
+									 (string< (cdr left) (cdr right)))))
+							 (insert "\n")))))
+     imapua-folder-list)
+    (goto-char stored-pos)
+    (toggle-truncate-lines 1)
+
+    ;; pX: Go to last mail in this folder
+    (search-forward-regexp "^$")
+    (previous-line)))
 
 (defun imapua-msg-redraw (display-buffer folder-name msg)
   "redraw a single message line.
@@ -1572,15 +1656,6 @@ msg is a dotted pair such that:
 						(imapua-field-format 1 (imap-message-envelope-subject uid imapua-connection) 't))
 					 (line-start (point))
 
-					 ;; (color
-           ;;  (cond
-           ;;   ((imapua-deletedp uid) imapua-deleted-message-color)
-           ;;   ((not (imapua-seenp uid)) imapua-unseen-message-color)
-           ;;   ;; pX:
-           ;;   ;; (t 'black)
-           ;;   (t imapua-px-message-color)
-           ;;   ))
-
 					 (message-face
             (cond
              ((imapua-deletedp uid) 'imapua-px-face-deleted)
@@ -1591,6 +1666,14 @@ msg is a dotted pair such that:
              (t 'imapua-px-face-message)
              ))
            )
+
+      (message "display-buffer: %s folder-name: %s msg: %s" display-buffer folder-name msg)
+
+      (if (eq message-face 'imapua-px-face-unread)
+          (progn (add-to-list 'imapua-unread-mails subject)
+                 (message "new one!"))
+        )
+
       (beginning-of-line)
       (if (> (- (line-end-position) (point)) 0)
 					(progn
