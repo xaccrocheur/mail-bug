@@ -411,10 +411,23 @@ all parts."
         (error nil)))))
 
 
+(defun mbug-count-occurrences (regexp str)
+  (loop with start = 0
+        for count from 0
+        while (string-match regexp str start)
+        do (setq start (match-end 0))
+        finally return count))
+
 (defun mbug-refresh-folder-list ()
   "Refresh the list of folders available from the imap server."
   (imap-mailbox-list "*" "" "." mbug-connection)
-  (setq mbug-folder-list
+  ;; (setq mbug-folder-list
+  ;;       (sort
+  ;;        (imap-mailbox-map
+  ;;         (lambda (folder-name)
+  ;;           folder-name)  mbug-connection) 'string<))
+
+  (setq mbug-sorted-raw-folder-list
         (sort
          (imap-mailbox-map
           (lambda (folder-name)
@@ -425,9 +438,17 @@ all parts."
   ;; (("One" . "Top/One")
   ;;  ("INBOX" . "INBOX"))
   (setq mbug-smart-folder-list
-        (imap-mailbox-map
+        (mapcar
          (lambda (folder-name)
-           (cons (replace-regexp-in-string ".*/" "" folder-name) folder-name))  mbug-connection)))
+           (cons (replace-regexp-in-string ".*/" "" folder-name) folder-name))  mbug-sorted-raw-folder-list)))
+
+  ;; (setq mbug-smart-folder-list
+  ;;       (mapcar
+  ;;        (lambda (folder-name)
+  ;;          (cons
+  ;;           (replace-regexp-in-string ".*/" "" folder-name)
+  ;;           folder-name
+  ;;           (mbug-count-occurrences "/" "" folder-name)))  mbug-sorted-raw-folder-list))
 
 
 ;; Other IMAP specific utility functions.
@@ -512,7 +533,10 @@ The timezone package is used to parse the string."
                            (funcall fn (cdr flag-list) fn)
                          nil)))
                  nil))))
-        (funcall seenp flag-list seenp))))
+        (funcall seenp flag-list seenp)))
+  (message "mbug-seenp OUT")
+
+)
 
 
 (defun mbug-deletedp (uid)
@@ -619,7 +643,7 @@ An malist is a Multi Association LIST: a list of alists."
     found))
 
 ;; pX:
-(defun string-repeat (str n)
+(defun mbug-string-repeat (str n)
   "Repeat string STR N times."
   (let ((retval ""))
     (dotimes (i n)
@@ -651,7 +675,7 @@ This means you can have multiple mbug sessions in one emacs session."
     (switch-to-buffer folder-buffer)
     ;; (newline)
     (insert-image (create-image "~/.emacs.d/lisp/mail-bug/mail-bug.svg"))
-    (animate-string (concat (string-repeat "-" (- (third (window-edges)) 25)) "> mail-bug 0.1b -->") 2 0)
+    (animate-string (concat (mbug-string-repeat "-" (- (third (window-edges)) 25)) "> mail-bug 0.1b -->") 2 0)
     ;; (beginning-of-buffer)
     (if (not mbug-mode-initialized-p)
         (progn
@@ -808,7 +832,6 @@ Here, various info about the structure of the message"
   (print (imap-message-get uid 'BODYSTRUCTURE mbug-connection))
   )
 
-
 (defun mbug-open ()
   "expand/contract the folder or open the message that point is on.
 Messages are opened with the first found text part displayed. If
@@ -822,16 +845,16 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
   (beginning-of-line)
   (if (looking-at "^[^ \t\n\r]+")
       ;; Must be a folder... expand or contract according to current state.
-      (let ((folder-name (match-string-no-properties 0)))
-        (if (imap-mailbox-get 'OPENED folder-name mbug-connection)
+      (let ((folder-path (get-text-property (point) 'help-echo)))
+        (if (imap-mailbox-get 'OPENED folder-path mbug-connection)
             ;; Mark the mailbox
-            (imap-mailbox-put 'OPENED nil folder-name mbug-connection)
+            (imap-mailbox-put 'OPENED nil folder-path mbug-connection)
           ;; Mark the folder opened
-          (imap-mailbox-put 'OPENED 't folder-name mbug-connection))
+          (imap-mailbox-put 'OPENED 't folder-path mbug-connection))
         (mbug-redraw))
     ;; Must be a message, mark it seen and then open it.
     (let ((msg nil)
-          (folder-name (get-text-property (point) 'FOLDER))
+          (folder-path (get-text-property (point) 'FOLDER))
           (uid (get-text-property (point) 'UID)))
       (setq msg (cons uid (mbug-date-format
                            (imap-message-envelope-date uid mbug-connection))))
@@ -856,7 +879,56 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
             (setq one-third (/ window-lines 3))
             (when (= (length (window-list)) 1)
               (setq w2 (split-window w one-third)))))
-      (mbug-message-open folder-name uid))))
+      (mbug-message-open folder-path uid))))
+
+;; (defun mbug-open ()
+;;   "expand/contract the folder or open the message that point is on.
+;; Messages are opened with the first found text part displayed. If
+;; a message has no text part then there will just be a list of
+;; other parts.
+
+;; The position between the header and the message text is marked with
+;; the buffer local variable @var{mbug-message-text-end-of-headers}."
+;;   (interactive)
+;;   (mbug-ensure-connected)
+;;   (beginning-of-line)
+;;   (if (looking-at "^[^ \t\n\r]+")
+;;       ;; Must be a folder... expand or contract according to current state.
+;;       (let ((folder-name (match-string-no-properties 0)))
+;;         (if (imap-mailbox-get 'OPENED folder-name mbug-connection)
+;;             ;; Mark the mailbox
+;;             (imap-mailbox-put 'OPENED nil folder-name mbug-connection)
+;;           ;; Mark the folder opened
+;;           (imap-mailbox-put 'OPENED 't folder-name mbug-connection))
+;;         (mbug-redraw))
+;;     ;; Must be a message, mark it seen and then open it.
+;;     (let ((msg nil)
+;;           (folder-name (get-text-property (point) 'FOLDER))
+;;           (uid (get-text-property (point) 'UID)))
+;;       (setq msg (cons uid (mbug-date-format
+;;                            (imap-message-envelope-date uid mbug-connection))))
+;;       (imap-message-flags-add (number-to-string uid) "\\Seen" nil mbug-connection)
+
+;;       ;; pX:
+;;       (if mbug-modal
+
+;;           ;; (let ((folders-window (selected-window))
+;;           ;;      (window-lines (fourth (window-edges)))
+;;           ;;      (one-third (/ window-lines 3)))
+;;           ;;  ((set-window-dedicated-p folders-window (not current-prefix-arg))
+;;           ;;   (when (= (length (window-list)) 1)
+;;           ;;     (setq w2 (split-window w one-third)))))
+
+;;           (progn
+;;             (setq w (selected-window))
+;;             ;; (window-edges)
+;;             (set-window-dedicated-p (selected-window) (not current-prefix-arg))
+
+;;             (setq window-lines (fourth (window-edges)))
+;;             (setq one-third (/ window-lines 3))
+;;             (when (= (length (window-list)) 1)
+;;               (setq w2 (split-window w one-third)))))
+;;       (mbug-message-open folder-name uid))))
 
 
 (defun mbug-message-open (folder-name uid)
@@ -1501,6 +1573,8 @@ This ensures that deleted messages are removed from the obarray."
   "redraw the buffer based on the imap state.
 Opened folders have their messages re-read and re-drawn."
   (interactive)
+  (message "mbug-redraw IN")
+
   (defun insert-with-prop (text prop-list)
     (let ((pt (point)))
       (insert text)
@@ -1514,62 +1588,120 @@ Opened folders have their messages re-read and re-drawn."
     (delete-region (point-min) (point-max))
     (mbug-refresh-folder-list)
 
-    ;; Map the folder display over the sorted folder list.
+    ;; Map the folder display over the sorted smart folder list - new mapc.
     (mapc
-     (lambda (folder-name)
+     (lambda (folder-cell)
        (with-current-buffer display-buffer
 
-				 ;; pX:
-				 ;; (insert-with-prop folder-name `(face (foreground-color . ,mbug-folder-color)))
-				 (insert (propertize folder-name 'face 'mbug-px-face-folder))
+         (let ((folder-name (car folder-cell))
+               (folder-path (cdr folder-cell))
+               (folder-depth (mbug-count-occurrences "/" (cdr folder-cell)))
+               ;; (folder-depth 0)
+               )
+           (message "name: %s path: %s depth: %s" folder-name folder-path folder-depth)
+ ;; ▷
 
-				 (if (mbug-has-recent-p folder-name)
+           ;; (insert-image (create-image "~/.emacs.d/lisp/mail-bug/folder.gif"))
+           (insert (propertize (concat
+                                (mbug-string-repeat " " folder-depth)
+                                folder-name) 'face 'mbug-px-face-folder))
+           (put-text-property (line-beginning-position) (+ 1 (line-beginning-position)) 'help-echo folder-path)
 
-						 ;; pX:
-						 ;; (insert-with-prop " * " `(face (foreground-color . ,mbug-unseen-message-color)))
-						 (insert (propertize " * " 'face 'mbug-px-face-unread))
-					 )
-				 (insert " \n")
-				 (if (imap-mailbox-get 'OPENED folder-name mbug-connection)
-						 (let* ((selection
+           (insert " \n")
+           (if (imap-mailbox-get 'OPENED (cdr folder-cell) mbug-connection)
+               (let* ((selection
 
-										 ;; Force the re-selection of the folder before local vars
-										 (progn
-											 (imap-mailbox-unselect mbug-connection)
-											 (imap-mailbox-select folder-name nil mbug-connection)))
-										(existing (imap-mailbox-get 'exists folder-name mbug-connection))
-										(message-range (concat "1:" (number-to-string existing))))
-							 (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't mbug-connection)
+                       ;; Force the re-selection of the folder before local vars
+                       (progn
+                         (imap-mailbox-unselect mbug-connection)
+                         (imap-mailbox-select (cdr folder-cell) nil mbug-connection)))
+                      (existing (imap-mailbox-get 'exists (cdr folder-cell) mbug-connection))
+                      (message-range (concat "1:" (number-to-string existing))))
+                 (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't mbug-connection)
 
-							 ;; Map the message redraw over each message in the folder.
-							 (mapc
-								(lambda (msg)
-									(let ((msg-redraw-func (mbug-get-msg-redraw-func folder-name)))
-										(funcall msg-redraw-func display-buffer folder-name msg)))
+                 ;; Map the message redraw over each message in the folder.
+                 (mapc
+                  (lambda (msg)
+                    (let ((msg-redraw-func (mbug-get-msg-redraw-func (cdr folder-cell))))
+                      (funcall msg-redraw-func display-buffer (cdr folder-cell) msg)))
 
-								;; The message list is sorted before being output
-								(sort
-								 (imap-message-map
-									(lambda (uid property)
-										(cons uid
-                          (condition-case nil
-                              (timezone-make-date-sortable (mbug-date-format (elt property 0)) "GMT" "GMT")
+                  ;; The message list is sorted before being output
+                  (sort
+                   (imap-message-map
+                    (lambda (uid property)
+                      (cons uid
+                            (condition-case nil
+                                (timezone-make-date-sortable (mbug-date-format (elt property 0)) "GMT" "GMT")
 
-                            ;; Ensures that strange dates don't cause a problem.
-                            (range-error nil))))
-									'ENVELOPE mbug-connection)
+                              ;; Ensures that strange dates don't cause a problem.
+                              (range-error nil))))
+                    'ENVELOPE mbug-connection)
 
-								 ;; Compare the sort elements by date
-								 (lambda (left right)
-									 (string< (cdr left) (cdr right)))))
-							 (insert "\n")))))
-     mbug-folder-list)
+                   ;; Compare the sort elements by date
+                   (lambda (left right)
+                     (string< (cdr left) (cdr right)))))
+
+                 (insert "\n"))))))
+     mbug-smart-folder-list)
+
+    ;; Map the folder display over the sorted folder list -original mapc.
+    ;; (mapc
+    ;;  (lambda (folder-name)
+    ;;    (with-current-buffer display-buffer
+
+		;; 		 ;; pX:
+		;; 		 ;; (insert-with-prop folder-name `(face (foreground-color . ,mbug-folder-color)))
+		;; 		 (insert (propertize folder-name 'face 'mbug-px-face-folder))
+
+		;; 		 (if (mbug-has-recent-p folder-name)
+
+		;; 				 ;; pX:
+		;; 				 ;; (insert-with-prop " * " `(face (foreground-color . ,mbug-unseen-message-color)))
+		;; 				 (insert (propertize " * " 'face 'mbug-px-face-unread))
+		;; 			 )
+		;; 		 (insert " \n")
+		;; 		 (if (imap-mailbox-get 'OPENED folder-name mbug-connection)
+		;; 				 (let* ((selection
+
+		;; 								 ;; Force the re-selection of the folder before local vars
+		;; 								 (progn
+		;; 									 (imap-mailbox-unselect mbug-connection)
+		;; 									 (imap-mailbox-select folder-name nil mbug-connection)))
+		;; 								(existing (imap-mailbox-get 'exists folder-name mbug-connection))
+		;; 								(message-range (concat "1:" (number-to-string existing))))
+		;; 					 (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't mbug-connection)
+
+		;; 					 ;; Map the message redraw over each message in the folder.
+		;; 					 (mapc
+		;; 						(lambda (msg)
+		;; 							(let ((msg-redraw-func (mbug-get-msg-redraw-func folder-name)))
+		;; 								(funcall msg-redraw-func display-buffer folder-name msg)))
+
+		;; 						;; The message list is sorted before being output
+		;; 						(sort
+		;; 						 (imap-message-map
+		;; 							(lambda (uid property)
+		;; 								(cons uid
+    ;;                       (condition-case nil
+    ;;                           (timezone-make-date-sortable (mbug-date-format (elt property 0)) "GMT" "GMT")
+
+    ;;                         ;; Ensures that strange dates don't cause a problem.
+    ;;                         (range-error nil))))
+		;; 							'ENVELOPE mbug-connection)
+
+		;; 						 ;; Compare the sort elements by date
+		;; 						 (lambda (left right)
+		;; 							 (string< (cdr left) (cdr right)))))
+		;; 					 (insert "\n")))))
+    ;;  mbug-folder-list)
     (goto-char stored-pos)
     (toggle-truncate-lines 1)
 
     ;; pX: Go to last mail in this folder
     (search-forward-regexp "^$")
-    (previous-line)))
+    (previous-line)
+    (message "mbug-redraw OUT")
+))
 
 (defun mbug-get-msg-redraw-func (folder-name)
   'mbug-msg-redraw)
@@ -1590,7 +1722,7 @@ Use `mbug-msg-recount' to get the un/seen status of every messages."
 
     ;; Map the folder counting over the sorted folder list.
     (mapc
-     (lambda (folder-name)
+     (lambda (folder-cell)
        (with-current-buffer display-buffer
 
 				 (if (imap-mailbox-get 'OPENED folder-name mbug-connection)
@@ -1599,16 +1731,16 @@ Use `mbug-msg-recount' to get the un/seen status of every messages."
 										 ;; Force the re-selection of the folder before local vars
 										 (progn
 											 (imap-mailbox-unselect mbug-connection)
-											 (imap-mailbox-select folder-name nil mbug-connection)))
-										(existing (imap-mailbox-get 'exists folder-name mbug-connection))
+											 (imap-mailbox-select (cdr folder-cell) nil mbug-connection)))
+										(existing (imap-mailbox-get 'exists (cdr folder-cell) mbug-connection))
 										(message-range (concat "1:" (number-to-string existing))))
 							 (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't mbug-connection)
 
 							 ;; Map the message redraw over each message in the folder.
 							 (mapc
 								(lambda (msg)
-									(let ((msg-recount-func (mbug-get-msg-recount-func folder-name)))
-										(funcall msg-recount-func display-buffer folder-name msg)))
+									(let ((msg-recount-func (mbug-get-msg-recount-func (cdr folder-cell))))
+										(funcall msg-recount-func display-buffer (cdr folder-cell) msg)))
 								;; The message list is sorted before being output
 								(sort
 								 (imap-message-map
@@ -1624,7 +1756,7 @@ Use `mbug-msg-recount' to get the un/seen status of every messages."
 								 (lambda (left right)
 									 (string< (cdr left) (cdr right)))))
                ))))
-     mbug-folder-list)))
+     mbug-smart-folder-list)))
 
 
 (defun mbug-msg-recount (display-buffer folder-name msg)
@@ -1834,41 +1966,62 @@ overlay on the hide-region-overlays \"ring\""
 
 ;; tests
 
-;; (setq testlist '("rose" "violet" "buttercup"))
+;; ;; (setq testlist '("rose" "violet" "buttercup"))
 
-;; (mapcar
-;;  (lambda (x)
-;;    (message "first: %s" x)
-;;    (setq string (replace-regexp-in-string my-operand my-char string 't)))
-;;  testlist)
+;; ;; (mapcar
+;; ;;  (lambda (x)
+;; ;;    (message "first: %s" x)
+;; ;;    (setq string (replace-regexp-in-string my-operand my-char string 't)))
+;; ;;  testlist)
 
-;; put-text-property start end prop value &optional object
+;; ;; put-text-property start end prop value &optional object
 
-(defun makeprop ()
-  (interactive)
-  (put-text-property (point) (+ 1 (point)) 'help-echo "plop"))
+;; (setq plop "zob")
 
-(defun readprop ()
-  (interactive)
-  (message "property: %s" (get-text-property (point) 'help-echo)))
+;; (defun makeprop ()
+;;   (interactive)
+;;   ;; (put-text-property (point) (+ 1 (point)) 'help-echo "plop")
 
-(setq test-list '("Brouillons" "Corbeille" "Dossier Spam" "Drafts" "Envoyés" "INBOX" "Sent" "Top" "Top/One" "Trash"))
-(setq s-test-list '(("Corbeille" . "Corbeille")
- ("One" . "Top/One")
- ("INBOX" . "INBOX")
- ("Envoyés" . "Envoyés")
- ("Dossier Spam" . "Dossier Spam")
- ("Top" . "Top")
- ("Trash" . "Trash")
- ("Sent" . "Sent")
- ("Brouillons" . "Brouillons")
- ("Drafts" . "Drafts")))
+;;   (add-text-properties (point) (+ 1 (point))
+;;                        `(help-echo "ploup" ZZZ ,plop))
 
-           (mapcar
-            (lambda (folder-name)
-              (cons (cdr folder-name) 't)) s-test-list)
+;; )
+
+;; (defun readprop ()
+;;   (interactive)
+;;   (message "help-echo: %s face: %s" (get-text-property (point) 'help-echo) (get-text-property (point) 'ZZZ)))
+
+;; insert-with-prop (text prop-list)
+
+;; (insert-with-prop "plop" 'help-echo "plop")
 
 
-           (mapcar
-            (lambda (folder-name)
-              (cons folder-name 't)) s-test-list)
+;; (insert (propertize "plopz" 'face 'default))plopz
+
+;; (add-text-properties line-start (point)
+;;                      `(FOLDER ,folder-name face ,message-face))
+
+
+
+;; (setq test-list '("Brouillons" "Corbeille" "Dossier Spam" "Drafts" "Envoyés" "INBOX" "Sent" "Top" "Top/One" "Trash"))
+;; (setq s-test-list '(("Corbeille" . "Corbeille")
+;;  ("One" . "Top/One")
+;;  ("INBOX" . "INBOX")
+;;  ("Envoyés" . "Envoyés")
+;;  ("Dossier Spam" . "Dossier Spam")
+;;  ("Top" . "Top")
+;;  ("Trash" . "Trash")
+;;  ("Sent" . "Sent")
+;;  ("Brouillons" . "Brouillons")
+;;  ("Drafts" . "Drafts")))
+
+;;            (mapcar
+;;             (lambda (folder-name)
+;;               (cons (cdr folder-name) 't)) s-test-list)
+
+
+;;            (mapcar
+;;             (lambda (folder-name)
+;;               (cons folder-name 't)) test-list)
+
+;; (insert (propertize "plop" 'help-info (cdr folder-cell)))plopplopplopplop
