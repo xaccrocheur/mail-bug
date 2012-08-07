@@ -64,7 +64,7 @@
 (defcustom mbug-host-name "imap.gmx.com"
   "The name of server to connect to"
   :type '(string)
-  :group 'imap-mail-user-agent)
+  :group 'mail-bug)
 
 ;; The port for the IMAP server
 (defvar mbug-port 993
@@ -78,50 +78,50 @@
 (defvar mbug-password nil
   "the user's password")
 
-(defgroup imap-mail-user-agent nil
+(defgroup mail-bug nil
   "an IMAP based MUA."
   :group 'applications)
 
 (defcustom mbug-modal 't
   "Should the message open in a dedicated windowpane?"
   :type '(boolean)
-  :group 'imap-mail-user-agent)
+  :group 'mail-bug)
 
 (defcustom mbug-inline-images 't
   "Should the images be displayed directly in the message windowpane?"
   :type '(boolean)
-  :group 'imap-mail-user-agent)
+  :group 'mail-bug)
 
 (defcustom mbug-short-headers 't
   "Should the headers show only the standard values?"
   :type '(boolean)
-  :group 'imap-mail-user-agent)
+  :group 'mail-bug)
 
 (defcustom mbug-bcc-to-sender 't
   "Should the sender be sent copies of all mails?"
   :type '(boolean)
-  :group 'imap-mail-user-agent)
+  :group 'mail-bug)
 
 (defcustom mbug-initial-folder-name ""
   "The name to popup when selecting a target folder for moves."
   :type '(string)
-  :group 'imap-mail-user-agent)
+  :group 'mail-bug)
 
 (defcustom mbug-trash-folder-name "Trash"
   "The folder name of the folder to save deleted emails in."
   :type '(string)
-  :group 'imap-mail-user-agent)
+  :group 'mail-bug)
 
 (defcustom mbug-spam-folder-name "Spam-today"
   "The folder name of the folder to save spam messages in."
   :type '(string)
-  :group 'imap-mail-user-agent)
+  :group 'mail-bug)
 
 
 ;; Customization for Faces.
-(defgroup imap-mail-user-agent-faces nil
+(defgroup mail-bug-faces nil
   "Faces for the IMAP user agent."
-  :group 'imap-mail-user-agent)
+  :group 'mail-bug)
 
 ;; Faces
 (defface mbug-px-face-folder
@@ -135,7 +135,7 @@
      (:weight bold))
     (t (:weight bold)))
   "Basic face for IMAP directories."
-  :group 'imap-mail-user-agent-faces)
+  :group 'mail-bug-faces)
 
 (defface hide-region-after-string-face
   '((t (:inherit region)))
@@ -152,7 +152,7 @@
      (:inherits default))
     (t (:inherits default)))
   "Basic face."
-  :group 'imap-mail-user-agent-faces)
+  :group 'mail-bug-faces)
 
 (defface mbug-px-face-unread
   `((((class color) (background dark))
@@ -165,7 +165,7 @@
      (:weight bold))
     (t (:weight bold)))
   "Basic face for unread mails."
-  :group 'imap-mail-user-agent-faces)
+  :group 'mail-bug-faces)
 
 (defface mbug-px-face-deleted
   `((((class color) (background dark))
@@ -178,7 +178,7 @@
      (:weight bold :foreground "DarkRed"))
     (t (:foreground "DarkRed")))
   "Basic face for deleted mails."
-  :group 'imap-mail-user-agent-faces)
+  :group 'mail-bug-faces)
 
 (defface mbug-px-face-marked
   `((((class color) (background dark))
@@ -191,7 +191,7 @@
      (:weight bold :foreground "DarkOliveGreen"))
     (t (:weight bold :foreground "DarkOliveGreen")))
   "Basic face for deleted mails."
-  :group 'imap-mail-user-agent-faces)
+  :group 'mail-bug-faces)
 
 
 ;; The server used for IMAP
@@ -254,12 +254,12 @@ all parts."
       (error "No such part"))
     (let ((handle (cdr (assq n gnus-article-mime-handle-alist))))
       (when (gnus-article-goto-part n)
-  (if (equal (car handle) "multipart/alternative")
-      (progn
-        (beginning-of-line) ;; Make it toggle subparts
-        (gnus-article-press-button))
-    (when (eq (gnus-mm-display-part handle) 'internal)
-      (gnus-set-window-start)))))))
+        (if (equal (car handle) "multipart/alternative")
+            (progn
+              (beginning-of-line) ;; Make it toggle subparts
+              (gnus-article-press-button))
+          (when (eq (gnus-mm-display-part handle) 'internal)
+            (gnus-set-window-start)))))))
 
 
 (defvar entities-latin
@@ -337,10 +337,10 @@ all parts."
  smtpmail-smtp-server "mail.gmx.com"
  smtpmail-smtp-service 465
  smtpmail-stream-type 'ssl
-;; smtpmail-auth-credentials '(("mail.gmx.com" "philcm@gmx.com" 465 "Amiga260."))
-;; smtpmail-auth-credentials '(("mail.gmx.com" 465 "philcm@gmx.com" "Amiga260."))
-;; smtpmail-starttls-credentials '(("mail.gmx.com" 465 nil nil)))
-)
+ ;; smtpmail-auth-credentials '(("mail.gmx.com" "philcm@gmx.com" 465 "Amiga260."))
+ ;; smtpmail-auth-credentials '(("mail.gmx.com" 465 "philcm@gmx.com" "Amiga260."))
+ ;; smtpmail-starttls-credentials '(("mail.gmx.com" 465 nil nil)))
+ )
 
 
 ;; Imap logging management. Very useful for debug.
@@ -365,13 +365,13 @@ all parts."
   (let ((mystr str))
     ;; Multiple spaces.
     (while (string-match "[ \t][ \t]+" mystr)
-       (setq mystr (concat (substring mystr 0 (match-beginning 0))
-          " " (substring mystr (match-end 0)))))
-     ;; Leading spaces.
-     (when (string-match "^[ \t]+" mystr)
-       (setq mystr (concat
-        (substring mystr 0 (match-beginning 0))
-        (substring mystr (match-end 0)))))
+      (setq mystr (concat (substring mystr 0 (match-beginning 0))
+                          " " (substring mystr (match-end 0)))))
+    ;; Leading spaces.
+    (when (string-match "^[ \t]+" mystr)
+      (setq mystr (concat
+                   (substring mystr 0 (match-beginning 0))
+                   (substring mystr (match-end 0)))))
     ;; Trailing spaces.
     (when (string-match "[:space:]$" mystr)
       (setq mystr (concat (substring mystr 0 (match-beginning 0)))))
@@ -390,25 +390,25 @@ all parts."
     ;; Else create the connection
     (progn
       (if (not mbug-host)
-    (if (not (equal mbug-host-name ""))
-        (setq mbug-host mbug-host-name)
-      (setq mbug-host (read-from-minibuffer "host: "))))
+          (if (not (equal mbug-host-name ""))
+              (setq mbug-host mbug-host-name)
+            (setq mbug-host (read-from-minibuffer "host: "))))
       ;; FIXME:!!! this is a new feature of GNUS imap, you can specify different connect mechanisms
       (setq mbug-connection (imap-open mbug-host mbug-port 'ssl))
       (assert mbug-connection nil "the imap connection could not be opened")
       ;; Use the default username and password if they're set
       (if (not (and mbug-username mbug-password))
-    (progn
-      (if (not mbug-username)
-    (setq mbug-username (read-from-minibuffer "username: ")))
-      (if (not mbug-password)
-    (setq mbug-password (read-passwd "password: ")))))
+          (progn
+            (if (not mbug-username)
+                (setq mbug-username (read-from-minibuffer "username: ")))
+            (if (not mbug-password)
+                (setq mbug-password (read-passwd "password: ")))))
       (condition-case nil
-    (progn
-      ;; Initialize the connection by listing all mailboxes.
-      (imap-authenticate mbug-username mbug-password mbug-connection)
-      (imap-mailbox-list "*" "" "." mbug-connection))
-  (error nil)))))
+          (progn
+            ;; Initialize the connection by listing all mailboxes.
+            (imap-authenticate mbug-username mbug-password mbug-connection)
+            (imap-mailbox-list "*" "" "." mbug-connection))
+        (error nil)))))
 
 
 (defun mbug-refresh-folder-list ()
@@ -436,8 +436,8 @@ all parts."
 If padding-only is non-nil then truncation will not be performed."
   (if (> (length str) width)
       (if (not padding-only)
-    (concat (substring str 0 (- width 3)) "...")
-  str)
+          (concat (substring str 0 (- width 3)) "...")
+        str)
     (concat str (make-string (- width (length str)) ?\ ))))
 
 
@@ -447,12 +447,12 @@ The supplied address is a vector of 3 different address types.
 imap.el returns the from address in element 0, but it's more reliable
 to concatentate the domain (element 3) and the username (element 2)"
   (let ((friendly-name (elt from-addr 0))
-  (other-name (elt from-addr 1))
-  (smtp-addr (elt from-addr 2))
-  (domain (elt from-addr 3)))
+        (other-name (elt from-addr 1))
+        (smtp-addr (elt from-addr 2))
+        (domain (elt from-addr 3)))
     ;;(if (gethash friendly-name mbug-friends)
-  ;;friendly-name
-      (concat smtp-addr "@" domain)));;)
+    ;;friendly-name
+    (concat smtp-addr "@" domain)));;)
 
 
 (defun mbug-date-format (date-string)
@@ -467,14 +467,14 @@ The timezone package is used to parse the string."
      ;; Handle month padding
      (let ((month (elt date-struct 1)))
        (if (< (length month) 2)
-     (concat "0" month)
-   month))
+           (concat "0" month)
+         month))
      "-"
      ;; Handle day padding
      (let ((day (elt date-struct 2)))
        (if (< (length day) 2)
-     (concat "0" day)
-   day))
+           (concat "0" day)
+         day))
      " "
      ;; Time
      (elt date-struct 3) " ")))
@@ -502,34 +502,34 @@ The timezone package is used to parse the string."
   "Return true if the flag list contains the \\Seen flag."
   (if uid
       (let ((flag-list (imap-message-get uid 'FLAGS mbug-connection))
-       (seenp
-        (lambda (flag-list fn)
-    (if (listp flag-list)
-        (let ((flag (car flag-list)))
-          (if (and (stringp flag) (string= "\\Seen" flag))
-        't
-      (if (cdr flag-list)
-          (funcall fn (cdr flag-list) fn)
-        nil)))
-      nil))))
-  (funcall seenp flag-list seenp))))
+            (seenp
+             (lambda (flag-list fn)
+               (if (listp flag-list)
+                   (let ((flag (car flag-list)))
+                     (if (and (stringp flag) (string= "\\Seen" flag))
+                         't
+                       (if (cdr flag-list)
+                           (funcall fn (cdr flag-list) fn)
+                         nil)))
+                 nil))))
+        (funcall seenp flag-list seenp))))
 
 
 (defun mbug-deletedp (uid)
   "Return true if the flag list contains the \\Deleted flag."
   (if uid
       (let ((flag-list (imap-message-get uid 'FLAGS mbug-connection))
-      (deletedp
-       (lambda (flag-list fn)
-         (if (listp flag-list)
-       (let ((flag (car flag-list)))
-         (if (and (stringp flag) (string= "\\Deleted" flag))
-       't
-           (if (cdr flag-list)
-         (funcall fn (cdr flag-list) fn)
-       nil)))
-     nil))))
-  (funcall deletedp flag-list deletedp))))
+            (deletedp
+             (lambda (flag-list fn)
+               (if (listp flag-list)
+                   (let ((flag (car flag-list)))
+                     (if (and (stringp flag) (string= "\\Deleted" flag))
+                         't
+                       (if (cdr flag-list)
+                           (funcall fn (cdr flag-list) fn)
+                         nil)))
+                 nil))))
+        (funcall deletedp flag-list deletedp))))
 
 
 (defun mbug-has-recent-p (folder-name)
@@ -554,7 +554,7 @@ string)."
   (defun part-num-to-str (super-part part)
     "Convert a part number to a compound string"
     (if super-part
-  (format "%s.%s" super-part part)
+        (format "%s.%s" super-part part)
       (format "%s" part)))
   (defun ext-parse (bs lst)
     "Parse the extension data."
@@ -568,25 +568,25 @@ string)."
     bs)
   ;; Main func.
   (let ((bs (list '()))
-  (part 1)
-  (el (car lst)))
+        (part 1)
+        (el (car lst)))
     (while (listp el)
       (let ((part-str (part-num-to-str super-part part)))
-  (nconc bs (list (cons part-str (mbug-parse-bs el part-str))))
-      (setq part (+ 1 part))
-      (setq lst (cdr lst))
-      (setq el (car lst))
-      ))
+        (nconc bs (list (cons part-str (mbug-parse-bs el part-str))))
+        (setq part (+ 1 part))
+        (setq lst (cdr lst))
+        (setq el (car lst))
+        ))
     ;; el now points to the mime type of the overall part
     (if (not (listp (cadr lst)))
-  ;; This is a simple type
-  (progn
-    (nconc bs (list (cons 'type (list (cons el (cadr lst))))))
-    (ext-parse bs (cddr lst)))
+        ;; This is a simple type
+        (progn
+          (nconc bs (list (cons 'type (list (cons el (cadr lst))))))
+          (ext-parse bs (cddr lst)))
       ;; This is a multipart
       (progn
-  (nconc bs (list (cons 'type el)))
-  (ext-parse bs (cdr lst))))
+        (nconc bs (list (cons 'type el)))
+        (ext-parse bs (cdr lst))))
     (cdr bs)))
 
 (defun mbug-bs-to-part-list (bs)
@@ -600,11 +600,11 @@ key: 'partnum"
   (let ((parts (list '())))
     (defun iterator (lst)
       (mapc (lambda (item)
-        (and (listp item)
-       (part-spec-p (car item))
-       (nconc parts (list (cons (cons 'partnum (car item))
-              (cdr item))))
-       (iterator item)))  lst))
+              (and (listp item)
+                   (part-spec-p (car item))
+                   (nconc parts (list (cons (cons 'partnum (car item))
+                                            (cdr item))))
+                   (iterator item)))  lst))
     (iterator bs)
     (cdr parts)))
 
@@ -613,14 +613,14 @@ key: 'partnum"
 Find the specified key/value pair in the malist.
 An malist is a Multi Association LIST: a list of alists."
   (let ((found (catch 'found
-     (mapc (lambda (alist)
-       (if (equal value (cdr (assoc key alist)))
-           (throw 'found alist))) malist))))
+                 (mapc (lambda (alist)
+                         (if (equal value (cdr (assoc key alist)))
+                             (throw 'found alist))) malist))))
     found))
 
 ;; pX:
 (defun string-repeat (str n)
-"Repeat string STR N times."
+  "Repeat string STR N times."
   (let ((retval ""))
     (dotimes (i n)
       (setq retval (concat retval str)))
@@ -693,7 +693,7 @@ If you want to know about updates this is the function to use."
   (message "point is %s" (point))
   (beginning-of-line)
   (message "point is now %s" (point))
-;; (goto-line (cdr (sixth (cdr (posn-at-point)))))
+  ;; (goto-line (cdr (sixth (cdr (posn-at-point)))))
   ;; (deactivate-mark)
   ;; (line)
   ;; (sleep-for 1)
@@ -798,8 +798,9 @@ The keys defined are:
 (define-key mbug-message-mode-map "h" 'mbug-toggle-headers)
 
 
-;; Functions for opening messages and parts (and folders).
 (defun mbug-show-structure (folder-name uid)
+"Read info hidden in the text by means of `add-text-properties'.
+Here, various info about the structure of the message"
   (interactive (list (get-text-property (point) 'FOLDER)
                      (get-text-property (point) 'UID)))
   (imap-mailbox-select folder-name nil mbug-connection)
@@ -909,7 +910,6 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
     (let ((hdr (imap-message-get uid 'RFC822.HEADER mbug-connection)))
       (with-current-buffer buf
 
-
         (insert (rfc2047-decode-string hdr))
         ;; (insert hdr)
 
@@ -923,6 +923,7 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
         (insert "---------------------------------------------\n\n")
         ))
 
+
     (save-excursion
       ;; (message "buffer is %s" buf)
 
@@ -931,6 +932,8 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
         (mbug-message-fill-text uid (if text-part text-part bs) buf))
 
       ;; Now switch to buffer wether we're in modal mode or not
+      ;; (sleep-for 0.5)
+
       (switch-to-buffer buf)
 
       ;; (beginning-of-buffer)
@@ -945,7 +948,8 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
           (progn
             (setq hide-region-overlays ())
             (mbug-toggle-headers)))
-
+      (previous-line)
+      (next-line 3)
       (set-buffer-modified-p nil)
       (mbug-message-mode)
 
@@ -954,7 +958,7 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
 
     ;; Display the list of other parts (if there are any) here
     (mbug-part-list-display mbug-connection folder-name uid buf parts)
-))
+    ))
 
 
 (defun mbug-part-list-display (connection folder uid buffer part-list)
@@ -1102,7 +1106,7 @@ buffer. Programs can pass the imap-con in directly though."
 					 (mimetype-px (car mimetype))
            ;; (buffer (get-buffer-create "*attached*"))
            (buffer (get-buffer-create (concat "*attached-" name "*"))
-))
+                   ))
 
 			;; pX: This was a swith-to-buffer
       (set-buffer buffer)
@@ -1131,11 +1135,11 @@ buffer. Programs can pass the imap-con in directly though."
                       )))
 
             ;; (if (equal mimetype-str "APPLICATION/x-gzip")
-;;    (setq mbug-px-attachment-extension ".gz"))
+            ;;    (setq mbug-px-attachment-extension ".gz"))
 
             (mailcap-ext-pattern (mailcap-mime-info mimetype-str "nametemplate"))
             (mailcap-ext-pattern-all (mailcap-mime-info mimetype-str "all"))
-)
+            )
 
         ;; Simple replace function.
         (defun string-replace (re replace string)
@@ -1304,12 +1308,12 @@ buffer. Programs can pass the imap-con in directly though."
 
 (defvar mbug-message-line-regex
   (concat "^[\t ]+"
-                    mbug-message-date-regex
-                    mbug-message-time-regex
-                    ;; email address match
-                    "[\t ]+\\([^\t\n ]+\\)"
-                    ;; subject match
-                    "[\t ]+\\([^\t\n]+\\)$")
+          mbug-message-date-regex
+          mbug-message-time-regex
+          ;; email address match
+          "[\t ]+\\([^\t\n ]+\\)"
+          ;; subject match
+          "[\t ]+\\([^\t\n]+\\)$")
   "Regex for matching an mbug message.
 Broadly this is: date time from subject")
 
@@ -1330,12 +1334,12 @@ is set to true."
     (goto-char (mbug-beginning-of-folder (get-text-property (point) 'FOLDER)))
     (while (re-search-forward regex nil 't)
       (progn
-                (let ((inhibit-read-only 't))
-                  (add-text-properties
-                   (point-at-bol)
-                   (point-at-eol)
-                   `(marked t
-                            face ,mbug-px-face-marked)))))))
+        (let ((inhibit-read-only 't))
+          (add-text-properties
+           (point-at-bol)
+           (point-at-eol)
+           `(marked t
+                    face ,mbug-px-face-marked)))))))
 
 
 (defun mbug-beginning-of-folder (folder-name)
@@ -1352,16 +1356,16 @@ is set to true."
       (mbug-beginning-of-folder folder-name)
       (imap-mailbox-select folder-name nil mbug-connection)
       (while (re-search-forward mbug-message-line-regex nil 't)
-  (progn
-    (if (get-text-property (point-at-bol) 'marked)
-        (let ((uid (get-text-property (point-at-bol) 'UID)))
-    (imap-fetch uid "(ENVELOPE)" 't nil mbug-connection)
-    (imap-message-copy (number-to-string uid) mbug-trash-folder-name 't 't mbug-connection) ;; this should be on a switch
-    (imap-message-flags-add (number-to-string uid) "\\Deleted" nil mbug-connection)
-    (let ((msg (cons uid
-         (mbug-date-format
-          (imap-message-envelope-date uid mbug-connection)))))
-      (mbug-msg-redraw (current-buffer) folder-name msg)))))))))
+        (progn
+          (if (get-text-property (point-at-bol) 'marked)
+              (let ((uid (get-text-property (point-at-bol) 'UID)))
+                (imap-fetch uid "(ENVELOPE)" 't nil mbug-connection)
+                (imap-message-copy (number-to-string uid) mbug-trash-folder-name 't 't mbug-connection) ;; this should be on a switch
+                (imap-message-flags-add (number-to-string uid) "\\Deleted" nil mbug-connection)
+                (let ((msg (cons uid
+                                 (mbug-date-format
+                                  (imap-message-envelope-date uid mbug-connection)))))
+                  (mbug-msg-redraw (current-buffer) folder-name msg)))))))))
 
 
 (defun mbug-undelete (folder-name uid)
@@ -1369,14 +1373,14 @@ is set to true."
 When called interactively the folder-name and uid are obtained from
 the text properties of whatever is at (point)."
   (interactive (list (get-text-property (point) 'FOLDER)
-         (get-text-property (point) 'UID)))
+                     (get-text-property (point) 'UID)))
   (mbug-ensure-connected)
   (imap-mailbox-select folder-name nil mbug-connection)
   (imap-fetch uid "(ENVELOPE)" 't nil mbug-connection)
   (imap-message-flags-del (number-to-string uid) "\\Deleted" nil mbug-connection)
   (let ((msg (cons uid
-         (mbug-date-format
-          (imap-message-envelope-date uid mbug-connection)))))
+                   (mbug-date-format
+                    (imap-message-envelope-date uid mbug-connection)))))
     (mbug-msg-redraw (current-buffer) folder-name msg)))
 
 
@@ -1385,7 +1389,7 @@ the text properties of whatever is at (point)."
 When called interactively the folder-name and uid are obtained from
 the text properties of whatever is at (point)."
   (interactive (list (get-text-property (point) 'FOLDER)
-         (get-text-property (point) 'UID)))
+                     (get-text-property (point) 'UID)))
   (beginning-of-line)
   (mbug-ensure-connected)
   (imap-mailbox-select folder-name nil mbug-connection)
@@ -1393,8 +1397,8 @@ the text properties of whatever is at (point)."
   (imap-message-copy (number-to-string uid) mbug-trash-folder-name 't 't mbug-connection) ;; this should be on a switch
   (imap-message-flags-add (number-to-string uid) "\\Deleted" nil mbug-connection)
   (let ((msg (cons uid
-       (mbug-date-format
-        (imap-message-envelope-date uid mbug-connection)))))
+                   (mbug-date-format
+                    (imap-message-envelope-date uid mbug-connection)))))
     (mbug-msg-redraw (current-buffer) folder-name msg)))
 
 
@@ -1403,7 +1407,7 @@ the text properties of whatever is at (point)."
 The Spam folder name is obtained from MBUG-SPAM-FOLDER-NAME
 which can be customized."
   (interactive (list (get-text-property (point) 'FOLDER)
-         (get-text-property (point) 'UID)))
+                     (get-text-property (point) 'UID)))
   (mbug-move folder-name uid mbug-spam-folder-name))
 
 
@@ -1411,15 +1415,15 @@ which can be customized."
   "move a message from one folder to another."
   (interactive
    (let ((dest-folder
-    (completing-read
-     "Folder name: "
-     (mapcar
-      (lambda (folder-name)
-        (cons folder-name 't)) mbug-folder-list)
-     nil nil mbug-initial-folder-name 'mbug-folder-history)))
+          (completing-read
+           "Folder name: "
+           (mapcar
+            (lambda (folder-name)
+              (cons folder-name 't)) mbug-folder-list)
+           nil nil mbug-initial-folder-name 'mbug-folder-history)))
      (list (get-text-property (point) 'FOLDER)
-     (get-text-property (point) 'UID)
-     dest-folder)))
+           (get-text-property (point) 'UID)
+           dest-folder)))
   (mbug-ensure-connected)
   (imap-mailbox-select folder-name nil mbug-connection)
   (imap-fetch uid "(ENVELOPE)" 't nil mbug-connection)
@@ -1431,10 +1435,10 @@ which can be customized."
   "expunges the current folder.
 This ensures that deleted messages are removed from the obarray."
   (interactive (list (get-text-property (point) 'FOLDER)
-         (y-or-n-p "Expunge current folder?")))
+                     (y-or-n-p "Expunge current folder?")))
   (mbug-ensure-connected)
   (if folder-name
-    (imap-mailbox-select folder-name nil mbug-connection))
+      (imap-mailbox-select folder-name nil mbug-connection))
   (imap-mailbox-expunge 't mbug-connection)
   (imap-mailbox-unselect mbug-connection)
   (mbug-redraw))
@@ -1444,7 +1448,7 @@ This ensures that deleted messages are removed from the obarray."
   "Extract the folder-name from the current line."
   (save-excursion
     (if pt
-  (goto-char pt))
+        (goto-char pt))
     (buffer-substring-no-properties
      (line-beginning-position)
      (save-excursion
@@ -1465,13 +1469,13 @@ This ensures that deleted messages are removed from the obarray."
 (defun mbug-kill-folder (folder-name)
   "kill the folder at point"
   (interactive (let* ((folder (mbug-extract-folder-name))
-          (confirm (y-or-n-p (concat "Delete folder " folder))))
-     (if confirm (list folder))))
+                      (confirm (y-or-n-p (concat "Delete folder " folder))))
+                 (if confirm (list folder))))
   (if folder-name
       (progn
-  (imap-mailbox-delete folder-name mbug-connection)
-  (imap-mailbox-list "*" "" "." mbug-connection)
-  (mbug-redraw))))
+        (imap-mailbox-delete folder-name mbug-connection)
+        (imap-mailbox-list "*" "" "." mbug-connection)
+        (mbug-redraw))))
 
 
 (defun mbug-logout ()
@@ -1495,8 +1499,7 @@ This ensures that deleted messages are removed from the obarray."
 
 (defun mbug-redraw ()
   "redraw the buffer based on the imap state.
-Opened folders have their messages re-read and re-drawn.
-pX: I think we gonna use this for the collecting of unread/seen mails"
+Opened folders have their messages re-read and re-drawn."
   (interactive)
   (defun insert-with-prop (text prop-list)
     (let ((pt (point)))
@@ -1719,8 +1722,7 @@ msg is a dotted pair such that:
        ;; pX: decode the subject
        " " (rfc2047-decode-string subject) "\n")
       (add-text-properties line-start (point)
-													 `(UID ,uid FOLDER ,folder-name
-																 face ,message-face))
+													 `(UID ,uid FOLDER ,folder-name face ,message-face))
 
       ;; (insert
       ;;  "  " (mbug-field-format 20 date)
@@ -1845,3 +1847,28 @@ overlay on the hide-region-overlays \"ring\""
 (defun makeprop ()
   (interactive)
   (put-text-property (point) (+ 1 (point)) 'help-echo "plop"))
+
+(defun readprop ()
+  (interactive)
+  (message "property: %s" (get-text-property (point) 'help-echo)))
+
+(setq test-list '("Brouillons" "Corbeille" "Dossier Spam" "Drafts" "Envoyés" "INBOX" "Sent" "Top" "Top/One" "Trash"))
+(setq s-test-list '(("Corbeille" . "Corbeille")
+ ("One" . "Top/One")
+ ("INBOX" . "INBOX")
+ ("Envoyés" . "Envoyés")
+ ("Dossier Spam" . "Dossier Spam")
+ ("Top" . "Top")
+ ("Trash" . "Trash")
+ ("Sent" . "Sent")
+ ("Brouillons" . "Brouillons")
+ ("Drafts" . "Drafts")))
+
+           (mapcar
+            (lambda (folder-name)
+              (cons (cdr folder-name) 't)) s-test-list)
+
+
+           (mapcar
+            (lambda (folder-name)
+              (cons folder-name 't)) s-test-list)
