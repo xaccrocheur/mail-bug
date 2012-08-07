@@ -78,19 +78,30 @@
 (defvar mbug-password nil
   "the user's password")
 
+
+;; Customizations (M-x customize-group "mail-bug" RET)
 (defgroup mail-bug nil
   "an IMAP based MUA."
   :group 'applications)
 
+(defgroup mail-bug-interface nil
+  "Faces for the IMAP user agent."
+  :group 'mail-bug)
+
 (defcustom mbug-modal 't
   "Should the message open in a dedicated windowpane?"
   :type '(boolean)
-  :group 'mail-bug)
+  :group 'mail-bug-interface)
 
 (defcustom mbug-inline-images 't
   "Should the images be displayed directly in the message windowpane?"
   :type '(boolean)
-  :group 'mail-bug)
+  :group 'mail-bug-interface)
+
+(defcustom mbug-splash 't
+  "Should something move at each launch?"
+  :type '(boolean)
+  :group 'mail-bug-interface)
 
 (defcustom mbug-short-headers 't
   "Should the headers show only the standard values?"
@@ -235,8 +246,6 @@
   "the buffer being used.")
 
 
-
-
 (setq mm-text-html-renderer 'w3m)
 (setq mm-inline-text-html-with-images t)
 (setq mm-inline-text-html-with-w3m-keymap nil)
@@ -268,31 +277,29 @@ all parts."
 		("=C2=AB" "«")
 		("=C2=BB" "»")
 		("=E2=80=99" "’")
+    ("=C3=80" "À")
+    ("=C3=A2" "â")
+    ("=C3=A0" "à")
+    ("=C3=A7" "ç")
+    ("=C3=87" "Ç")
 		("=E9" "é")
     ("=EA" "ê")
 		("=C3=A9" "é")
-    ("=C3=89" "É")
     ("=C3=A8" "è")
+    ("=C3=AA" "ê")
+    ("=C3=89" "É")
     ("=C3=88" "È")
-    ("=C3=A7" "ç")
-    ("=C3=87" "Ç")
-    ("=C3=A0" "à")
-
+    ("=C3=8A" "Ê")
+    ("=C3=8B" "Ë")
+    ("=C3=AB" "ë")
+    ("=C5=93" "œ")
     ("=C5=84" "ń")
-
-    ("=C3=80" "À")
-    ("=C3=A2" "â")
     ("=C3=AE" "î")
+    ("=C3=B4" "ô")
     ("=C3=B9" "ù")
     ("=C3=99" "Ù")
-    ("=C3=AA" "ê")
-    ("=C3=8A" "Ê")
-    ("=C5=93" "œ")
-    ("=C3=B4" "ô")
     ("=C3=BB" "û")
     ("=C3=9B" "Û")
-    ("=C3=AB" "ë")
-    ("=C3=8B" "Ë")
     ("=C3=BC" "ü")
     ("=C3=9C" "Ü"))
   "The list of entities.")
@@ -613,6 +620,7 @@ string)."
         (ext-parse bs (cdr lst))))
     (cdr bs)))
 
+
 (defun mbug-bs-to-part-list (bs)
   "Make a part list from a bodystructure.
 A part list is a flat list of all mime types, which are
@@ -632,6 +640,7 @@ key: 'partnum"
     (iterator bs)
     (cdr parts)))
 
+
 (defun mbug-part-list-assoc (key value malist)
   "This is an massoc function.
 Find the specified key/value pair in the malist.
@@ -642,6 +651,7 @@ An malist is a Multi Association LIST: a list of alists."
                              (throw 'found alist))) malist))))
     found))
 
+
 ;; pX:
 (defun mbug-string-repeat (str n)
   "Repeat string STR N times."
@@ -649,6 +659,21 @@ An malist is a Multi Association LIST: a list of alists."
     (dotimes (i n)
       (setq retval (concat retval str)))
     retval))
+
+
+(defun mbug-splash-it ()
+  (if (file-exists-p "~/.emacs.d/lisp/mail-bug/mail-bug.svg")
+      (insert-image (create-image "~/.emacs.d/lisp/mail-bug/mail-bug.svg"))
+    (animate-string "
+          `'.   .'`
+             \\_/
+          \\ .:=:. /
+        --.' -|- '.--
+         /`-._|_.-'\\
+        /     |     \\
+       /_/    |    \\_\\
+       '----'`^`'----'" 0 0))
+  (animate-string (concat (mbug-string-repeat "-" (- (third (window-edges)) 25)) "> mail-bug 0.1b -->") 9 0))
 
 ;; The intializing proc.
 ;;;###autoload
@@ -674,8 +699,10 @@ This means you can have multiple mbug sessions in one emacs session."
                                     (concat host-name ":" (number-to-string tcp-port)))))))
     (switch-to-buffer folder-buffer)
     ;; (newline)
-    (insert-image (create-image "~/.emacs.d/lisp/mail-bug/mail-bug.svg"))
-    (animate-string (concat (mbug-string-repeat "-" (- (third (window-edges)) 25)) "> mail-bug 0.1b -->") 2 0)
+
+    (if mbug-splash
+        (mbug-splash-it))
+
     ;; (beginning-of-buffer)
     (if (not mbug-mode-initialized-p)
         (progn
@@ -729,6 +756,7 @@ If you want to know about updates this is the function to use."
 ;; pX: : line hilite
 (add-hook 'mbug-mode-hook
           (lambda ()
+            (linum-mode -1)
             (hl-line-mode t)))
 
 (add-hook 'mbug-message-mode-hook
@@ -843,7 +871,8 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
   (interactive)
   (mbug-ensure-connected)
   (beginning-of-line)
-  (if (looking-at "^[^ \t\n\r]+")
+  ;; (if (looking-at "^[^ \t\n\r]+")
+  (if (get-text-property (point) 'help-echo)
       ;; Must be a folder... expand or contract according to current state.
       (let ((folder-path (get-text-property (point) 'help-echo)))
         (if (imap-mailbox-get 'OPENED folder-path mbug-connection)
@@ -1909,6 +1938,7 @@ msg is a dotted pair such that:
       ;; (toggle-read-only)
       )))
 
+
 (defvar hide-region-before-string "[(h)eaders"
   "String to mark the beginning of an invisible region. This string is
 not really placed in the text, it is just shown in the overlay")
@@ -1922,11 +1952,17 @@ not really placed in the text, it is just shown in the overlay")
 
 (defface hide-region-before-string-face
   '((t (:inherit region)))
-  "Face for the before string.")
+  "Face for the header-hiding string.")
 
 (defface hide-region-after-string-face
   '((t (:inherit region)))
   "Face for the after string.")
+
+
+(defface mail-bug-toggle-headers-face
+  '((t (:inherit region)))
+  "Face for the header-hiding string.")
+
 
 (defvar hide-region-overlays nil
   "Variable to store the regions we put an overlay on.")
@@ -1950,13 +1986,68 @@ overlay on the hide-region-overlays \"ring\""
     (overlay-put new-overlay 'before-string
                  (if hide-region-propertize-markers
                      (propertize hide-region-before-string
-                                 'font-lock-face 'hide-region-before-string-face)
+                                 'font-lock-face 'mail-bug-toggle-headers-face)
                    hide-region-before-string))
     (overlay-put new-overlay 'after-string
                  (if hide-region-propertize-markers
                      (propertize hide-region-after-string
-                                 'font-lock-face 'hide-region-after-string-face)
+                                 'font-lock-face 'mail-bug-toggle-headers-face)
                    hide-region-after-string))))
+
+;; (defvar hide-region-before-string "[(h)eaders"
+;;   "String to mark the beginning of an invisible region. This string is
+;; not really placed in the text, it is just shown in the overlay")
+
+;; (defvar hide-region-after-string "]"
+;;   "String to mark the end of an invisible region. This string is
+;; not really placed in the text, it is just shown in the overlay")
+
+;; (defvar hide-region-propertize-markers t
+;;   "If non-nil, add text properties to the region markers.")
+
+;; (defface hide-region-before-string-face
+;;   '((t (:inherit region)))
+;;   "Face for the header-hiding string.")
+
+;; (defface hide-region-after-string-face
+;;   '((t (:inherit region)))
+;;   "Face for the after string.")
+
+
+;; (defface mail-bug-toggle-headers-face
+;;   '((t (:inherit region)))
+;;   "Face for the header-hiding string.")
+
+
+;; (defvar hide-region-overlays nil
+;;   "Variable to store the regions we put an overlay on.")
+
+;; (defun mbug-show-headers ()
+;;   "Unhide a region at a time, starting with the last one hidden and
+;; deleting the overlay from the hide-region-overlays \"ring\"."
+;;   (interactive)
+;;   (when (car hide-region-overlays)
+;;     (delete-overlay (car hide-region-overlays))
+;;     (setq hide-region-overlays (cdr hide-region-overlays))))
+
+;; (defun mbug-hide-headers ()
+;;   "Hides a region by making an invisible overlay over it and save the
+;; overlay on the hide-region-overlays \"ring\""
+;;   (interactive)
+;;   (let ((new-overlay (make-overlay (mark) (point))))
+;;     (push new-overlay hide-region-overlays)
+;;     (overlay-put new-overlay 'invisible t)
+;;     (overlay-put new-overlay 'intangible t)
+;;     (overlay-put new-overlay 'before-string
+;;                  (if hide-region-propertize-markers
+;;                      (propertize hide-region-before-string
+;;                                  'font-lock-face 'hide-region-before-string-face)
+;;                    hide-region-before-string))
+;;     (overlay-put new-overlay 'after-string
+;;                  (if hide-region-propertize-markers
+;;                      (propertize hide-region-after-string
+;;                                  'font-lock-face 'hide-region-after-string-face)
+;;                    hide-region-after-string))))
 
 
 ;; Boot strap stuff
@@ -1987,9 +2078,16 @@ overlay on the hide-region-overlays \"ring\""
 
 ;; )
 
-;; (defun readprop ()
-;;   (interactive)
-;;   (message "help-echo: %s face: %s" (get-text-property (point) 'help-echo) (get-text-property (point) 'ZZZ)))
+(defun readprop ()
+  (interactive)
+  (message "props %s" (text-properties-at (point)))
+
+  (if (get-text-property (point) 'help-echo)
+      (message "yup: props %s" (text-properties-at (point)))
+    (message "nope: props %s" (text-properties-at (point))))
+
+  ;; (message "help-echo: %s face: %s" (get-text-property (point) 'help-echo) (get-text-property (point) 'ZZZ))
+  )
 
 ;; insert-with-prop (text prop-list)
 
