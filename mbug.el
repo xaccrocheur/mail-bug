@@ -4,7 +4,7 @@
 ;; Copyright (C) 2012 Philippe Coatmeur-Marin
 
 ;; Author: Nic Ferrier <nferrier@tapsellferrier.co.uk>
-;; Author: Philippe Coatmeur-Marin <philcm@gnu.org>
+;; Author: Philippe CM http://stackoverflow.com/users/539797/philippe-cm
 ;; Keywords: mail
 ;; Version 0.6b
 
@@ -702,7 +702,7 @@ An malist is a Multi Association LIST: a list of alists."
   (interactive)
   (message "thunderbirds are GO")
   (setq mbug-timer (run-with-timer 1
-                                   30
+                                   300
                                    'mbug-recount)))
 
 (defun mbug-timer-kill ()
@@ -1823,7 +1823,7 @@ msg is a dotted pair such that:
   ;; Refresh the modeline
   (progn (setq global-mode-string ())
          (add-to-list 'global-mode-string
-                      (mail-bug-mode-line mbug-unread-mails))))
+                      (mbug-mode-line mbug-unread-mails))))
 
 (defun mbug-get-msg-recount-func (folder-name)
   'mbug-msg-recount)
@@ -2098,12 +2098,6 @@ overlay on the hide-region-overlays \"ring\""
 ;; Modeline
 
 
-(defconst mail-bug-logo
-  (if (and window-system
-           mail-bug-icon)
-      (apply 'propertize " " `(display ,mail-bug-icon))
-    mail-bug))
-
 (defcustom mail-bug-icon
   (when (image-type-available-p 'xpm)
     '(image :type xpm
@@ -2113,9 +2107,14 @@ overlay on the hide-region-overlays \"ring\""
 Must be an XPM (use Gimp)."
   :group 'mail-bug)
 
-(defun mail-bug-mode-line (mbug-unseen-mails)
+(defconst mail-bug-logo
+  (if (and window-system
+           mail-bug-icon)
+      (apply 'propertize " " `(display ,mail-bug-icon))
+    mail-bug))
+
+(defun mbug-mode-line (mbug-unseen-mails)
   "Construct an emacs modeline object."
-  ;; (message "mail-bug-mode-line-all called with %s" num)
   (if (null mbug-unseen-mails)
       (concat mail-bug-logo " ")
     (let ((s (format "%d" (length mbug-unseen-mails)))
@@ -2132,20 +2131,63 @@ Must be an XPM (use Gimp)."
            (interactive "e")
            (browse-url ,url)))
 
-      (define-key map (vector 'mode-line 'mouse-3)
-        `(lambda (e)
-           (interactive "e")
-           (mbolic mbug-unseen-mails)))
+      (add-text-properties 0 (length s)
+                           `(local-map
+                             ,map mouse-face mode-line-highlight uri
+                             ,url help-echo
+                             ,(format "
+--------------
+mouse-1: View mail in %s
+mouse-2: View mail on %s" mbug-host-name mbug-host-name))
+                           s)
+      (concat mail-bug-logo ":" s))
+    ))
 
-      ;; (add-text-properties 0 (length s)
-;;                            `(local-map
-;;                              ,map mouse-face mode-line-highlight uri
-;;                              ,url help-echo
-;;                              ,(concat (mail-bug-tooltip (format "%s" num))
-;;                                       (format "
-;; --------------
-;; mouse-1: View mail in %s
-;; mouse-2: View mail on %s
-;; mouse-3: View mail in MBOLIC" mail-bug-external-client mbug-host-name mbug-host-name)))
-;;                            s)
-      (concat mail-bug-logo ":" s))))
+
+(defun mail-bug-desktop-notify (list)
+  (mapcar
+   (lambda (x)
+     (if (not (member x (symbol-value (intern (concat "mail-bug-advertised-mails-" list)))))
+         (progn
+           (mail-bug-desktop-notification
+            (format "%s" (first x))
+            (format "%s \n%s" (second x) (third x))
+            "5000" (symbol-value (intern (concat "mail-bug-new-mail-icon-" list))))
+           (add-to-list (intern (concat "mail-bug-advertised-mails-" list)) x))))
+   (symbol-value (intern (concat "mail-bug-unseen-mails-" list)))))
+
+
+(defun mail-bug-desktop-notification (summary body timeout icon)
+  "Call notification-daemon method with ARGS over DBus.
+And that's not the half of it."
+  (if (window-system)
+      (progn
+        (start-process "notify" "*mail-bug-notify*"
+                       libnotify-program
+                       (concat "--expire-time=" timeout)
+                       "--urgency=low"
+                       (concat "--icon=" icon)
+                       (format "%s" summary)
+                       (format "%s" body))
+        (if (and
+             (file-exists-p "/usr/bin/mplayer")
+             mail-bug-new-mail-sound)
+            (start-process-shell-command "*mail-bug-sound*" nil (concat "mplayer " mail-bug-new-mail-sound))))
+    (message "New mail from %s !" summary)))
+
+
+(defun mail-bug-tooltip (list)
+  "Loop through the mail headers and build the hover tooltip"
+  (mapconcat
+   (lambda (x)
+     (let
+         ((tooltip-string
+           (format "%s\n%s \n-------\n%s"
+                   (car x)
+                   (car (nthcdr 1 x))
+                   (car (nthcdr 2 x))
+                   )))
+       tooltip-string)
+     )
+   (symbol-value (intern (concat "mail-bug-unseen-mails-" list)))
+   "\n\n"))
