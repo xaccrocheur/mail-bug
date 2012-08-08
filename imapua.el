@@ -324,17 +324,18 @@ The timezone package is used to parse the string."
   "Return true if the flag list contains the \\Seen flag."
   (if uid
       (let ((flag-list (imap-message-get uid 'FLAGS imapua-connection))
-	     (seenp
-	      (lambda (flag-list fn)
-		(if (listp flag-list)
-		    (let ((flag (car flag-list)))
-		      (if (and (stringp flag) (string= "\\Seen" flag))
-			  't
-			(if (cdr flag-list)
-			    (funcall fn (cdr flag-list) fn)
-			  nil)))
-		  nil))))
-	(funcall seenp flag-list seenp))))
+            (seenp
+             (lambda (flag-list fn)
+               (if (listp flag-list)
+                   (let ((flag (car flag-list)))
+                     (if (and (stringp flag) (string= "\\Seen" flag))
+                         't
+                       (if (cdr flag-list)
+                           (funcall fn (cdr flag-list) fn)
+                         nil)))
+                 nil))))
+        (message "imapua flag list for uid %s: %s" uid (list flag-list))
+        (funcall seenp flag-list seenp))))
 
 
 (defun imapua-deletedp (uid)
@@ -605,7 +606,7 @@ the buffer local variable @var{imapua-message-text-end-of-headers}."
 	  (folder-name (get-text-property (point) 'FOLDER))
 	  (uid (get-text-property (point) 'UID)))
       (setq msg (cons uid (imapua-date-format
-			   (imap-message-envelope-date uid imapua-connection))))
+                           (imap-message-envelope-date uid imapua-connection))))
       (imap-message-flags-add (number-to-string uid) "\\Seen" nil imapua-connection)
       (imapua-msg-redraw (current-buffer) folder-name msg)
       (imapua-message-open folder-name uid))))

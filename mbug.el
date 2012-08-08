@@ -540,11 +540,28 @@ The timezone package is used to parse the string."
                            (funcall fn (cdr flag-list) fn)
                          nil)))
                  nil))))
+        (message "mbug flag list for uid %s: %s" uid (list flag-list))
         (funcall seenp flag-list seenp)))
-  (message "mbug-seenp OUT")
-
 )
 
+
+;; (setq mylist '(("Brouillons" . "Brouillons")
+;;  ("Corbeille" . "Corbeille")
+;;  ("Dossier Spam" . "Dossier Spam")
+;;  ("Drafts" . "Drafts")
+;;  ("Envoyés" . "Envoyés")
+;;  ("INBOX" . "INBOX")
+;;  ("Sent" . "Sent")
+;;  ("Top" . "Top")
+;;  ("One" . "Top/One")
+;;  ("one space" . "Top/One/one space")
+;;  ("Two" . "Top/Two")
+;;  ("Trash" . "Trash")
+;;  ("Zob" . "Zob")
+;;  ("One" . "Zob/One")
+;;  ("Two  spaces" . "Zob/One/Two  spaces")))
+
+;; (message "list: %s" (list mylist))
 
 (defun mbug-deletedp (uid)
   "Return true if the flag list contains the \\Deleted flag."
@@ -1595,6 +1612,7 @@ This ensures that deleted messages are removed from the obarray."
 Opened folders have their messages re-read and re-drawn."
   (interactive)
   (message "mbug-redraw IN")
+
   ;; (setq stored-pos (point))
   (defun insert-with-prop (text prop-list)
     (let ((pt (point)))
@@ -1729,35 +1747,35 @@ Use `mbug-msg-recount' to get the un/seen status of every messages."
      mbug-smart-folder-list)))
 
 
-(defun mbug-msg-recount (display-buffer folder-name msg)
-  "recheck a msg for counting."
-  (with-current-buffer display-buffer
-    (let* ((uid (car msg))
-					 (date (mbug-date-format (imap-message-envelope-date uid mbug-connection)))
-					 ;; (date (cdr msg))
-					 (from-addr
-						(mbug-from-format
-						 (let ((env-from (imap-message-envelope-from uid mbug-connection)))
-							 (if (consp env-from)
-									 (car env-from)
-								 ;; Make up an address
-								 `("-" "unknown email" "-" "-")))))
-					 (subject
-						(mbug-field-format 1 (imap-message-envelope-subject uid mbug-connection) 't))
+;; (defun mbug-msg-recount (display-buffer folder-name msg)
+;;   "recheck a msg for counting."
+;;   (with-current-buffer display-buffer
+;;     (let* ((uid (car msg))
+;; 					 (date (mbug-date-format (imap-message-envelope-date uid mbug-connection)))
+;; 					 ;; (date (cdr msg))
+;; 					 (from-addr
+;; 						(mbug-from-format
+;; 						 (let ((env-from (imap-message-envelope-from uid mbug-connection)))
+;; 							 (if (consp env-from)
+;; 									 (car env-from)
+;; 								 ;; Make up an address
+;; 								 `("-" "unknown email" "-" "-")))))
+;; 					 (subject
+;; 						(mbug-field-format 1 (imap-message-envelope-subject uid mbug-connection) 't))
 
-					 (message-status
-            (cond
-             ((not (mbug-seenp uid)) 'mbug-status-unread)
-             (t 'mbug-status-read)))
-           )
+;; 					 (message-status
+;;             (cond
+;;              ((not (mbug-seenp uid)) 'mbug-status-unread)
+;;              (t 'mbug-status-read)))
+;;            )
 
-      (message "display-buffer: %s folder-name: %s msg: %s" display-buffer folder-name msg)
+;;       (message "display-buffer: %s folder-name: %s msg: %s" display-buffer folder-name msg)
 
-      (if (eq message-status 'mbug-status-unread)
-          (progn (add-to-list 'mbug-unread-mails msg)
-                 (message "new one: %s" (car mbug-unread-mails)))
-        )
-      )))
+;;       (if (eq message-status 'mbug-status-unread)
+;;           (progn (add-to-list 'mbug-unread-mails msg)
+;;                  (message "new one: %s" (car mbug-unread-mails)))
+;;         )
+;;       )))
 
 (defun mbug-msg-redraw (display-buffer folder-name msg)
   "redraw a single message line.
@@ -1794,7 +1812,7 @@ msg is a dotted pair such that:
              ))
            )
 
-      (message "display-buffer: %s folder-name: %s msg: %s" display-buffer folder-name msg)
+      ;; (message "display-buffer: %s folder-name: %s msg: %s" display-buffer folder-name msg)
 
       (if (eq message-face 'mbug-px-face-unread)
           (progn (add-to-list 'mbug-unread-mails subject)
