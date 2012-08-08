@@ -1819,7 +1819,11 @@ msg is a dotted pair such that:
           ;; Compare the sort elements by date
           (lambda (left right)
             (string< (cdr left) (cdr right)))))))
-    (message "mbug-recount OUT")))
+    (message "mbug-recount OUT"))
+  ;; Refresh the modeline
+  (progn (setq global-mode-string ())
+         (add-to-list 'global-mode-string
+                      (mail-bug-mode-line mbug-unread-mails))))
 
 (defun mbug-get-msg-recount-func (folder-name)
   'mbug-msg-recount)
@@ -2090,3 +2094,58 @@ overlay on the hide-region-overlays \"ring\""
 ;;               (cons folder-name 't)) test-list)
 
 ;; (insert (propertize "plop" 'help-info (cdr folder-cell)))plopplopplopplop
+
+;; Modeline
+
+
+(defconst mail-bug-logo
+  (if (and window-system
+           mail-bug-icon)
+      (apply 'propertize " " `(display ,mail-bug-icon))
+    mail-bug))
+
+(defcustom mail-bug-icon
+  (when (image-type-available-p 'xpm)
+    '(image :type xpm
+            :file "~/.emacs.d/lisp/mail-bug/greenbug.xpm"
+            :ascent center))
+  "Icon for the first account.
+Must be an XPM (use Gimp)."
+  :group 'mail-bug)
+
+(defun mail-bug-mode-line (mbug-unseen-mails)
+  "Construct an emacs modeline object."
+  ;; (message "mail-bug-mode-line-all called with %s" num)
+  (if (null mbug-unseen-mails)
+      (concat mail-bug-logo " ")
+    (let ((s (format "%d" (length mbug-unseen-mails)))
+          (map (make-sparse-keymap))
+          (url (concat "http://" mbug-host-name)))
+
+      (define-key map (vector 'mode-line 'mouse-1)
+        `(lambda (e)
+           (interactive "e")
+           (funcall mail-bug-external-client)))
+
+      (define-key map (vector 'mode-line 'mouse-2)
+        `(lambda (e)
+           (interactive "e")
+           (browse-url ,url)))
+
+      (define-key map (vector 'mode-line 'mouse-3)
+        `(lambda (e)
+           (interactive "e")
+           (mbolic mbug-unseen-mails)))
+
+      ;; (add-text-properties 0 (length s)
+;;                            `(local-map
+;;                              ,map mouse-face mode-line-highlight uri
+;;                              ,url help-echo
+;;                              ,(concat (mail-bug-tooltip (format "%s" num))
+;;                                       (format "
+;; --------------
+;; mouse-1: View mail in %s
+;; mouse-2: View mail on %s
+;; mouse-3: View mail in MBOLIC" mail-bug-external-client mbug-host-name mbug-host-name)))
+;;                            s)
+      (concat mail-bug-logo ":" s))))
