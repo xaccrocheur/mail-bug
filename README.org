@@ -2,7 +2,6 @@
 
 Mail-bug is a fork of imapua.el
 
-
 ** INSTALLATION
 To enable it, put the directory in your load-path, and this in your
 .emacs :
