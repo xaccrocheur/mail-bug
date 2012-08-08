@@ -663,8 +663,12 @@ An malist is a Multi Association LIST: a list of alists."
 
 (defun mbug-splash-it ()
   (if (file-exists-p "~/.emacs.d/lisp/mail-bug/mail-bug.svg")
-      (insert-image (create-image "~/.emacs.d/lisp/mail-bug/mail-bug.svg"))
-    (animate-string "
+    (progn
+      (setq line 2)
+      (insert-image (create-image "~/.emacs.d/lisp/mail-bug/mail-bug.svg")))
+    (progn
+      (setq line 9)
+      (animate-string "
           `'.   .'`
              \\_/
           \\ .:=:. /
@@ -672,8 +676,8 @@ An malist is a Multi Association LIST: a list of alists."
          /`-._|_.-'\\
         /     |     \\
        /_/    |    \\_\\
-       '----'`^`'----'" 0 0))
-  (animate-string (concat (mbug-string-repeat "-" (- (third (window-edges)) 25)) "> mail-bug 0.1b -->") 9 0))
+       '----'`^`'----'" 0 0)))
+  (animate-string (concat (mbug-string-repeat "-" (- (third (window-edges)) 25)) "> mail-bug 0.1b -->") line 0))
 
 ;; The intializing proc.
 ;;;###autoload
@@ -738,18 +742,7 @@ If you want to know about updates this is the function to use."
 (defun mbug-click ()
   "Click!"
   (interactive)
-  (kbd "<mouse-1>")
-  ;; (sleep-for 1)
-
-  (message "point is %s" (point))
-  (beginning-of-line)
-  (message "point is now %s" (point))
-  ;; (goto-line (cdr (sixth (cdr (posn-at-point)))))
-  ;; (deactivate-mark)
-  ;; (line)
-  ;; (sleep-for 1)
-  ;; ;; (mouse-drag-region (point))
-  ;; ;; (beginning-of-line)
+  (sleep-for 0.5)
   (mbug-open)
   )
 
@@ -775,7 +768,7 @@ The keys defined are:
   (kill-all-local-variables)
   (unless mbug-mode-map
     (setq mbug-mode-map (make-sparse-keymap))
-		;; (define-key mbug-mode-map [down-mouse-1] 'mbug-click)
+		(define-key mbug-mode-map [down-mouse-1] 'mbug-click)
     (define-key mbug-mode-map "\r" 'mbug-open)
     (define-key mbug-mode-map "+" 'mbug-create-folder)
     (define-key mbug-mode-map "/" 'isearch-forward-regexp)
@@ -1723,13 +1716,13 @@ Opened folders have their messages re-read and re-drawn."
 		;; 							 (string< (cdr left) (cdr right)))))
 		;; 					 (insert "\n")))))
     ;;  mbug-folder-list)
+    ;; (toggle-truncate-lines 1)
     (goto-char stored-pos)
-    (toggle-truncate-lines 1)
 
     ;; pX: Go to last mail in this folder
-    (search-forward-regexp "^$")
-    (previous-line)
-    (message "mbug-redraw OUT")
+    ;; (search-forward-regexp "^$")
+    ;; (previous-line)
+    ;; (message "mbug-redraw OUT")
 ))
 
 (defun mbug-get-msg-redraw-func (folder-name)
