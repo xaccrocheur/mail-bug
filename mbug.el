@@ -540,7 +540,7 @@ The timezone package is used to parse the string."
                            (funcall fn (cdr flag-list) fn)
                          nil)))
                  nil))))
-        (message "mbug flag list for uid %s: %s" uid (list flag-list))
+        ;; (message "mbug flag list for uid %s: %s" uid (list flag-list))
         (funcall seenp flag-list seenp)))
 )
 
@@ -696,6 +696,19 @@ An malist is a Multi Association LIST: a list of alists."
        '----'`^`'----'" 0 0)))
   (animate-string (concat (mbug-string-repeat "-" (- (third (window-edges)) 25)) "> mail-bug 0.1b -->") line 0))
 
+
+(defun mbug-timer-start ()
+  "Init"
+  (interactive)
+  (message "thunderbirds are GO")
+  (run-with-timer 10
+                  30
+                  'mbug-recount))
+
+(defun mbug-timer-kill ()
+  (interactive)
+  (cancel-timer 'mbug-timer-start))
+
 ;; The intializing proc.
 ;;;###autoload
 (defun mbug (&optional host-name tcp-port)
@@ -735,6 +748,7 @@ This means you can have multiple mbug sessions in one emacs session."
                 (setq mbug-host host-name)
                 (make-local-variable 'mbug-port)
                 (setq mbug-port tcp-port)))))
+    ;; (mbug-timer-start)
     (mbug-redraw))
   ;; t
   )
@@ -1675,8 +1689,8 @@ Opened folders have their messages re-read and re-drawn."
     (goto-char stored-pos)
 
     ;; pX: Go to last mail in this folder
-    (search-forward-regexp "^$")
-    (previous-line)
+    ;; (search-forward-regexp "^$")
+    ;; (previous-line)
     ;; (message "mbug-redraw OUT")
 ))
 
@@ -1691,6 +1705,7 @@ msg is a dotted pair such that:
   ;; it's done like that so mbug-redraw can sort and map the
   ;; messages all in one... but it means multiple calls to
   ;; mbug-date-format which is perhaps slow.
+  (message "mbug-msg-redraw IN, mbug-connection: %s" mbug-connection)
   (with-current-buffer display-buffer
     (let* ((inhibit-read-only 't)
 					 (uid (car msg))
@@ -1719,11 +1734,6 @@ msg is a dotted pair such that:
            )
 
       ;; (message "display-buffer: %s folder-name: %s msg: %s" display-buffer folder-name msg)
-
-      (if (eq message-face 'mbug-px-face-unread)
-          (progn (add-to-list 'mbug-unread-mails subject)
-                 (message "new one!"))
-        )
 
       (beginning-of-line)
       (if (> (- (line-end-position) (point)) 0)
@@ -1765,62 +1775,53 @@ msg is a dotted pair such that:
 
 (defvar mbug-unread-mails nil)
 
-
 (defun mbug-recount ()
   "recount the buffer based on the imap state.
 Opened folders have their messages re-read and re-drawn."
   (interactive)
-  (message "mbug-recount IN")
-
+  (message "mbug-recount IN, mbug-connection: %s" mbug-connection)
   ;; Main function.
   (mbug-ensure-connected)
-  (let ((display-buffer (current-buffer)))
-    (mbug-refresh-folder-list)
+  (let ((display-buffer "mail-bug"))
 
-    ;; Map the folder display over the sorted smart folder list - new mapc.
-    (mapc
-     (lambda (folder-cell)
-       (with-current-buffer display-buffer
+    (with-current-buffer display-buffer
 
-         (let ((folder-name (car folder-cell))
-               (folder-path (cdr folder-cell)))
-           ;; (message "name: %s path: %s depth: %s" folder-name folder-path folder-depth)
+      (let ((mbug-this-box "INBOX"))
+        ;; (message "name: %s path: %s depth: %s" folder-name folder-path folder-depth)
 
-           (if (imap-mailbox-get 'OPENED (cdr folder-cell) mbug-connection)
-               (let* ((selection
+        (if (imap-mailbox-get 'OPENED mbug-this-box mbug-connection)
+            (let* ((selection
 
-                       ;; Force the re-selection of the folder before local vars
-                       (progn
-                         (imap-mailbox-unselect mbug-connection)
-                         (imap-mailbox-select (cdr folder-cell) nil mbug-connection)))
-                      (existing (imap-mailbox-get 'exists (cdr folder-cell) mbug-connection))
-                      (message-range (concat "1:" (number-to-string existing))))
-                 (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't mbug-connection)
+                    ;; Force the re-selection of the folder before local vars
+                    (progn
+                      (imap-mailbox-unselect mbug-connection)
+                      (imap-mailbox-select mbug-this-box nil mbug-connection)))
+                   (existing (imap-mailbox-get 'exists mbug-this-box mbug-connection))
+                   (message-range (concat "1:" (number-to-string existing))))
+              (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't mbug-connection)
 
-                 ;; Map the message recount over each message in the folder.
-                 (mapc
-                  (lambda (msg)
-                    (let ((msg-recount-func (mbug-get-msg-recount-func (cdr folder-cell))))
-                      (funcall msg-recount-func display-buffer (cdr folder-cell) msg)))
+              ;; Map the message recount over each message in the folder.
+              (mapc
+               (lambda (msg)
+                 (let ((msg-recount-func (mbug-get-msg-recount-func mbug-this-box)))
+                   (funcall msg-recount-func display-buffer mbug-this-box msg)))
 
-                  ;; The message list is sorted before being output
-                  (sort
-                   (imap-message-map
-                    (lambda (uid property)
-                      (cons uid
-                            (condition-case nil
-                                (timezone-make-date-sortable (mbug-date-format (elt property 0)) "GMT" "GMT")
+               ;; The message list is sorted before being output
+               (sort
+                (imap-message-map
+                 (lambda (uid property)
+                   (cons uid
+                         (condition-case nil
+                             (timezone-make-date-sortable (mbug-date-format (elt property 0)) "GMT" "GMT")
 
-                              ;; Ensures that strange dates don't cause a problem.
-                              (range-error nil))))
-                    'ENVELOPE mbug-connection)
+                           ;; Ensures that strange dates don't cause a problem.
+                           (range-error nil))))
+                 'ENVELOPE mbug-connection)
 
-                   ;; Compare the sort elements by date
-                   (lambda (left right)
-                     (string< (cdr left) (cdr right)))))
-
-                 (insert "\n"))))))
-     mbug-smart-folder-list)
+                ;; Compare the sort elements by date
+                (lambda (left right)
+                  (string< (cdr left) (cdr right)))))
+              ))))
     (message "mbug-recount OUT")
 ))
 
@@ -1831,7 +1832,7 @@ Opened folders have their messages re-read and re-drawn."
   "recount a single message line.
 msg is a dotted pair such that:
    ( uid . msg-date )"
-  (message "mbug-msg-recount IN")
+  (message "mbug-msg-recount IN, mbug-connection: %s in display-buffer: %s" mbug-connection display-buffer)
   (with-current-buffer display-buffer
     (let* ((uid (car msg))
 					 (date (mbug-date-format (imap-message-envelope-date uid mbug-connection)))
@@ -1841,10 +1842,9 @@ msg is a dotted pair such that:
 						 (let ((env-from (imap-message-envelope-from uid mbug-connection)))
 							 (if (consp env-from)
 									 (car env-from)
-								 ;; Make up an address
 								 `("-" "unknown email" "-" "-")))))
 					 (subject
-						(mbug-field-format 1 (imap-message-envelope-subject uid mbug-connection) 't))
+            (imap-message-envelope-subject uid mbug-connection))
 
 					 (mbug-status
             (cond
@@ -1855,10 +1855,12 @@ msg is a dotted pair such that:
            )
 
       (if (eq mbug-status 'mbug-status-unread)
-          (progn (add-to-list 'mbug-unread-mails uid)
-                 (message "new one in the list!"))
+          (progn (add-to-list 'mbug-unread-mails msg)
+                 (message "---new one in the list!---"))
         )
-      (message "mbug-msg-recount OUT status: %s" mbug-status))))
+      (message "mbug-msg-recount OUT status: %s" mbug-status)
+      ))
+  )
 
 
 ;; END COUNT
