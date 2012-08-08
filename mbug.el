@@ -2140,8 +2140,7 @@ Must be an XPM (use Gimp)."
 mouse-1: View mail in %s
 mouse-2: View mail on %s" mbug-host-name mbug-host-name))
                            s)
-      (concat mail-bug-logo ":" s))
-    ))
+      (concat mail-bug-logo ":" s))))
 
 
 (defun mail-bug-desktop-notify (list)
