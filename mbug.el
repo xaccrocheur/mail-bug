@@ -1781,7 +1781,7 @@ Opened folders have their messages re-read and re-drawn."
   (interactive)
   (message "mbug-recount IN, mbug-connection: %s" mbug-connection)
   ;; Main function.
-  (mbug-ensure-connected)
+  ;; (mbug-ensure-connected)
   (let ((display-buffer "mail-bug"))
 
     (with-current-buffer display-buffer
@@ -1789,39 +1789,38 @@ Opened folders have their messages re-read and re-drawn."
       (let ((mbug-this-box "INBOX"))
         ;; (message "name: %s path: %s depth: %s" folder-name folder-path folder-depth)
 
-        (if (imap-mailbox-get 'OPENED mbug-this-box mbug-connection)
-            (let* ((selection
+        (let* ((selection
 
-                    ;; Force the re-selection of the folder before local vars
-                    (progn
-                      (imap-mailbox-unselect mbug-connection)
-                      (imap-mailbox-select mbug-this-box nil mbug-connection)))
-                   (existing (imap-mailbox-get 'exists mbug-this-box mbug-connection))
-                   (message-range (concat "1:" (number-to-string existing))))
-              (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't mbug-connection)
+                ;; Force the re-selection of the folder before local vars
+                (progn
+                  (imap-mailbox-unselect mbug-connection)
+                  (imap-mailbox-select mbug-this-box nil mbug-connection)))
+               (existing (imap-mailbox-get 'exists mbug-this-box mbug-connection))
+               (message-range (concat "1:" (number-to-string existing))))
+          (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't mbug-connection)
 
-              ;; Map the message recount over each message in the folder.
-              (mapc
-               (lambda (msg)
-                 (let ((msg-recount-func (mbug-get-msg-recount-func mbug-this-box)))
-                   (funcall msg-recount-func display-buffer mbug-this-box msg)))
+          ;; Map the message recount over each message in the folder.
+          (mapc
+           (lambda (msg)
+             (let ((msg-recount-func (mbug-get-msg-recount-func mbug-this-box)))
+               (funcall msg-recount-func display-buffer mbug-this-box msg)))
 
-               ;; The message list is sorted before being output
-               (sort
-                (imap-message-map
-                 (lambda (uid property)
-                   (cons uid
-                         (condition-case nil
-                             (timezone-make-date-sortable (mbug-date-format (elt property 0)) "GMT" "GMT")
+           ;; The message list is sorted before being output
+           (sort
+            (imap-message-map
+             (lambda (uid property)
+               (cons uid
+                     (condition-case nil
+                         (timezone-make-date-sortable (mbug-date-format (elt property 0)) "GMT" "GMT")
 
-                           ;; Ensures that strange dates don't cause a problem.
-                           (range-error nil))))
-                 'ENVELOPE mbug-connection)
+                       ;; Ensures that strange dates don't cause a problem.
+                       (range-error nil))))
+             'ENVELOPE mbug-connection)
 
-                ;; Compare the sort elements by date
-                (lambda (left right)
-                  (string< (cdr left) (cdr right)))))
-              ))))
+            ;; Compare the sort elements by date
+            (lambda (left right)
+              (string< (cdr left) (cdr right)))))
+          )))
     (message "mbug-recount OUT")
 ))
 
