@@ -1651,7 +1651,7 @@ Opened folders have their messages re-read and re-drawn."
            ;; (insert-image (create-image "~/.emacs.d/lisp/mail-bug/folder.gif"))
            (insert (propertize (concat
                                 (mbug-string-repeat " " folder-depth)
-                                folder-name) 'face 'mbug-px-face-folder))
+                                "♦ " folder-name) 'face 'mbug-px-face-folder))
            (put-text-property (line-beginning-position) (+ 1 (line-beginning-position)) 'help-echo folder-path)
 
            (insert " \n")
@@ -1693,8 +1693,8 @@ Opened folders have their messages re-read and re-drawn."
     (goto-char stored-pos)
 
     ;; pX: Go to last mail in this folder
-    ;; (search-forward-regexp "^$")
-    ;; (previous-line)
+    (search-forward-regexp "^$")
+    (previous-line)
     ;; (message "mbug-redraw OUT")
 ))
 
