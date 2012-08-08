@@ -743,8 +743,7 @@ If you want to know about updates this is the function to use."
   "Click!"
   (interactive)
   (sleep-for 0.5)
-  (mbug-open)
-  )
+  (mbug-open))
 
 ;; pX: : line hilite
 (add-hook 'mbug-mode-hook
@@ -768,7 +767,7 @@ The keys defined are:
   (kill-all-local-variables)
   (unless mbug-mode-map
     (setq mbug-mode-map (make-sparse-keymap))
-		(define-key mbug-mode-map [down-mouse-1] 'mbug-click)
+		(define-key mbug-mode-map [down-mouse-1] 'mbug-open)
     (define-key mbug-mode-map "\r" 'mbug-open)
     (define-key mbug-mode-map "+" 'mbug-create-folder)
     (define-key mbug-mode-map "/" 'isearch-forward-regexp)
@@ -790,7 +789,7 @@ The keys defined are:
   ;;set the mode as a non-editor mode
   (put 'mbug-mode 'mode-class 'special)
   ;;specify the mode name
-  (setq mode-name "IMAP-UA")
+  (setq mode-name "mbug")
   (setq major-mode 'mbug-mode)
   ;;setup the buffer to be modal
   (setq buffer-read-only 't)
@@ -1596,7 +1595,7 @@ This ensures that deleted messages are removed from the obarray."
 Opened folders have their messages re-read and re-drawn."
   (interactive)
   (message "mbug-redraw IN")
-
+  ;; (setq stored-pos (point))
   (defun insert-with-prop (text prop-list)
     (let ((pt (point)))
       (insert text)
@@ -1604,7 +1603,8 @@ Opened folders have their messages re-read and re-drawn."
 
   ;; Main function.
   (mbug-ensure-connected)
-  (let ((stored-pos (point-marker))
+  (let (
+        (stored-pos (point))
 				(inhibit-read-only 't)
 				(display-buffer (current-buffer)))
     (delete-region (point-min) (point-max))
@@ -1665,63 +1665,11 @@ Opened folders have their messages re-read and re-drawn."
 
                  (insert "\n"))))))
      mbug-smart-folder-list)
-
-    ;; Map the folder display over the sorted folder list -original mapc.
-    ;; (mapc
-    ;;  (lambda (folder-name)
-    ;;    (with-current-buffer display-buffer
-
-		;; 		 ;; pX:
-		;; 		 ;; (insert-with-prop folder-name `(face (foreground-color . ,mbug-folder-color)))
-		;; 		 (insert (propertize folder-name 'face 'mbug-px-face-folder))
-
-		;; 		 (if (mbug-has-recent-p folder-name)
-
-		;; 				 ;; pX:
-		;; 				 ;; (insert-with-prop " * " `(face (foreground-color . ,mbug-unseen-message-color)))
-		;; 				 (insert (propertize " * " 'face 'mbug-px-face-unread))
-		;; 			 )
-		;; 		 (insert " \n")
-		;; 		 (if (imap-mailbox-get 'OPENED folder-name mbug-connection)
-		;; 				 (let* ((selection
-
-		;; 								 ;; Force the re-selection of the folder before local vars
-		;; 								 (progn
-		;; 									 (imap-mailbox-unselect mbug-connection)
-		;; 									 (imap-mailbox-select folder-name nil mbug-connection)))
-		;; 								(existing (imap-mailbox-get 'exists folder-name mbug-connection))
-		;; 								(message-range (concat "1:" (number-to-string existing))))
-		;; 					 (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't mbug-connection)
-
-		;; 					 ;; Map the message redraw over each message in the folder.
-		;; 					 (mapc
-		;; 						(lambda (msg)
-		;; 							(let ((msg-redraw-func (mbug-get-msg-redraw-func folder-name)))
-		;; 								(funcall msg-redraw-func display-buffer folder-name msg)))
-
-		;; 						;; The message list is sorted before being output
-		;; 						(sort
-		;; 						 (imap-message-map
-		;; 							(lambda (uid property)
-		;; 								(cons uid
-    ;;                       (condition-case nil
-    ;;                           (timezone-make-date-sortable (mbug-date-format (elt property 0)) "GMT" "GMT")
-
-    ;;                         ;; Ensures that strange dates don't cause a problem.
-    ;;                         (range-error nil))))
-		;; 							'ENVELOPE mbug-connection)
-
-		;; 						 ;; Compare the sort elements by date
-		;; 						 (lambda (left right)
-		;; 							 (string< (cdr left) (cdr right)))))
-		;; 					 (insert "\n")))))
-    ;;  mbug-folder-list)
-    ;; (toggle-truncate-lines 1)
     (goto-char stored-pos)
 
     ;; pX: Go to last mail in this folder
-    ;; (search-forward-regexp "^$")
-    ;; (previous-line)
+    (search-forward-regexp "^$")
+    (previous-line)
     ;; (message "mbug-redraw OUT")
 ))
 
