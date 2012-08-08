@@ -1595,17 +1595,6 @@ This ensures that deleted messages are removed from the obarray."
       (imap-close mbug-connection))
   (setq mbug-connection nil))
 
-;;;; The display logic.
-
-;; (insert (propertize "Gah! I'm green!" 'face 'mbug-px-unread-face))
-
-;; (insert (propertize "Gah! I'm green!" 'face '(:foreground "#00ff00" :background "#005000")))
-
-;; (defvar mbug-unread-mails '())
-
-;; (setq plop "ployp")
-
-;; (add-to-list 'mbug-unread-mails plop)
 
 (defun mbug-redraw ()
   "redraw the buffer based on the imap state.
@@ -1638,7 +1627,7 @@ Opened folders have their messages re-read and re-drawn."
                (folder-depth (mbug-count-occurrences "/" (cdr folder-cell)))
                ;; (folder-depth 0)
                )
-           (message "name: %s path: %s depth: %s" folder-name folder-path folder-depth)
+           ;; (message "name: %s path: %s depth: %s" folder-name folder-path folder-depth)
  ;; ▷
 
            ;; (insert-image (create-image "~/.emacs.d/lisp/mail-bug/folder.gif"))
@@ -1693,89 +1682,6 @@ Opened folders have their messages re-read and re-drawn."
 
 (defun mbug-get-msg-redraw-func (folder-name)
   'mbug-msg-redraw)
-
-;; pX:
-(defun mbug-get-msg-recount-func (folder-name)
-  'mbug-msg-recount)
-
-(defvar mbug-unread-mails nil)
-
-(defun mbug-recount ()
-  "Recount.
-Use `mbug-msg-recount' to get the un/seen status of every messages."
-  (interactive)
-  (mbug-ensure-connected)
-  (let ((display-buffer (current-buffer)))
-    (mbug-refresh-folder-list)
-
-    ;; Map the folder counting over the sorted folder list.
-    (mapc
-     (lambda (folder-cell)
-       (with-current-buffer display-buffer
-
-				 (if (imap-mailbox-get 'OPENED folder-name mbug-connection)
-						 (let* ((selection
-
-										 ;; Force the re-selection of the folder before local vars
-										 (progn
-											 (imap-mailbox-unselect mbug-connection)
-											 (imap-mailbox-select (cdr folder-cell) nil mbug-connection)))
-										(existing (imap-mailbox-get 'exists (cdr folder-cell) mbug-connection))
-										(message-range (concat "1:" (number-to-string existing))))
-							 (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't mbug-connection)
-
-							 ;; Map the message redraw over each message in the folder.
-							 (mapc
-								(lambda (msg)
-									(let ((msg-recount-func (mbug-get-msg-recount-func (cdr folder-cell))))
-										(funcall msg-recount-func display-buffer (cdr folder-cell) msg)))
-								;; The message list is sorted before being output
-								(sort
-								 (imap-message-map
-									(lambda (uid property)
-										(cons uid
-                          (condition-case nil
-                              (timezone-make-date-sortable (mbug-date-format (elt property 0)) "GMT" "GMT")
-                            ;; Ensure that strange dates don't cause a problem.
-                            (range-error nil))))
-									'ENVELOPE mbug-connection)
-
-								 ;; Compare the sort elements by date
-								 (lambda (left right)
-									 (string< (cdr left) (cdr right)))))
-               ))))
-     mbug-smart-folder-list)))
-
-
-;; (defun mbug-msg-recount (display-buffer folder-name msg)
-;;   "recheck a msg for counting."
-;;   (with-current-buffer display-buffer
-;;     (let* ((uid (car msg))
-;; 					 (date (mbug-date-format (imap-message-envelope-date uid mbug-connection)))
-;; 					 ;; (date (cdr msg))
-;; 					 (from-addr
-;; 						(mbug-from-format
-;; 						 (let ((env-from (imap-message-envelope-from uid mbug-connection)))
-;; 							 (if (consp env-from)
-;; 									 (car env-from)
-;; 								 ;; Make up an address
-;; 								 `("-" "unknown email" "-" "-")))))
-;; 					 (subject
-;; 						(mbug-field-format 1 (imap-message-envelope-subject uid mbug-connection) 't))
-
-;; 					 (message-status
-;;             (cond
-;;              ((not (mbug-seenp uid)) 'mbug-status-unread)
-;;              (t 'mbug-status-read)))
-;;            )
-
-;;       (message "display-buffer: %s folder-name: %s msg: %s" display-buffer folder-name msg)
-
-;;       (if (eq message-status 'mbug-status-unread)
-;;           (progn (add-to-list 'mbug-unread-mails msg)
-;;                  (message "new one: %s" (car mbug-unread-mails)))
-;;         )
-;;       )))
 
 (defun mbug-msg-redraw (display-buffer folder-name msg)
   "redraw a single message line.
@@ -1852,6 +1758,109 @@ msg is a dotted pair such that:
 			;; 										 `(UID ,uid FOLDER ,folder-name
 			;; 													 face (foreground-color . ,color)))
       )))
+
+
+;; COUNT
+;; pX:
+
+(defvar mbug-unread-mails nil)
+
+
+(defun mbug-recount ()
+  "recount the buffer based on the imap state.
+Opened folders have their messages re-read and re-drawn."
+  (interactive)
+  (message "mbug-recount IN")
+
+  ;; Main function.
+  (mbug-ensure-connected)
+  (let ((display-buffer (current-buffer)))
+    (mbug-refresh-folder-list)
+
+    ;; Map the folder display over the sorted smart folder list - new mapc.
+    (mapc
+     (lambda (folder-cell)
+       (with-current-buffer display-buffer
+
+         (let ((folder-name (car folder-cell))
+               (folder-path (cdr folder-cell)))
+           ;; (message "name: %s path: %s depth: %s" folder-name folder-path folder-depth)
+
+           (if (imap-mailbox-get 'OPENED (cdr folder-cell) mbug-connection)
+               (let* ((selection
+
+                       ;; Force the re-selection of the folder before local vars
+                       (progn
+                         (imap-mailbox-unselect mbug-connection)
+                         (imap-mailbox-select (cdr folder-cell) nil mbug-connection)))
+                      (existing (imap-mailbox-get 'exists (cdr folder-cell) mbug-connection))
+                      (message-range (concat "1:" (number-to-string existing))))
+                 (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't mbug-connection)
+
+                 ;; Map the message recount over each message in the folder.
+                 (mapc
+                  (lambda (msg)
+                    (let ((msg-recount-func (mbug-get-msg-recount-func (cdr folder-cell))))
+                      (funcall msg-recount-func display-buffer (cdr folder-cell) msg)))
+
+                  ;; The message list is sorted before being output
+                  (sort
+                   (imap-message-map
+                    (lambda (uid property)
+                      (cons uid
+                            (condition-case nil
+                                (timezone-make-date-sortable (mbug-date-format (elt property 0)) "GMT" "GMT")
+
+                              ;; Ensures that strange dates don't cause a problem.
+                              (range-error nil))))
+                    'ENVELOPE mbug-connection)
+
+                   ;; Compare the sort elements by date
+                   (lambda (left right)
+                     (string< (cdr left) (cdr right)))))
+
+                 (insert "\n"))))))
+     mbug-smart-folder-list)
+    (message "mbug-recount OUT")
+))
+
+(defun mbug-get-msg-recount-func (folder-name)
+  'mbug-msg-recount)
+
+(defun mbug-msg-recount (display-buffer folder-name msg)
+  "recount a single message line.
+msg is a dotted pair such that:
+   ( uid . msg-date )"
+  (message "mbug-msg-recount IN")
+  (with-current-buffer display-buffer
+    (let* ((uid (car msg))
+					 (date (mbug-date-format (imap-message-envelope-date uid mbug-connection)))
+					 ;; (date (cdr msg))
+					 (from-addr
+						(mbug-from-format
+						 (let ((env-from (imap-message-envelope-from uid mbug-connection)))
+							 (if (consp env-from)
+									 (car env-from)
+								 ;; Make up an address
+								 `("-" "unknown email" "-" "-")))))
+					 (subject
+						(mbug-field-format 1 (imap-message-envelope-subject uid mbug-connection) 't))
+
+					 (mbug-status
+            (cond
+             ((mbug-deletedp uid) 'mbug-status-deleted)
+             ((not (mbug-seenp uid)) 'mbug-status-unread)
+             (t 'mbug-status-normal)
+             ))
+           )
+
+      (if (eq mbug-status 'mbug-status-unread)
+          (progn (add-to-list 'mbug-unread-mails uid)
+                 (message "new one in the list!"))
+        )
+      (message "mbug-msg-recount OUT status: %s" mbug-status))))
+
+;; END COUNT
 
 ;; Auto-BCC
 (defadvice message-reply (after mbug-message-reply-yank-original)
