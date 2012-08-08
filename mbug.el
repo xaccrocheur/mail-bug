@@ -71,7 +71,7 @@
   "the imap server port")
 
 ;; The cached username
-(defvar mbug-username "philippec@gmx.com"
+(defvar mbug-username "philcm@gmx.com"
   "the user's name")
 
 ;; The cached password
@@ -679,23 +679,7 @@ An malist is a Multi Association LIST: a list of alists."
 
 
 (defun mbug-splash-it ()
-  (if (file-exists-p "~/.emacs.d/lisp/mail-bug/mail-bug.svg")
-    (progn
-      (setq line 2)
-      (insert-image (create-image "~/.emacs.d/lisp/mail-bug/mail-bug.svg")))
-    (progn
-      (setq line 9)
-      (animate-string "
-          `'.   .'`
-             \\_/
-          \\ .:=:. /
-        --.' -|- '.--
-         /`-._|_.-'\\
-        /     |     \\
-       /_/    |    \\_\\
-       '----'`^`'----'" 0 0)))
-  (animate-string (concat (mbug-string-repeat "-" (- (third (window-edges)) 25)) "> mail-bug 0.1b -->") line 0))
-
+  (animate-string "mail-bug β "  (/ (fourth (window-edges)) 2) (- (/ (third (window-edges)) 2) 10)))
 
 (defun mbug-timer-start ()
   "Init"
@@ -1015,8 +999,8 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
 
     (setq message-header-format-alist
           `(
-            (To)
             (From)
+            (To)
             (Bcc)
             (Date)
             (Subject)
@@ -1048,7 +1032,9 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
         (setq mbug-message-text-end-of-headers (point))
 
         (put 'mbug-message-text-end-of-headers 'permanent-local 't)
-        (insert "---------------------------------------------\n\n")
+
+        (insert (concat (mbug-string-repeat "-" (- (third (window-edges)) 6))) "\n\n")
+        ;; (insert "---------------------------------------------\n\n")
         ))
 
 
@@ -1574,13 +1560,13 @@ This ensures that deleted messages are removed from the obarray."
 
 (defun mbug-extract-folder-name (&optional pt)
   "Extract the folder-name from the current line."
+
   (save-excursion
     (if pt
         (goto-char pt))
-    (buffer-substring-no-properties
-     (line-beginning-position)
-     (save-excursion
-       (search-forward " " (line-end-position))))))
+      (let ((folder-name (get-text-property (point) 'help-echo)))
+    folder-name
+    (message "folder-name: %s" folder-name))))
 
 (defun mbug-create-folder (new-folder-name)
   "create a new folder under the specified parent folder."
@@ -1609,6 +1595,7 @@ This ensures that deleted messages are removed from the obarray."
 (defun mbug-logout ()
   "logout the mail server connection"
   (interactive)
+  (setq global-mode-string ())
   (if mbug-connection
       (imap-close mbug-connection))
   (setq mbug-connection nil))
@@ -1734,8 +1721,7 @@ msg is a dotted pair such that:
              ;; pX:
              ;; (t 'black)
              (t 'mbug-px-face-message)
-             ))
-           )
+             )))
 
       ;; (message "display-buffer: %s folder-name: %s msg: %s" display-buffer folder-name msg)
 

@@ -1,15 +1,16 @@
 * mail-bug.el
 
 Mail-bug is a fork of imapua.el (www.emacswiki.org/emacs/imapua.el)
+It is NOT READY for production. You have been warned.
 
 ** INSTALLATION
-To enable it, put the directory in your load-path, and this in your
+Put the file/directory in your load-path, and this in your
 .emacs :
 
 (require 'mail-bug)
 
 ** USAGE
-Use M-x customize-group "mail-bug" to safely setup your prefs.
+Use M-x customize-group "mail-bug" to setup your prefs.
 M-x mbug
 
 ** NOTES
