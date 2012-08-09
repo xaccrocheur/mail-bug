@@ -2125,17 +2125,20 @@ Any format works."
   :type 'string
   :group 'mail-bug)
 
+(setq nice-uri (replace-regexp-in-string "^.*?\\." "" mbug-host-name 't))
+
 (defun mbug-mode-line (mbug-unseen-mails)
   "Construct an emacs modeline object."
   (if (null mbug-unseen-mails)
       (concat mail-bug-logo " ")
     (let ((s (format "%d" (length mbug-unseen-mails)))
           (map (make-sparse-keymap))
-          (url (concat "http://" mbug-host-name)))
+          (url (concat "http://" nice-uri)))
 
       (define-key map (vector 'mode-line 'mouse-1)
         `(lambda (e)
            (interactive "e")
+           (switch-to-buffer "mail-bug")
            (funcall mail-bug-external-client)))
 
       (define-key map (vector 'mode-line 'mouse-2)
@@ -2148,13 +2151,15 @@ Any format works."
                              ,map mouse-face mode-line-highlight uri
                              ,url help-echo
                              ,(format "
---------------
-mouse-1: View mail in %s
-mouse-2: View mail on %s" mbug-host-name mbug-host-name))
+%s
+----------------------------
+mouse-1: View in mail-bug
+mouse-2: View on %s" (mbug-tooltip) url))
                            s)
       (concat mail-bug-logo ":" s))))
 
 (defvar mbug-advertised-mails '())
+
 
 (defun mbug-desktop-notify ()
   (mapcar
@@ -2165,12 +2170,10 @@ mouse-2: View mail on %s" mbug-host-name mbug-host-name))
             (format "%s" (second x))
             (format "%s \n%s" (first x) (third x))
             "5000" mbug-new-mail-icon)
-           (add-to-list 'mbug-advertised-mails x)
+           (add-to-list 'mbug-advertised-mails x))))
+   mbug-unread-mails))
 
-;; (message "Wow! %s \n%s" (first x) (third x))
-
-)))
-mbug-unread-mails))
+;; (mbug-tooltip mbug-unread-mails)
 
 
 (defun send-desktop-notification (summary body timeout)
@@ -2228,18 +2231,16 @@ And that's not the half of it."
     (message "New mail from %s! (%s)" summary subject)))
 
 
-(defun mbug-tooltip (list)
+(defun mbug-tooltip ()
   "Loop through the mail headers and build the hover tooltip"
   (mapconcat
    (lambda (x)
      (let
          ((tooltip-string
            (format "%s\n%s \n-------\n%s"
-                   (car x)
-                   (car (nthcdr 1 x))
-                   (car (nthcdr 2 x))
-                   )))
-       tooltip-string)
-     )
-   (symbol-value (intern (concat "mail-bug-unseen-mails-" list)))
+                   (first x)
+                   (second x)
+                   (third x))))
+       tooltip-string))
+   mbug-unread-mails
    "\n\n"))
