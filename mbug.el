@@ -44,6 +44,8 @@
 ;; If you have any comments or requests please send them to Nic Ferrier by
 ;; emailing: nferrier@tapsellferrier.co.uk
 
+;; Install libnotify-bin to get desktop notifications
+
 ;;; Code:
 
 ;;all these requires are from GNUS packages
@@ -58,6 +60,7 @@
 ;; (require 'gnus)
 
 (require 'w3m nil 'noerror)
+(require 'dbus)
 
 ;; Customization.
 
@@ -679,13 +682,13 @@ An malist is a Multi Association LIST: a list of alists."
 
 
 (defun mbug-splash-it ()
-  (animate-string "mail-bug β "  (/ (fourth (window-edges)) 2) (- (/ (third (window-edges)) 2) 10)))
+  (animate-string "mail-bug 0.1.2β "  (/ (fourth (window-edges)) 2) (- (/ (third (window-edges)) 2) 15)))
 
 (defun mbug-timer-start ()
   "Init"
   (interactive)
   (message "thunderbirds are GO")
-  (setq mbug-timer (run-with-timer 1
+  (setq mbug-timer (run-with-timer 15
                                    300
                                    'mbug-recount)))
 
@@ -835,6 +838,9 @@ The keys defined are:
 (defun mbug-kill-buffer ()
   (interactive)
   (kill-buffer (current-buffer))
+  ;; (sleep-for 0.5)
+  ;; (mbug-redraw)
+  ;; (mbug-recount)
   (delete-window))
 
 (define-derived-mode mbug-message-mode message-mode "IMAP UA Message" "IMPAUA Msg \\{mbug-message-mode-map}"
@@ -1071,8 +1077,7 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
       )
 
     ;; Display the list of other parts (if there are any) here
-    (mbug-part-list-display mbug-connection folder-name uid buf parts)
-    ))
+    (mbug-part-list-display mbug-connection folder-name uid buf parts)))
 
 
 (defun mbug-part-list-display (connection folder uid buffer part-list)
@@ -1814,6 +1819,9 @@ msg is a dotted pair such that:
 (defun mbug-get-msg-recount-func (folder-name)
   'mbug-msg-recount)
 
+(defvar this-mail nil)
+
+
 (defun mbug-msg-recount (display-buffer folder-name msg)
   "recount a single message line.
 msg is a dotted pair such that:
@@ -1839,10 +1847,16 @@ msg is a dotted pair such that:
              (t 'mbug-status-normal)
              ))
            )
+      (setq this-mail ())
+      (push msg this-mail)
+      (push subject this-mail)
+      (push from-addr this-mail)
+      (push date this-mail)
 
       (if (eq mbug-status 'mbug-status-unread)
-          (progn (add-to-list 'mbug-unread-mails msg)
-                 (message "---new one in the list!---"))
+          (progn
+            (add-to-list 'mbug-unread-mails this-mail)
+            (message "---new one in the list!---"))
         )
       (message "mbug-msg-recount OUT status: %s" mbug-status)
       ))
@@ -2099,6 +2113,18 @@ Must be an XPM (use Gimp)."
       (apply 'propertize " " `(display ,mail-bug-icon))
     mail-bug))
 
+(defcustom mbug-new-mail-icon "/usr/share/icons/oxygen/128x128/actions/configure.png"
+  "Icon for new mail notification.
+PNG works."
+  :type 'string
+  :group 'mail-bug-account-1)
+
+(defcustom mbug-new-mail-sound "/usr/share/sounds/pop.wav"
+  "Sound for new mail notification.
+Any format works."
+  :type 'string
+  :group 'mail-bug)
+
 (defun mbug-mode-line (mbug-unseen-mails)
   "Construct an emacs modeline object."
   (if (null mbug-unseen-mails)
@@ -2128,24 +2154,65 @@ mouse-2: View mail on %s" mbug-host-name mbug-host-name))
                            s)
       (concat mail-bug-logo ":" s))))
 
+(defvar mbug-advertised-mails '())
 
-(defun mail-bug-desktop-notify (list)
+(defun mbug-desktop-notify ()
   (mapcar
    (lambda (x)
-     (if (not (member x (symbol-value (intern (concat "mail-bug-advertised-mails-" list)))))
+     (if (not (member x mbug-advertised-mails))
          (progn
-           (mail-bug-desktop-notification
-            (format "%s" (first x))
-            (format "%s \n%s" (second x) (third x))
-            "5000" (symbol-value (intern (concat "mail-bug-new-mail-icon-" list))))
-           (add-to-list (intern (concat "mail-bug-advertised-mails-" list)) x))))
-   (symbol-value (intern (concat "mail-bug-unseen-mails-" list)))))
+           (mbug-desktop-notification
+            (format "%s" (second x))
+            (format "%s \n%s" (first x) (third x))
+            "5000" mbug-new-mail-icon)
+           (add-to-list 'mbug-advertised-mails x)
+
+;; (message "Wow! %s \n%s" (first x) (third x))
+
+)))
+mbug-unread-mails))
 
 
-(defun mail-bug-desktop-notification (summary body timeout icon)
+(defun send-desktop-notification (summary body timeout)
+  "call notification-daemon method METHOD with ARGS over dbus"
+  (dbus-call-method
+    :session                        ; use the session (not system) bus
+    "org.freedesktop.Notifications" ; service name
+    "/org/freedesktop/Notifications"   ; path name
+    "org.freedesktop.Notifications" "Notify" ; Method
+    "emacs"
+    0
+    ""
+    summary
+    body
+    '(:array)
+    '(:array :signature "{sv}")
+    ':int32 timeout))
+
+(defun pw/compile-notify (buffer message)
+  (send-desktop-notification "emacs compile" "plop" 0))
+
+(setq compilation-finish-function 'pw/compile-notify)
+
+;; (setq mbug-advertised-mails '())
+;; (mbug-desktop-notify)
+(defvar libnotify-program "/usr/bin/notify-send")
+
+
+(defcustom mail-bug-new-mail-sound "/usr/share/sounds/pop.wav"
+  "Sound for new mail notification.
+Any format works."
+  :type 'string
+  :group 'mail-bug)
+
+
+(defun mbug-desktop-notification (summary subject timeout icon)
   "Call notification-daemon method with ARGS over DBus.
 And that's not the half of it."
-  (if (window-system)
+  (if (and
+       (window-system)
+       (file-exists-p "/usr/bin/notify-send")
+       )
       (progn
         (start-process "notify" "*mail-bug-notify*"
                        libnotify-program
@@ -2153,15 +2220,15 @@ And that's not the half of it."
                        "--urgency=low"
                        (concat "--icon=" icon)
                        (format "%s" summary)
-                       (format "%s" body))
+                       (format "%s" subject))
         (if (and
              (file-exists-p "/usr/bin/mplayer")
              mail-bug-new-mail-sound)
-            (start-process-shell-command "*mail-bug-sound*" nil (concat "mplayer " mail-bug-new-mail-sound))))
-    (message "New mail from %s !" summary)))
+            (start-process-shell-command "*mail-bug-sound*" nil (concat "mplayer " mbug-new-mail-sound))))
+    (message "New mail from %s! (%s)" summary subject)))
 
 
-(defun mail-bug-tooltip (list)
+(defun mbug-tooltip (list)
   "Loop through the mail headers and build the hover tooltip"
   (mapconcat
    (lambda (x)
