@@ -2138,8 +2138,7 @@ Any format works."
       (define-key map (vector 'mode-line 'mouse-1)
         `(lambda (e)
            (interactive "e")
-           (switch-to-buffer "mail-bug")
-           (funcall mail-bug-external-client)))
+           (switch-to-buffer "mail-bug")))
 
       (define-key map (vector 'mode-line 'mouse-2)
         `(lambda (e)
@@ -2152,7 +2151,7 @@ Any format works."
                              ,url help-echo
                              ,(format "
 %s
-----------------------------
+______________________________________
 mouse-1: View in mail-bug
 mouse-2: View on %s" (mbug-tooltip) url))
                            s)
