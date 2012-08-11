@@ -1129,90 +1129,62 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
               (format "(BODY[%s])" (or (cdr (assoc 'partnum text-part)) "1"))
               't nil mbug-connection)
   (let* (
-         ;; (transfer-encoding (lookup 'transfer-encoding (fifth (car text-part))))
-         ;; (body-details (cadr (assoc 'body text-part)))
-         ;; (charset "plop")
+         (charset
+          (if (listp (cadr (car (cdr (third (car text-part))))))
+              (cadr (car (cdr (third (cadr text-part)))))
+            (cadr (car (cdr (third (car text-part)))))))
 
-         ;; (this-thing (list-query '(body) (car text-part)))
-         ;; (this-thing (car text-part))
-
-         ;; (charset (lookup 'charset (cadr this-thing)))
-
-    ;;      (plop (list-query '(body) (car plip))))
-
-    ;; (setq plip '(((partnum . 1) (type (TEXT . plain)) (body (charset UTF-8)) (disposition nil) (transfer-encoding 7BIT)) ((partnum . 2) (type (TEXT . html)) (body (charset UTF-8)) (disposition nil) (transfer-encoding 7BIT))))
-
-;; (setq text-part '(((partnum . 1) (type (TEXT . plain)) (body (charset UTF-8)) (disposition nil) (transfer-encoding 7BIT)) ((partnum . 2) (type (TEXT . html)) (body (charset UTF-8)) (disposition nil) (transfer-encoding 7BIT))))
-
-         (charset (cadr (car (cdr (third (car text-part))))))
-
-         ;; (charset (lookup 'charset body-details))
-         ;; (charset (format "%s" (lookup 'charset (list-query '(body charset) (car text-part)))))
-
-         (transfer-encoding (lookup 'transfer-encoding (list-query '(transfer-encoding) (car text-part))))
-
+         (transfer-encoding (if (listp (lookup 'transfer-encoding (list-query '(transfer-encoding) (car text-part))))
+                                (lookup 'transfer-encoding (list-query '(transfer-encoding) (cadr text-part)))
+                              (lookup 'transfer-encoding (list-query '(transfer-encoding) (car text-part)))))
          (start-of-body 0)
          (body (elt (car (imap-message-get uid 'BODYDETAIL mbug-connection)) 2))
          )
+
 			;; (message "plop: %s" plop)
     (save-excursion
       (switch-to-buffer buffer)
       (setq start-of-body (point))
 
-      ;; (setq charset (lookup 'charset (list-query '(body charset) part)))
 
-         ;; (charset (format "%s" (lookup 'charset (list-query '(body charset) (car text-part)))))
+;; (cadr (car (cdr (third (cadr mylist)))))
 
-      ;; (insert "\n\n" transfer-encoding "\n\n" charset)
+;; (setq mylist '(((partnum . 1)
+;;                 (1.1 (type (TEXT . plain)) (body (charset UTF-8))
+;;                      (disposition nil) (transfer-encoding 7BIT))
+;;                 (1.2 (type (TEXT . html)) (body (charset UTF-8))
+;;                      (disposition nil) (transfer-encoding 7BIT))
+;;                 (type . alternative) (body (boundary e89a8fb2067eba300404c63c5f7f))
+;;                 (disposition nil) (transfer-encoding nil))
+;;                ((partnum . 1.1) (type (TEXT . plain)) (body (charset UTF-8))
+;;                 (disposition nil) (transfer-encoding 7BIT))
+;;                ((partnum . 1.2) (type (TEXT . html)) (body (charset UTF-8))
+;;                 (disposition nil) (transfer-encoding 7BIT))
+;;                ((partnum . 2) (type (IMAGE . x-xpixmap)) (body (name ladybug.xpm))
+;;                 (disposition nil) (transfer-encoding BASE64))))
+
+;; (setq my-list '(((partnum . 1) (type (TEXT . plain)) (body (charset UTF-8))
+;;                  (disposition nil) (transfer-encoding QUOTED-PRINTABLE))
+;;                 ((partnum . 2) (type (TEXT . html)) (body (charset UTF-8))
+;;                  (disposition nil) (transfer-encoding QUOTED-PRINTABLE))))
+
+;; (list-query '(body charset) (car mylist))
+
+;; (transfer-encoding (lookup 'transfer-encoding (list-query '(transfer-encoding) (cadr mylist))))
 
 			(message "\n
 -------------------
 \nTransfer-encoding: %s \n\ncharset: %s \n\ntext-part: %s\n
 -------------------\n" transfer-encoding charset text-part)
+
       (insert (mbug-decode-string
                body
                transfer-encoding
-               charset))
-
-      ;; (insert
-      ;;  (mbug-px-decode-string
-      ;;   (mbug-decode-string
-      ;;    body
-      ;;    transfer-encoding
-      ;;    ;; A nasty company in redmond make this complicated.
-      ;;    (cond
-      ;;     ((and (equal charset "us-ascii")
-      ;;           (equal transfer-encoding "8bit")) 'utf-8)
-      ;;     (charset charset)
-      ;;     ('t 'emacs-mule))) entities-latin))
-
-
-;; (print-elements-recursively mylist)
-
-;; (search-rec mylist)
-
-;; (setq mylizt '((partnum . 1)))
-
-;; (cdr (car mylizt))
-
-;; (defun search-rec (list)
-;;   (mapcar
-;;      (lambda (x)
-;;        (if (listp x)
-;;            (search-rec x)
-;;          (message "OY %s" x)))
-;;      list))
-
-;; (mapcar
-;;    (lambda (x)
-;;      (search-rec x))
-;;    list)
-;;   (print x)
-;; ))
-
-;; (assoc 'charset mylist)
-
-
+               (cond
+                ((and (equal charset "us-ascii")
+                      (equal transfer-encoding "8bit")) 'utf-8)
+                (charset charset)
+                ('t 'emacs-mule))))
 
 			(insert "\n--end body--\n")
 
@@ -1272,7 +1244,7 @@ buffer. Programs can pass the imap-con in directly though."
       (set-buffer buffer)
 
       (setq start-of-body (point))
-      (message "mimetype-str: %s" mimetype-str)
+
       ;; Do a mailcap view if we have a viewer
       (mailcap-parse-mailcaps)
       (let (
@@ -1398,8 +1370,7 @@ buffer. Programs can pass the imap-con in directly though."
 							(switch-to-buffer px-calling-buffer)
 							(setq inhibit-read-only 't)
 							(insert "\n")
-							(insert-image (create-image fname))
-							(message "buffer is %s" (current-buffer)))
+							(insert-image (create-image fname)))
 					(let* ((proc-buf (generate-new-buffer "*mbug-attachment*"))
 								 (proc (apply 'start-process-shell-command
 															`("*mbug-detachment*" ,proc-buf
@@ -1424,7 +1395,8 @@ buffer. Programs can pass the imap-con in directly though."
 
 (defun mbug-decode-string (content transfer-encoding char-encoding)
   "Decode the specified content string."
-  (message "char-enc: %s transfer-enc: %s\nString: " char-encoding transfer-encoding content)
+
+  ;; (message "char-enc: %s transfer-enc: %s\nString: " char-encoding transfer-encoding content)
   (let* ((transfer-enc (if transfer-encoding
                            (upcase transfer-encoding)
                          'NONE))
@@ -1612,7 +1584,8 @@ This ensures that deleted messages are removed from the obarray."
         (goto-char pt))
       (let ((folder-name (get-text-property (point) 'help-echo)))
     folder-name
-    (message "folder-name: %s" folder-name))))
+    ;; (message "folder-name: %s" folder-name)
+    )))
 
 (defun mbug-create-folder (new-folder-name)
   "create a new folder under the specified parent folder."
@@ -1651,7 +1624,6 @@ This ensures that deleted messages are removed from the obarray."
   "redraw the buffer based on the imap state.
 Opened folders have their messages re-read and re-drawn."
   (interactive)
-  (message "mbug-redraw IN")
 
   ;; (setq stored-pos (point))
   (defun insert-with-prop (text prop-list)
@@ -1747,7 +1719,8 @@ msg is a dotted pair such that:
   ;; it's done like that so mbug-redraw can sort and map the
   ;; messages all in one... but it means multiple calls to
   ;; mbug-date-format which is perhaps slow.
-  (message "mbug-msg-redraw IN, mbug-connection: %s" mbug-connection)
+
+  ;; (message "mbug-msg-redraw IN, mbug-connection: %s" mbug-connection)
   (with-current-buffer display-buffer
     (let* ((inhibit-read-only 't)
 					 (uid (car msg))
@@ -1817,7 +1790,8 @@ msg is a dotted pair such that:
 (defun mbug-recount ()
   "recount 'INBOX' based on the imap state."
   (interactive)
-  (message "mbug-recount IN, mbug-connection: %s" mbug-connection)
+
+  ;; (message "mbug-recount IN, mbug-connection: %s" mbug-connection)
   (setq mbug-unread-mails ())
   ;; (mbug-ensure-connected)
   (let ((display-buffer "mail-bug"))
@@ -1853,8 +1827,7 @@ msg is a dotted pair such that:
 
           ;; Compare the sort elements by date
           (lambda (left right)
-            (string< (cdr left) (cdr right)))))))
-    (message "mbug-recount OUT"))
+            (string< (cdr left) (cdr right))))))))
   ;; Refresh the modeline
   (progn (setq global-mode-string ())
          (add-to-list 'global-mode-string
@@ -1870,7 +1843,8 @@ msg is a dotted pair such that:
   "Recount a single message line.
 msg is a dotted pair such that:
    ( uid . msg-date )"
-  (message "mbug-msg-recount IN, mbug-connection: %s in display-buffer: %s" mbug-connection display-buffer)
+
+  ;; (message "mbug-msg-recount IN, mbug-connection: %s in display-buffer: %s" mbug-connection display-buffer)
   (with-current-buffer display-buffer
     (let* ((uid (car msg))
 					 (date (mbug-date-format (imap-message-envelope-date uid mbug-connection)))
