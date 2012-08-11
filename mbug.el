@@ -62,8 +62,7 @@
 (require 'w3m nil 'noerror)
 (require 'dbus)
 
-;; Customization.
-
+;; Test Customization
 (defcustom mbug-host-name "imap.gmx.com"
   "The name of server to connect to"
   :type '(string)
@@ -82,9 +81,9 @@
   "the user's password")
 
 
-;; Customizations (M-x customize-group "mail-bug" RET)
+;; Customizations (Don't touch it, M-x customize-group "mail-bug" RET instead)
 (defgroup mail-bug nil
-  "an IMAP based MUA."
+  "A Full-on IMAP MUA."
   :group 'applications)
 
 (defgroup mail-bug-interface nil
@@ -126,7 +125,7 @@
   :type '(string)
   :group 'mail-bug)
 
-(defcustom mbug-spam-folder-name "Spam-today"
+(defcustom mbug-spam-folder-name "Spam"
   "The folder name of the folder to save spam messages in."
   :type '(string)
   :group 'mail-bug)
@@ -1117,9 +1116,7 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
               (format "(BODY[%s])" (or (cdr (assoc 'partnum text-part)) "1"))
               't nil mbug-connection)
   (let* ((transfer-encoding (lookup 'transfer-encoding (fifth (car text-part))))
-         (body-details (cadr (assoc 'body text-part)))
-         ;; (charset (car (cdr (cadr (third (car text-part))))))
-
+         ;; (body-details (cadr (assoc 'body text-part)))
          (charset (or (car (cdr (car (cdr (third (second (car text-part)))))))
                       (car (cdr (cadr (third (car text-part)))))))
          (start-of-body 0)
@@ -1128,33 +1125,7 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
       (switch-to-buffer buffer)
       (setq start-of-body (point))
 
-      ;; pX:
-      ;; (insert (format "body is %s, encoding is %s and charset is %s" body transfer-encoding charset))
-      ;; (insert body)
-
-(car (car '(((partnum . 1) (type (TEXT . plain)) (body (charset utf-8)) (disposition nil) (transfer-encoding BASE64)) ((partnum . 2) (type (TEXT . html)) (body (charset utf-8)) (disposition nil) (transfer-encoding BASE64)))))
-
-(cdr (car (cdr (third (second (car '(((partnum . 1) (1.1 (type (TEXT . plain)) (body (charset UTF-8)) (disposition nil) (transfer-encoding 7BIT)) (1.2 (type (TEXT . html)) (body (charset UTF-8)) (disposition nil) (transfer-encoding 7BIT)) (type . alternative) (body (boundary e89a8fb2067eba300404c63c5f7f)) (disposition nil) (transfer-encoding nil)) ((partnum . 1.1) (type (TEXT . plain)) (body (charset UTF-8)) (disposition nil) (transfer-encoding 7BIT)) ((partnum . 1.2) (type (TEXT . html)) (body (charset UTF-8)) (disposition nil) (transfer-encoding 7BIT)) ((partnum . 2) (type (IMAGE . x-xpixmap)) (body (name ladybug.xpm)) (disposition nil) (transfer-encoding BASE64)))))))))
-
-      ;; (mbug-px-decode-string "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme" entities-latin)
-
 			(message "transfer-encoding: %s charset: %s part: %s" transfer-encoding charset text-part)
-
-			;; (insert "\n---Undecoded--\n")
-      ;; (insert
-			;;  (mbug-decode-string
-			;; 	body
-			;; 	transfer-encoding
-			;; 	;; A nasty company in redmond make this complicated.
-			;; 	(cond
-			;; 	 ((and (equal charset "us-ascii")
-			;; 				 (equal transfer-encoding "8bit")) 'utf-8)
-			;; 	 (charset charset)
-			;; 	 ('t 'emacs-mule))))
-
-			;; (insert "\n---Semi-decoded--\n")
-      ;; (insert
-      ;;  (mbug-px-decode-string body entities-latin))
 
       (insert
        (mbug-px-decode-string
@@ -1168,18 +1139,7 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
           (charset charset)
           ('t 'emacs-mule))) entities-latin))
 
-			;; (insert "\n---RAW--\n")
-      ;; (insert
-			;;  body
-			;; 	transfer-encoding
-			;; 	;; A nasty company in redmond make this complicated.
-			;; 	(cond
-			;; 	 ((and (equal charset "us-ascii")
-			;; 				 (equal transfer-encoding "8bit")) 'utf-8)
-			;; 	 (charset charset)
-			;; 	 ('t 'emacs-mule)))
-
-			;; (insert "\n--end body--\n")
+			(insert "\n--end body--\n")
 
       )))
 
@@ -1644,12 +1604,17 @@ Opened folders have their messages re-read and re-drawn."
                ;; (folder-depth 0)
                )
            ;; (message "name: %s path: %s depth: %s" folder-name folder-path folder-depth)
- ;; ▷
+
+ ;;  ▴ ▾ ◂ ▸ ▵ ▿ ◃ ▹
+
+           (if (imap-mailbox-get 'OPENED folder-path mbug-connection)
+               (setq folder-icon "▾")
+             (setq folder-icon "▸"))
 
            ;; (insert-image (create-image "~/.emacs.d/lisp/mail-bug/folder.gif"))
            (insert (propertize (concat
                                 (mbug-string-repeat " " folder-depth)
-                                "♦ " folder-name) 'face 'mbug-px-face-folder))
+                                folder-icon " " folder-name) 'face 'mbug-px-face-folder))
            (put-text-property (line-beginning-position) (+ 1 (line-beginning-position)) 'help-echo folder-path)
 
            (insert " \n")
@@ -1728,11 +1693,7 @@ msg is a dotted pair such that:
             (cond
              ((mbug-deletedp uid) 'mbug-px-face-deleted)
              ((not (mbug-seenp uid)) 'mbug-px-face-unread)
-
-             ;; pX:
-             ;; (t 'black)
-             (t 'mbug-px-face-message)
-             )))
+             (t 'mbug-px-face-message))))
 
       ;; (message "display-buffer: %s folder-name: %s msg: %s" display-buffer folder-name msg)
 
@@ -1829,7 +1790,7 @@ msg is a dotted pair such that:
 
 
 (defun mbug-msg-recount (display-buffer folder-name msg)
-  "recount a single message line.
+  "Recount a single message line.
 msg is a dotted pair such that:
    ( uid . msg-date )"
   (message "mbug-msg-recount IN, mbug-connection: %s in display-buffer: %s" mbug-connection display-buffer)
@@ -2057,11 +2018,11 @@ overlay on the hide-region-overlays \"ring\""
 
 (defun readprop ()
   (interactive)
-  (message "props %s" (text-properties-at (point)))
+  ;; (message "props %s" (text-properties-at (point)))
 
   (if (get-text-property (point) 'help-echo)
-      (message "yup: props %s" (text-properties-at (point)))
-    (message "nope: props %s" (text-properties-at (point))))
+      (message "folder: props %s" (text-properties-at (point)))
+    (message "dunno: props %s" (text-properties-at (point))))
 
   ;; (message "help-echo: %s face: %s" (get-text-property (point) 'help-echo) (get-text-property (point) 'ZZZ))
   )
