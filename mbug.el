@@ -735,8 +735,10 @@ This means you can have multiple mbug sessions in one emacs session."
                 (make-local-variable 'mbug-port)
                 (setq mbug-port tcp-port)))
 
+
 ;; Are we connected yet?
-          (mbug-timer-start)
+(if (eq window-system 'x)
+    (mbug-timer-start))
 
 ))
     (mbug-redraw))
@@ -906,7 +908,7 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
       (imap-message-flags-add (number-to-string uid) "\\Seen" nil mbug-connection)
 
       ;; pX:
-      (if mbug-modal
+      (if (and mbug-modal (eq window-system 'x))
 
           ;; (let ((folders-window (selected-window))
           ;;      (window-lines (fourth (window-edges)))
@@ -1087,6 +1089,7 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
                 "/"
                 (cdr (car mimetypeheader)))
       mimetypeheader))
+
   (with-current-buffer buffer
     (make-local-variable 'mbug-connection)
     (setq mbug-connection connection)
@@ -1109,35 +1112,107 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
               part-list)
         (set-buffer-modified-p nil)))))
 
+
+(defun list-query (list-of-keys data)
+  "Search a value in a list"
+  (let ((data data))
+    (while (and data list-of-keys)
+      (setq data (assoc (car list-of-keys) data))
+      (setq list-of-keys (cdr list-of-keys)))
+    data))
+
 (defun mbug-message-fill-text (uid text-part buffer)
   "Insert the text-part for the specified uid in the buffer provided."
+
   ;; Main function.
   (imap-fetch uid
               (format "(BODY[%s])" (or (cdr (assoc 'partnum text-part)) "1"))
               't nil mbug-connection)
-  (let* ((transfer-encoding (lookup 'transfer-encoding (fifth (car text-part))))
+  (let* (
+         ;; (transfer-encoding (lookup 'transfer-encoding (fifth (car text-part))))
          ;; (body-details (cadr (assoc 'body text-part)))
-         (charset (or (car (cdr (car (cdr (third (second (car text-part)))))))
-                      (car (cdr (cadr (third (car text-part)))))))
+         ;; (charset "plop")
+
+         ;; (this-thing (list-query '(body) (car text-part)))
+         ;; (this-thing (car text-part))
+
+         ;; (charset (lookup 'charset (cadr this-thing)))
+
+    ;;      (plop (list-query '(body) (car plip))))
+
+    ;; (setq plip '(((partnum . 1) (type (TEXT . plain)) (body (charset UTF-8)) (disposition nil) (transfer-encoding 7BIT)) ((partnum . 2) (type (TEXT . html)) (body (charset UTF-8)) (disposition nil) (transfer-encoding 7BIT))))
+
+;; (setq text-part '(((partnum . 1) (type (TEXT . plain)) (body (charset UTF-8)) (disposition nil) (transfer-encoding 7BIT)) ((partnum . 2) (type (TEXT . html)) (body (charset UTF-8)) (disposition nil) (transfer-encoding 7BIT))))
+
+         (charset (cadr (car (cdr (third (car text-part))))))
+
+         ;; (charset (lookup 'charset body-details))
+         ;; (charset (format "%s" (lookup 'charset (list-query '(body charset) (car text-part)))))
+
+         (transfer-encoding (lookup 'transfer-encoding (list-query '(transfer-encoding) (car text-part))))
+
          (start-of-body 0)
-         (body (elt (car (imap-message-get uid 'BODYDETAIL mbug-connection)) 2)))
+         (body (elt (car (imap-message-get uid 'BODYDETAIL mbug-connection)) 2))
+         )
+			;; (message "plop: %s" plop)
     (save-excursion
       (switch-to-buffer buffer)
       (setq start-of-body (point))
 
-			(message "transfer-encoding: %s charset: %s part: %s" transfer-encoding charset text-part)
+      ;; (setq charset (lookup 'charset (list-query '(body charset) part)))
 
-      (insert
-       (mbug-px-decode-string
-        (mbug-decode-string
-         body
-         transfer-encoding
-         ;; A nasty company in redmond make this complicated.
-         (cond
-          ((and (equal charset "us-ascii")
-                (equal transfer-encoding "8bit")) 'utf-8)
-          (charset charset)
-          ('t 'emacs-mule))) entities-latin))
+         ;; (charset (format "%s" (lookup 'charset (list-query '(body charset) (car text-part)))))
+
+      ;; (insert "\n\n" transfer-encoding "\n\n" charset)
+
+			(message "\n
+-------------------
+\nTransfer-encoding: %s \n\ncharset: %s \n\ntext-part: %s\n
+-------------------\n" transfer-encoding charset text-part)
+      (insert (mbug-decode-string
+               body
+               transfer-encoding
+               charset))
+
+      ;; (insert
+      ;;  (mbug-px-decode-string
+      ;;   (mbug-decode-string
+      ;;    body
+      ;;    transfer-encoding
+      ;;    ;; A nasty company in redmond make this complicated.
+      ;;    (cond
+      ;;     ((and (equal charset "us-ascii")
+      ;;           (equal transfer-encoding "8bit")) 'utf-8)
+      ;;     (charset charset)
+      ;;     ('t 'emacs-mule))) entities-latin))
+
+
+;; (print-elements-recursively mylist)
+
+;; (search-rec mylist)
+
+;; (setq mylizt '((partnum . 1)))
+
+;; (cdr (car mylizt))
+
+;; (defun search-rec (list)
+;;   (mapcar
+;;      (lambda (x)
+;;        (if (listp x)
+;;            (search-rec x)
+;;          (message "OY %s" x)))
+;;      list))
+
+;; (mapcar
+;;    (lambda (x)
+;;      (search-rec x))
+;;    list)
+;;   (print x)
+;; ))
+
+;; (assoc 'charset mylist)
+
+
 
 			(insert "\n--end body--\n")
 
@@ -1715,10 +1790,12 @@ msg is a dotted pair such that:
 
       (insert
        " " (mbug-field-format 20 date)
-       " " (mbug-field-format 30 from-addr)
+       "│" (mbug-field-format 30 from-addr)
+
+ ;; ▎ ▉ ▊ ▋  │ ▕ ▏ ┃ ┆ ┇ ┊ ╎ ┋ ╿ ╽
 
        ;; pX: decode the subject
-       " " (rfc2047-decode-string subject) "\n")
+       "│ " (rfc2047-decode-string subject) "\n")
       (add-text-properties line-start (point)
 													 `(UID ,uid FOLDER ,folder-name face ,message-face))
 
@@ -1843,6 +1920,15 @@ msg is a dotted pair such that:
   )
 
 (ad-activate 'message-reply)
+
+(defadvice view-echo-area-messages (after view-echo-area-messages-in-help-mode)
+  "Toggle `help-mode' to use the keys (mostly 'q' to quit)."
+  (help-mode))
+
+(ad-activate 'view-echo-area-messages)
+
+;; (view-echo-area-messages)
+
 
 
 ;; Hide headers
@@ -2078,7 +2164,7 @@ Must be an XPM (use Gimp)."
   (if (and window-system
            mail-bug-icon)
       (apply 'propertize " " `(display ,mail-bug-icon))
-    mail-bug))
+    mbug-host-name))
 
 (defcustom mbug-new-mail-icon "/usr/share/icons/oxygen/128x128/actions/configure.png"
   "Icon for new mail notification.
