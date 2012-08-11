@@ -1605,6 +1605,7 @@ Opened folders have their messages re-read and re-drawn."
                )
            ;; (message "name: %s path: %s depth: %s" folder-name folder-path folder-depth)
 
+
  ;;  ▴ ▾ ◂ ▸ ▵ ▿ ◃ ▹
 
            (if (imap-mailbox-get 'OPENED folder-path mbug-connection)
