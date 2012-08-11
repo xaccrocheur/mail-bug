@@ -1116,9 +1116,12 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
   (imap-fetch uid
               (format "(BODY[%s])" (or (cdr (assoc 'partnum text-part)) "1"))
               't nil mbug-connection)
-  (let* ((transfer-encoding (cadr (assoc 'transfer-encoding text-part)))
+  (let* ((transfer-encoding (lookup 'transfer-encoding (fifth (car text-part))))
          (body-details (cadr (assoc 'body text-part)))
-         (charset (lookup "charset" body-details))
+         ;; (charset (car (cdr (cadr (third (car text-part))))))
+
+         (charset (or (car (cdr (car (cdr (third (second (car text-part)))))))
+                      (car (cdr (cadr (third (car text-part)))))))
          (start-of-body 0)
          (body (elt (car (imap-message-get uid 'BODYDETAIL mbug-connection)) 2)))
     (save-excursion
@@ -1129,10 +1132,13 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
       ;; (insert (format "body is %s, encoding is %s and charset is %s" body transfer-encoding charset))
       ;; (insert body)
 
+(car (car '(((partnum . 1) (type (TEXT . plain)) (body (charset utf-8)) (disposition nil) (transfer-encoding BASE64)) ((partnum . 2) (type (TEXT . html)) (body (charset utf-8)) (disposition nil) (transfer-encoding BASE64)))))
+
+(cdr (car (cdr (third (second (car '(((partnum . 1) (1.1 (type (TEXT . plain)) (body (charset UTF-8)) (disposition nil) (transfer-encoding 7BIT)) (1.2 (type (TEXT . html)) (body (charset UTF-8)) (disposition nil) (transfer-encoding 7BIT)) (type . alternative) (body (boundary e89a8fb2067eba300404c63c5f7f)) (disposition nil) (transfer-encoding nil)) ((partnum . 1.1) (type (TEXT . plain)) (body (charset UTF-8)) (disposition nil) (transfer-encoding 7BIT)) ((partnum . 1.2) (type (TEXT . html)) (body (charset UTF-8)) (disposition nil) (transfer-encoding 7BIT)) ((partnum . 2) (type (IMAGE . x-xpixmap)) (body (name ladybug.xpm)) (disposition nil) (transfer-encoding BASE64)))))))))
 
       ;; (mbug-px-decode-string "l'=C3=9Cber-int=C3=A9rimaire est b=C3=A8te, cr=C3=A9tinisme" entities-latin)
 
-			;; (message "transfer-encoding: %s \nBody:" transfer-encoding body)
+			(message "transfer-encoding: %s charset: %s part: %s" transfer-encoding charset text-part)
 
 			;; (insert "\n---Undecoded--\n")
       ;; (insert
