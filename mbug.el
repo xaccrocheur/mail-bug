@@ -195,13 +195,13 @@
 
 (defface mbug-px-face-answered
   `((((class color) (background dark))
-     (:weight bold :foreground "LightGreen"))
+     (:foreground "LightGreen"))
     (((class color) (background light))
-     (:weight bold :foreground "DarkGreen"))
+     (:foreground "DarkGreen"))
     (((type tty) (class color))
-     (:weight bold :foreground "LightGreen"))
+     (:foreground "LightGreen"))
     (((type tty) (class mono))
-     (:weight bold :foreground "DarkGreen"))
+     (:foreground "DarkGreen"))
     (t (:foreground "LightGreen")))
   "Basic face for answered mails."
   :group 'mail-bug-faces)
@@ -783,12 +783,13 @@ This means you can have multiple mbug sessions in one emacs session."
                 (setq mbug-port tcp-port)))
 
 
-;; Are we connected yet?
-(if (eq window-system 'x)
-    (mbug-timer-start))
+          ;; Are we connected yet?
+          (if (eq window-system 'x)
+              (mbug-timer-start))
 
-))
-    (mbug-redraw))
+          ))
+    (mbug-redraw)
+    (beginning-of-buffer))
   ;; t
   )
 
@@ -957,17 +958,9 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
 
       ;; pX:
       (if (and mbug-modal (eq window-system 'x))
-
-          ;; (let ((folders-window (selected-window))
-          ;;      (window-lines (fourth (window-edges)))
-          ;;      (one-third (/ window-lines 3)))
-          ;;  ((set-window-dedicated-p folders-window (not current-prefix-arg))
-          ;;   (when (= (length (window-list)) 1)
-          ;;     (setq w2 (split-window w one-third)))))
-
           (progn
             (setq w (selected-window))
-            ;; (window-edges)
+            (window-edges)
             (set-window-dedicated-p (selected-window) (not current-prefix-arg))
 
             (setq window-lines (fourth (window-edges)))
@@ -1617,16 +1610,16 @@ Opened folders have their messages re-read and re-drawn."
 
          (let ((folder-name (car folder-cell))
                (folder-path (cdr folder-cell))
-               (folder-depth (mbug-count-occurrences "/" (cdr folder-cell)))
-               ;; (folder-depth 0)
-               )
-           ;; (message "name: %s path: %s depth: %s" folder-name folder-path folder-depth)
+               (folder-depth (mbug-count-occurrences "/" (cdr folder-cell))))
 
- ;;  ▴ ▾ ◂ ▸ ▵ ▿ ◃ ▹
+           ;;  ▴ ▾ ◂ ▸ ▵ ▿ ◃ ▹
 
            (if (imap-mailbox-get 'OPENED folder-path mbug-connection)
                (setq folder-icon "▾")
              (setq folder-icon "▸"))
+
+           ;; (if (imap-mailbox-get 'OPENED folder-path mbug-connection)
+           ;;     (setq opening-folder-p 't))
 
            ;; (insert-image (create-image "~/.emacs.d/lisp/mail-bug/folder.gif"))
            (insert (propertize (concat
@@ -1634,10 +1627,10 @@ Opened folders have their messages re-read and re-drawn."
                                 folder-icon " " folder-name) 'face 'mbug-px-face-folder))
            (put-text-property (line-beginning-position) (+ 1 (line-beginning-position)) 'help-echo folder-path)
 
+
            (insert " \n")
            (if (imap-mailbox-get 'OPENED (cdr folder-cell) mbug-connection)
                (let* ((selection
-
                        ;; Force the re-selection of the folder before local vars
                        (progn
                          (imap-mailbox-unselect mbug-connection)
@@ -1646,6 +1639,8 @@ Opened folders have their messages re-read and re-drawn."
                       (message-range (concat "1:" (number-to-string existing))))
                  (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't mbug-connection)
 
+
+                 (setq openingp 't)
                  ;; Map the message redraw over each message in the folder.
                  (mapc
                   (lambda (msg)
@@ -1671,10 +1666,13 @@ Opened folders have their messages re-read and re-drawn."
                  (insert "\n"))))))
      mbug-smart-folder-list)
     (goto-char stored-pos)
+    (if openingp
+        (progn (search-forward-regexp "^$")
+               (previous-line)))
+    ;; (message "openingp: %s" openingp)
 
+    (setq openingp 'nil)
     ;; pX: Go to last mail in this folder
-    (search-forward-regexp "^$")
-    (previous-line)
     ;; (message "mbug-redraw OUT")
 ))
 
@@ -1719,7 +1717,7 @@ msg is a dotted pair such that:
              ((not (mbug-seenp uid)) 'mbug-px-face-unread)
              (t 'mbug-px-face-message))))
 
-           (message "-\n%s-\n" message-ans)
+      ;; (message "-\n%s-\n" message-ans)
       ;; (message "display-buffer: %s folder-name: %s msg: %s" display-buffer folder-name msg)
 
       (beginning-of-line)
@@ -1851,9 +1849,9 @@ msg is a dotted pair such that:
       (if (eq mbug-status 'mbug-status-unread)
           (progn
             (add-to-list 'mbug-unread-mails this-mail)
-            (message "---new one in the list!---"))
+            (mbug-redraw))
         )
-      (message "mbug-msg-recount OUT status: %s" mbug-status)
+      ;; (message "mbug-msg-recount OUT status: %s" mbug-status)
       ))
   )
 
@@ -1864,6 +1862,7 @@ msg is a dotted pair such that:
 (defadvice message-reply (after mbug-message-reply-yank-original)
   "Quote original when replying."
   (message-replace-header "BCC" user-mail-address "AFTER" "FORCE")
+  (message-replace-header "Reply-To" "Philippe Coatmeur-Marin <philcm@gnu.org>" "AFTER" "FORCE")
   (message-yank-original)
   (message "advised")
   (message-sort-headers)
