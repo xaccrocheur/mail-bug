@@ -1129,10 +1129,26 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
               (format "(BODY[%s])" (or (cdr (assoc 'partnum text-part)) "1"))
               't nil mbug-connection)
   (let* (
-         (charset
-          (if (listp (cadr (car (cdr (third (car text-part))))))
-              (cadr (car (cdr (third (cadr text-part)))))
-            (cadr (car (cdr (third (car text-part)))))))
+         ;; (charset
+         ;;  (lookup 'charset (or (cadr (third (cadr text-part)))
+         ;;                       (car (cdr (third (cadr (car text-part))))))))
+
+         ;; (charset (lookup 'charset (or (cadr (assoc 'body text-part))
+         ;;                               (cadr (assoc 'body (cadr text-part))))))
+
+         (charset (cadr (or (cadr (assoc 'body text-part))
+                            (cadr (assoc 'body (cadr text-part))))))
+
+;; (lookup 'charset (cadr (assoc 'body text-part)))
+;; (lookup 'charset (cadr (assoc 'body (cadr text-part))))
+
+
+         ;; (charset
+         ;;  (if (listp (cadr (car (cdr (third (car text-part))))))
+         ;;      (cadr (car (cdr (third (cadr text-part)))))
+         ;;    (cadr (car (cdr (third (car text-part)))))))
+
+         (tst (lookup 'charset (list-query '(body charset) text-part)))
 
          (transfer-encoding (if (listp (lookup 'transfer-encoding (list-query '(transfer-encoding) (car text-part))))
                                 (lookup 'transfer-encoding (list-query '(transfer-encoding) (cadr text-part)))
@@ -1147,35 +1163,10 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
       (setq start-of-body (point))
 
 
-;; (cadr (car (cdr (third (cadr mylist)))))
-
-;; (setq mylist '(((partnum . 1)
-;;                 (1.1 (type (TEXT . plain)) (body (charset UTF-8))
-;;                      (disposition nil) (transfer-encoding 7BIT))
-;;                 (1.2 (type (TEXT . html)) (body (charset UTF-8))
-;;                      (disposition nil) (transfer-encoding 7BIT))
-;;                 (type . alternative) (body (boundary e89a8fb2067eba300404c63c5f7f))
-;;                 (disposition nil) (transfer-encoding nil))
-;;                ((partnum . 1.1) (type (TEXT . plain)) (body (charset UTF-8))
-;;                 (disposition nil) (transfer-encoding 7BIT))
-;;                ((partnum . 1.2) (type (TEXT . html)) (body (charset UTF-8))
-;;                 (disposition nil) (transfer-encoding 7BIT))
-;;                ((partnum . 2) (type (IMAGE . x-xpixmap)) (body (name ladybug.xpm))
-;;                 (disposition nil) (transfer-encoding BASE64))))
-
-;; (setq my-list '(((partnum . 1) (type (TEXT . plain)) (body (charset UTF-8))
-;;                  (disposition nil) (transfer-encoding QUOTED-PRINTABLE))
-;;                 ((partnum . 2) (type (TEXT . html)) (body (charset UTF-8))
-;;                  (disposition nil) (transfer-encoding QUOTED-PRINTABLE))))
-
-;; (list-query '(body charset) (car mylist))
-
-;; (transfer-encoding (lookup 'transfer-encoding (list-query '(transfer-encoding) (cadr mylist))))
-
 			(message "\n
 -------------------
-\nTransfer-encoding: %s \n\ncharset: %s \n\ntext-part: %s\n
--------------------\n" transfer-encoding charset text-part)
+\nTransfer-encoding: %s \n\ncharset: %s \n\ntext-part: %s\n\ntst: %s
+-------------------\n" transfer-encoding charset text-part tst)
 
       (insert (mbug-decode-string
                body
