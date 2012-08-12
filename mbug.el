@@ -594,24 +594,6 @@ The timezone package is used to parse the string."
         (funcall seenp flag-list seenp))))
 
 
-;; (setq mylist '(("Brouillons" . "Brouillons")
-;;  ("Corbeille" . "Corbeille")
-;;  ("Dossier Spam" . "Dossier Spam")
-;;  ("Drafts" . "Drafts")
-;;  ("Envoyés" . "Envoyés")
-;;  ("INBOX" . "INBOX")
-;;  ("Sent" . "Sent")
-;;  ("Top" . "Top")
-;;  ("One" . "Top/One")
-;;  ("one space" . "Top/One/one space")
-;;  ("Two" . "Top/Two")
-;;  ("Trash" . "Trash")
-;;  ("Zob" . "Zob")
-;;  ("One" . "Zob/One")
-;;  ("Two  spaces" . "Zob/One/Two  spaces")))
-
-;; (message "list: %s" (list mylist))
-
 (defun mbug-deletedp (uid)
   "Return true if the flag list contains the \\Deleted flag."
   (if uid
@@ -1738,12 +1720,12 @@ msg is a dotted pair such that:
 
       (insert
        " " (mbug-field-format 20 date)
-       "│" (mbug-field-format 22 from-addr)
+       " " (mbug-field-format 25 from-addr)
 
  ;; ▎ ▉ ▊ ▋  │ ▕ ▏ ┃ ┆ ┇ ┊ ╎ ┋ ╿ ╽
 
        ;; pX: decode the subject
-       "│ " (rfc2047-decode-string subject) "\n")
+       " " (rfc2047-decode-string subject) "\n")
       (add-text-properties line-start (point)
 													 `(UID ,uid FOLDER ,folder-name face ,message-face))
 
@@ -1968,137 +1950,13 @@ overlay on the hide-region-overlays \"ring\""
                                  'font-lock-face 'mail-bug-toggle-headers-face)
                    hide-region-after-string))))
 
-;; (defvar hide-region-before-string "[(h)eaders"
-;;   "String to mark the beginning of an invisible region. This string is
-;; not really placed in the text, it is just shown in the overlay")
-
-;; (defvar hide-region-after-string "]"
-;;   "String to mark the end of an invisible region. This string is
-;; not really placed in the text, it is just shown in the overlay")
-
-;; (defvar hide-region-propertize-markers t
-;;   "If non-nil, add text properties to the region markers.")
-
-;; (defface hide-region-before-string-face
-;;   '((t (:inherit region)))
-;;   "Face for the header-hiding string.")
-
-;; (defface hide-region-after-string-face
-;;   '((t (:inherit region)))
-;;   "Face for the after string.")
-
-
-;; (defface mail-bug-toggle-headers-face
-;;   '((t (:inherit region)))
-;;   "Face for the header-hiding string.")
-
-
-;; (defvar hide-region-overlays nil
-;;   "Variable to store the regions we put an overlay on.")
-
-;; (defun mbug-show-headers ()
-;;   "Unhide a region at a time, starting with the last one hidden and
-;; deleting the overlay from the hide-region-overlays \"ring\"."
-;;   (interactive)
-;;   (when (car hide-region-overlays)
-;;     (delete-overlay (car hide-region-overlays))
-;;     (setq hide-region-overlays (cdr hide-region-overlays))))
-
-;; (defun mbug-hide-headers ()
-;;   "Hides a region by making an invisible overlay over it and save the
-;; overlay on the hide-region-overlays \"ring\""
-;;   (interactive)
-;;   (let ((new-overlay (make-overlay (mark) (point))))
-;;     (push new-overlay hide-region-overlays)
-;;     (overlay-put new-overlay 'invisible t)
-;;     (overlay-put new-overlay 'intangible t)
-;;     (overlay-put new-overlay 'before-string
-;;                  (if hide-region-propertize-markers
-;;                      (propertize hide-region-before-string
-;;                                  'font-lock-face 'hide-region-before-string-face)
-;;                    hide-region-before-string))
-;;     (overlay-put new-overlay 'after-string
-;;                  (if hide-region-propertize-markers
-;;                      (propertize hide-region-after-string
-;;                                  'font-lock-face 'hide-region-after-string-face)
-;;                    hide-region-after-string))))
-
-
-;; Boot strap stuff
-(add-hook 'kill-emacs (lambda () (mbug-logout)))
-
-(provide 'mbug)
-
-;; tests
-
-;; ;; (setq testlist '("rose" "violet" "buttercup"))
-
-;; ;; (mapcar
-;; ;;  (lambda (x)
-;; ;;    (message "first: %s" x)
-;; ;;    (setq string (replace-regexp-in-string my-operand my-char string 't)))
-;; ;;  testlist)
-
-;; ;; put-text-property start end prop value &optional object
-
-;; (setq plop "zob")
-
-;; (defun makeprop ()
-;;   (interactive)
-;;   ;; (put-text-property (point) (+ 1 (point)) 'help-echo "plop")
-
-;;   (add-text-properties (point) (+ 1 (point))
-;;                        `(help-echo "ploup" ZZZ ,plop))
-
-;; )
-
 (defun readprop ()
   (interactive)
   ;; (message "props %s" (text-properties-at (point)))
 
   (if (get-text-property (point) 'help-echo)
       (message "folder: props %s" (text-properties-at (point)))
-    (message "dunno: props %s" (text-properties-at (point))))
-
-  ;; (message "help-echo: %s face: %s" (get-text-property (point) 'help-echo) (get-text-property (point) 'ZZZ))
-  )
-
-;; insert-with-prop (text prop-list)
-
-;; (insert-with-prop "plop" 'help-echo "plop")
-
-
-;; (insert (propertize "plopz" 'face 'default))plopz
-
-;; (add-text-properties line-start (point)
-;;                      `(FOLDER ,folder-name face ,message-face))
-
-
-
-;; (setq test-list '("Brouillons" "Corbeille" "Dossier Spam" "Drafts" "Envoyés" "INBOX" "Sent" "Top" "Top/One" "Trash"))
-;; (setq s-test-list '(("Corbeille" . "Corbeille")
-;;  ("One" . "Top/One")
-;;  ("INBOX" . "INBOX")
-;;  ("Envoyés" . "Envoyés")
-;;  ("Dossier Spam" . "Dossier Spam")
-;;  ("Top" . "Top")
-;;  ("Trash" . "Trash")
-;;  ("Sent" . "Sent")
-;;  ("Brouillons" . "Brouillons")
-;;  ("Drafts" . "Drafts")))
-
-;;            (mapcar
-;;             (lambda (folder-name)
-;;               (cons (cdr folder-name) 't)) s-test-list)
-
-
-;;            (mapcar
-;;             (lambda (folder-name)
-;;               (cons folder-name 't)) test-list)
-
-;; (insert (propertize "plop" 'help-info (cdr folder-cell)))plopplopplopplop
-
-;; Modeline
+    (message "dunno: props %s" (text-properties-at (point)))))
 
 
 (defcustom mail-bug-icon
@@ -2246,3 +2104,9 @@ And that's not the half of it."
        tooltip-string))
    mbug-unread-mails
    "\n\n"))
+
+
+;; Boot strap stuff
+(add-hook 'kill-emacs (lambda () (mbug-logout)))
+
+(provide 'mbug)
