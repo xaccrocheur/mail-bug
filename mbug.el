@@ -193,6 +193,19 @@
   "Basic face for deleted mails."
   :group 'mail-bug-faces)
 
+(defface mbug-px-face-answered
+  `((((class color) (background dark))
+     (:weight bold :foreground "LightGreen"))
+    (((class color) (background light))
+     (:weight bold :foreground "DarkGreen"))
+    (((type tty) (class color))
+     (:weight bold :foreground "LightGreen"))
+    (((type tty) (class mono))
+     (:weight bold :foreground "DarkGreen"))
+    (t (:foreground "LightGreen")))
+  "Basic face for answered mails."
+  :group 'mail-bug-faces)
+
 (defface mbug-px-face-marked
   `((((class color) (background dark))
      (:weight bold :foreground "DarkOliveGreen"))
@@ -239,9 +252,13 @@
 (defvar mbug-folder-list nil
   "the cached list of folders.")
 
+;; The cached list of folders
+(defvar mbug-smart-folder-list nil
+  "the cached alist (NAME . PATH) of folders.")
+
 ;; The history list for the message moves.
 (defvar mbug-folder-history nil
-  "the history of foldere names.")
+  "the history of folder names.")
 
 ;; This is useful for debugging - but might not be useful for prod.
 (defvar mbug-buffer nil
@@ -322,6 +339,8 @@ all parts."
 ;; SMTP configs.
 
 (require 'smtpmail)
+(require 'starttls)
+
 
 (setq smtpmail-default-smtp-server "mail.gmx.com")
 (load-library "smtpmail")
@@ -333,8 +352,8 @@ all parts."
  smtpmail-debug-info t
  smtpmail-debug-verb t)
 
-(setq user-full-name "Phil CM")
-(setq user-mail-address "philcm@gmx.com")
+;; (setq user-full-name "Phil CM")
+;; (setq user-mail-address "philcm@gmx.com")
 
 ;; (setq
 ;;  starttls-use-gnutls t
@@ -342,15 +361,27 @@ all parts."
 ;;  ;; starttls-extra-arguments '("--insecure")
 ;; )
 
+;;  ;; smtpmail-auth-credentials '(("mail.gmx.com" "philcm@gmx.com" 465 "Amiga260."))
+;;  ;; smtpmail-auth-credentials '(("mail.gmx.com" 465 "philcm@gmx.com" "Amiga260."))
+;;  ;; smtpmail-starttls-credentials '(("mail.gmx.com" 465 nil nil)))
+
+
+;; this works but I have to use a reply-to :/
 (setq
  smtpmail-smtp-server "mail.gmx.com"
  smtpmail-smtp-service 465
  smtpmail-stream-type 'ssl
- ;; smtpmail-auth-credentials '(("mail.gmx.com" "philcm@gmx.com" 465 "Amiga260."))
- ;; smtpmail-auth-credentials '(("mail.gmx.com" 465 "philcm@gmx.com" "Amiga260."))
- ;; smtpmail-starttls-credentials '(("mail.gmx.com" 465 nil nil)))
  )
 
+;; (setq
+;;  smtpmail-smtp-server "fencepost.gnu.org"
+;;  smtpmail-smtp-service 587
+;;  smtpmail-stream-type 'starttls
+;;  )
+
+;; SMTP server: fencepost.gnu.org
+;; SMTP port: 587
+;; SMTP settings: STARTTLS
 
 ;; Imap logging management. Very useful for debug.
 
@@ -543,8 +574,24 @@ The timezone package is used to parse the string."
                          nil)))
                  nil))))
         ;; (message "mbug flag list for uid %s: %s" uid (list flag-list))
-        (funcall seenp flag-list seenp)))
-)
+        (funcall seenp flag-list seenp))))
+
+(defun mbug-answeredp (uid)
+  "Return true if the flag list contains the \\Seen flag."
+  (if uid
+      (let ((flag-list (imap-message-get uid 'FLAGS mbug-connection))
+            (seenp
+             (lambda (flag-list fn)
+               (if (listp flag-list)
+                   (let ((flag (car flag-list)))
+                     (if (and (stringp flag) (string= "\\Answered" flag))
+                         't
+                       (if (cdr flag-list)
+                           (funcall fn (cdr flag-list) fn)
+                         nil)))
+                 nil))))
+        ;; (message "mbug flag list for uid %s: %s" uid (list flag-list))
+        (funcall seenp flag-list seenp))))
 
 
 ;; (setq mylist '(("Brouillons" . "Brouillons")
@@ -771,6 +818,7 @@ If you want to know about updates this is the function to use."
 ;; pX: : line hilite
 (add-hook 'mbug-mode-hook
           (lambda ()
+            (toggle-truncate-lines 1)
             (linum-mode -1)
             (hl-line-mode t)))
 
@@ -928,58 +976,10 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
               (setq w2 (split-window w one-third)))))
       (mbug-message-open folder-path uid))))
 
-;; (defun mbug-open ()
-;;   "expand/contract the folder or open the message that point is on.
-;; Messages are opened with the first found text part displayed. If
-;; a message has no text part then there will just be a list of
-;; other parts.
-
-;; The position between the header and the message text is marked with
-;; the buffer local variable @var{mbug-message-text-end-of-headers}."
-;;   (interactive)
-;;   (mbug-ensure-connected)
-;;   (beginning-of-line)
-;;   (if (looking-at "^[^ \t\n\r]+")
-;;       ;; Must be a folder... expand or contract according to current state.
-;;       (let ((folder-name (match-string-no-properties 0)))
-;;         (if (imap-mailbox-get 'OPENED folder-name mbug-connection)
-;;             ;; Mark the mailbox
-;;             (imap-mailbox-put 'OPENED nil folder-name mbug-connection)
-;;           ;; Mark the folder opened
-;;           (imap-mailbox-put 'OPENED 't folder-name mbug-connection))
-;;         (mbug-redraw))
-;;     ;; Must be a message, mark it seen and then open it.
-;;     (let ((msg nil)
-;;           (folder-name (get-text-property (point) 'FOLDER))
-;;           (uid (get-text-property (point) 'UID)))
-;;       (setq msg (cons uid (mbug-date-format
-;;                            (imap-message-envelope-date uid mbug-connection))))
-;;       (imap-message-flags-add (number-to-string uid) "\\Seen" nil mbug-connection)
-
-;;       ;; pX:
-;;       (if mbug-modal
-
-;;           ;; (let ((folders-window (selected-window))
-;;           ;;      (window-lines (fourth (window-edges)))
-;;           ;;      (one-third (/ window-lines 3)))
-;;           ;;  ((set-window-dedicated-p folders-window (not current-prefix-arg))
-;;           ;;   (when (= (length (window-list)) 1)
-;;           ;;     (setq w2 (split-window w one-third)))))
-
-;;           (progn
-;;             (setq w (selected-window))
-;;             ;; (window-edges)
-;;             (set-window-dedicated-p (selected-window) (not current-prefix-arg))
-
-;;             (setq window-lines (fourth (window-edges)))
-;;             (setq one-third (/ window-lines 3))
-;;             (when (= (length (window-list)) 1)
-;;               (setq w2 (split-window w one-third)))))
-;;       (mbug-message-open folder-name uid))))
-
 
 (defun mbug-message-open (folder-name uid)
   (interactive "Mfolder-name:\nnUid:")
+
 
   (defun lookup (key lst) ; This function is used via dynamic scope in some funcs called from here
     "Find the value following the key, eg:
@@ -1128,36 +1128,14 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
   (imap-fetch uid
               (format "(BODY[%s])" (or (cdr (assoc 'partnum text-part)) "1"))
               't nil mbug-connection)
-  (let* (
-         ;; (charset
-         ;;  (lookup 'charset (or (cadr (third (cadr text-part)))
-         ;;                       (car (cdr (third (cadr (car text-part))))))))
-
-         ;; (charset (lookup 'charset (or (cadr (assoc 'body text-part))
-         ;;                               (cadr (assoc 'body (cadr text-part))))))
-
-         (charset (cadr (or (cadr (assoc 'body text-part))
+  (let* ((charset (cadr (or (cadr (assoc 'body text-part))
                             (cadr (assoc 'body (cadr text-part))))))
-
-;; (lookup 'charset (cadr (assoc 'body text-part)))
-;; (lookup 'charset (cadr (assoc 'body (cadr text-part))))
-
-
-         ;; (charset
-         ;;  (if (listp (cadr (car (cdr (third (car text-part))))))
-         ;;      (cadr (car (cdr (third (cadr text-part)))))
-         ;;    (cadr (car (cdr (third (car text-part)))))))
-
-         (tst (lookup 'charset (list-query '(body charset) text-part)))
-
          (transfer-encoding (if (listp (lookup 'transfer-encoding (list-query '(transfer-encoding) (car text-part))))
                                 (lookup 'transfer-encoding (list-query '(transfer-encoding) (cadr text-part)))
                               (lookup 'transfer-encoding (list-query '(transfer-encoding) (car text-part)))))
          (start-of-body 0)
-         (body (elt (car (imap-message-get uid 'BODYDETAIL mbug-connection)) 2))
-         )
+         (body (elt (car (imap-message-get uid 'BODYDETAIL mbug-connection)) 2)))
 
-			;; (message "plop: %s" plop)
     (save-excursion
       (switch-to-buffer buffer)
       (setq start-of-body (point))
@@ -1165,8 +1143,8 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
 
 			(message "\n
 -------------------
-\nTransfer-encoding: %s \n\ncharset: %s \n\ntext-part: %s\n\ntst: %s
--------------------\n" transfer-encoding charset text-part tst)
+\nTransfer-encoding: %s \n\ncharset: %s \n\ntext-part: %s\n\n
+-------------------\n" transfer-encoding charset text-part)
 
       (insert (mbug-decode-string
                body
@@ -1541,8 +1519,8 @@ which can be customized."
           (completing-read
            "Folder name: "
            (mapcar
-            (lambda (folder-name)
-              (cons folder-name 't)) mbug-folder-list)
+            (lambda (folder-cell)
+              (cons (cdr folder-cell) 't)) mbug-smart-folder-list)
            nil nil mbug-initial-folder-name 'mbug-folder-history)))
      (list (get-text-property (point) 'FOLDER)
            (get-text-property (point) 'UID)
@@ -1553,6 +1531,7 @@ which can be customized."
   (imap-message-copy (number-to-string uid) to-folder 't 't mbug-connection)
   (mbug-delete folder-name uid))
 
+;; (folder-name (car folder-cell))
 
 (defun mbug-expunge (folder-name doit)
   "expunges the current folder.
@@ -1728,12 +1707,19 @@ msg is a dotted pair such that:
 						(mbug-field-format 1 (imap-message-envelope-subject uid mbug-connection) 't))
 					 (line-start (point))
 
+           (message-ans
+            (cond
+             ((mbug-answeredp uid) (format "answered: %s" uid))
+             (t "plip")))
+
 					 (message-face
             (cond
              ((mbug-deletedp uid) 'mbug-px-face-deleted)
+             ((mbug-answeredp uid) 'mbug-px-face-answered)
              ((not (mbug-seenp uid)) 'mbug-px-face-unread)
              (t 'mbug-px-face-message))))
 
+           (message "-\n%s-\n" message-ans)
       ;; (message "display-buffer: %s folder-name: %s msg: %s" display-buffer folder-name msg)
 
       (beginning-of-line)
@@ -1754,7 +1740,7 @@ msg is a dotted pair such that:
 
       (insert
        " " (mbug-field-format 20 date)
-       "│" (mbug-field-format 30 from-addr)
+       "│" (mbug-field-format 22 from-addr)
 
  ;; ▎ ▉ ▊ ▋  │ ▕ ▏ ┃ ┆ ┇ ┊ ╎ ┋ ╿ ╽
 
