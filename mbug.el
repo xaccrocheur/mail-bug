@@ -152,7 +152,7 @@
 
 (defface hide-region-after-string-face
   '((t (:inherit region)))
-  "Face for the after string.")
+  "Face for the togglable hidden elements such as headers.")
 
 (defface mbug-px-face-message
   `((((class color) (background dark))
@@ -1980,9 +1980,9 @@ PNG works."
   :type 'string
   :group 'mail-bug-account-1)
 
-(defcustom mbug-new-mail-sound "/usr/share/sounds/pop.wav"
+(defcustom mbug-new-mail-sound "/usr/share/sounds/alsa/Front_Center.wav"
   "Sound for new mail notification.
-Any format works."
+Wav only."
   :type 'string
   :group 'mail-bug)
 
@@ -2022,6 +2022,7 @@ mouse-2: View on %s" (mbug-tooltip) url))
 
 
 (defun mbug-desktop-notify ()
+  "Loop through the unread mails and advertise them one by one."
   (mapcar
    (lambda (x)
      (if (not (member x mbug-advertised-mails))
@@ -2033,10 +2034,41 @@ mouse-2: View on %s" (mbug-tooltip) url))
            (add-to-list 'mbug-advertised-mails x))))
    mbug-unread-mails))
 
-;; (mbug-tooltip mbug-unread-mails)
+(defvar mbug-to-be-advertised-mails '())
 
+(defun newmails (mail-list)
+  (mbug-desktop-notification
+   (concat "New mail" (if (> (length mail-list) 1) "s" ""))
+   (mapconcat
+    (lambda (xx)
+      (mapconcat
+       (lambda (xxx)
+         (format "%s" xxx))
+       xx "\n"))
+    mail-list "\n\n")
+   5000 mbug-new-mail-icon)
+  (setq mbug-to-be-advertised-mails ()))
 
-(defun send-desktop-notification (summary body timeout)
+(defun mbug-desktop-notify-smart ()
+  "Loop through the unread mails and advertise them in bulk if there are >1."
+  (mapcar
+   (lambda (x)
+     (if (not (member x mbug-advertised-mails))
+         (progn
+           (add-to-list 'mbug-advertised-mails x)
+           (setq newmail 't)
+           (add-to-list 'mbug-to-be-advertised-mails x))))
+   mbug-unread-mails)
+  (if mbug-to-be-advertised-mails (newmails mbug-to-be-advertised-mails)))
+
+;; (setq mbug-unread-mails ())
+;; (mbug-desktop-notify-smart)
+;; (setq mbug-advertised-mails ())
+;; (mbug-desktop-notify)
+;; (setq mbug-unread-mails ())
+;; (send-desktop-notification "plip" "plop" 5000 mbug-new-mail-icon)
+
+(defun mbug-desktop-notification (summary body timeout icon)
   "call notification-daemon method METHOD with ARGS over dbus"
   (dbus-call-method
     :session                        ; use the session (not system) bus
@@ -2045,50 +2077,14 @@ mouse-2: View on %s" (mbug-tooltip) url))
     "org.freedesktop.Notifications" "Notify" ; Method
     "emacs"
     0
-    ""
+    icon
     summary
     body
     '(:array)
     '(:array :signature "{sv}")
-    ':int32 timeout))
-
-(defun pw/compile-notify (buffer message)
-  (send-desktop-notification "emacs compile" "plop" 0))
-
-(setq compilation-finish-function 'pw/compile-notify)
-
-;; (setq mbug-advertised-mails '())
-;; (mbug-desktop-notify)
-(defvar libnotify-program "/usr/bin/notify-send")
-
-
-(defcustom mail-bug-new-mail-sound "/usr/share/sounds/pop.wav"
-  "Sound for new mail notification.
-Any format works."
-  :type 'string
-  :group 'mail-bug)
-
-
-(defun mbug-desktop-notification (summary subject timeout icon)
-  "Call notification-daemon method with ARGS over DBus.
-And that's not the half of it."
-  (if (and
-       (window-system)
-       (file-exists-p "/usr/bin/notify-send")
-       )
-      (progn
-        (start-process "notify" "*mail-bug-notify*"
-                       libnotify-program
-                       (concat "--expire-time=" timeout)
-                       "--urgency=low"
-                       (concat "--icon=" icon)
-                       (format "%s" summary)
-                       (format "%s" subject))
-        (if (and
-             (file-exists-p "/usr/bin/mplayer")
-             mail-bug-new-mail-sound)
-            (start-process-shell-command "*mail-bug-sound*" nil (concat "mplayer " mbug-new-mail-sound))))
-    (message "New mail from %s! (%s)" summary subject)))
+    ':int32 timeout)
+  (if mail-bug-new-mail-sound
+      (play-sound-file mbug-new-mail-sound)))
 
 
 (defun mbug-tooltip ()
