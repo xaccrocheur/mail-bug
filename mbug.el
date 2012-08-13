@@ -2069,6 +2069,36 @@ mouse-2: View on %s" (mbug-tooltip) url))
 ;; (setq mbug-unread-mails ())
 ;; (send-desktop-notification "plip" "plop" 5000 mbug-new-mail-icon)
 
+(unwind-protect
+    (dbus-ping :session "org.freedesktop.Notifications")
+  (insert "hi"))
+
+(unwind-protect
+    (let (retval)
+      (condition-case ex
+          (setq retval (dbus-ping :session "org.freedesktop.Notifications"))
+        ('error
+         (progn (message (format "Caught exception: [%s] - Your system maybe lacking dbus notifications capabilities" ex))
+                (message "plop")
+                )))
+        retval)
+  (message "Cleaning up..."))
+
+(defmacro safe-wrap (fn &rest clean-up)
+  `(unwind-protect
+       (let (retval)
+         (condition-case ex
+             (setq retval (progn ,fn))
+           ('error
+            (message (format "Caught exception: [%s]" ex))
+            (setq retval (cons 'exception (list ex)))))
+         retval)
+     ,@clean-up))
+
+(if (safe-wrap (dbus-ping :session "org.freedesktop.Notifications"))
+    (message "nop")
+  (message "yep"))
+
 (defun mbug-desktop-notification (summary body timeout icon)
   (if (and (require 'dbus nil t)
            (dbus-ping :session "org.freedesktop.Notifications"))
