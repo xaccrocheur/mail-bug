@@ -2074,32 +2074,21 @@ mouse-2: View on %s" (mbug-tooltip) url))
   (insert "hi"))
 
 (defun dbus-capable ()
-(unwind-protect
-    (let (retval)
-      (condition-case ex
-          (setq retval (dbus-ping :session "org.freedesktop.Notifications"))
-        ('error
-         (message (format "Caught exception: [%s] - Your system maybe lacking dbus notifications capabilities" ex))))
-      retval)))
-
-(defmacro safe-wrap (fn &rest clean-up)
-  `(unwind-protect
-       (let (retval)
-         (condition-case ex
-             (setq retval (progn ,fn))
-           ('error
-            (message (format "Caught exception: [%s]" ex))
-            (setq retval (cons 'exception (list ex)))))
-         retval)
-     ,@clean-up))
+  "Check if dbus is available"
+  (unwind-protect
+      (let (retval)
+        (condition-case ex
+            (setq retval (dbus-ping :session "org.freedesktop.Notifications"))
+          ('error
+           (message (format "Error: %s - No dbus notifications capabilities" ex))))
+        retval)))
 
 (if (dbus-capable)
     (message "yep")
   (message "nop"))
 
 (defun mbug-desktop-notification (summary body timeout icon)
-  (if (and (require 'dbus nil t)
-           (dbus-ping :session "org.freedesktop.Notifications"))
+  (if (dbus-capable)
       "call notification-daemon method METHOD with ARGS over dbus"
     (dbus-call-method
      :session                        ; use the session (not system) bus
@@ -2117,6 +2106,26 @@ mouse-2: View on %s" (mbug-tooltip) url))
     (message "New mail!"))
   (if mbug-new-mail-sound
       (play-sound-file mbug-new-mail-sound)))
+
+
+(defun mbug-desktop-notification (summary body timeout icon)
+  "call notification-daemon method METHOD with ARGS over dbus"
+  (if (dbus-capable)
+      (dbus-call-method
+       :session                        ; use the session (not system) bus
+       "org.freedesktop.Notifications" ; service name
+       "/org/freedesktop/Notifications"   ; path name
+       "org.freedesktop.Notifications" "Notify" ; Method
+       "emacs"
+       0
+       icon
+       summary
+       body
+       '(:array)
+       '(:array :signature "{sv}")
+       ':int32 timeout)
+    (message "New mail!")))
+
 
 
 (defun mbug-tooltip ()
