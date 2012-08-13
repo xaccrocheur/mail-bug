@@ -2069,10 +2069,6 @@ mouse-2: View on %s" (mbug-tooltip) url))
 ;; (setq mbug-unread-mails ())
 ;; (send-desktop-notification "plip" "plop" 5000 mbug-new-mail-icon)
 
-(unwind-protect
-    (dbus-ping :session "org.freedesktop.Notifications")
-  (insert "hi"))
-
 (defun dbus-capable ()
   "Check if dbus is available"
   (unwind-protect
@@ -2083,9 +2079,9 @@ mouse-2: View on %s" (mbug-tooltip) url))
            (message (format "Error: %s - No dbus notifications capabilities" ex))))
         retval)))
 
-(if (dbus-capable)
-    (message "yep")
-  (message "nop"))
+;; (if (dbus-capable)
+;;     (message "yep")
+;;   (message "nop"))
 
 (defun mbug-desktop-notification (summary body timeout icon)
   (if (dbus-capable)
@@ -2106,25 +2102,6 @@ mouse-2: View on %s" (mbug-tooltip) url))
     (message "New mail!"))
   (if mbug-new-mail-sound
       (play-sound-file mbug-new-mail-sound)))
-
-
-(defun mbug-desktop-notification (summary body timeout icon)
-  "call notification-daemon method METHOD with ARGS over dbus"
-  (if (dbus-capable)
-      (dbus-call-method
-       :session                        ; use the session (not system) bus
-       "org.freedesktop.Notifications" ; service name
-       "/org/freedesktop/Notifications"   ; path name
-       "org.freedesktop.Notifications" "Notify" ; Method
-       "emacs"
-       0
-       icon
-       summary
-       body
-       '(:array)
-       '(:array :signature "{sv}")
-       ':int32 timeout)
-    (message "New mail!")))
 
 
 
