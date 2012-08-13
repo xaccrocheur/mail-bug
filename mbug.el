@@ -1564,6 +1564,7 @@ This ensures that deleted messages are removed from the obarray."
       (imap-close mbug-connection))
   (setq mbug-connection nil))
 
+(defvar openingp '())
 
 (defun mbug-redraw ()
   "redraw the buffer based on the imap state.
@@ -2083,7 +2084,7 @@ mouse-2: View on %s" (mbug-tooltip) url))
     '(:array)
     '(:array :signature "{sv}")
     ':int32 timeout)
-  (if mail-bug-new-mail-sound
+  (if mbug-new-mail-sound
       (play-sound-file mbug-new-mail-sound)))
 
 
