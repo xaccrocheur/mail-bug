@@ -2070,20 +2070,23 @@ mouse-2: View on %s" (mbug-tooltip) url))
 ;; (send-desktop-notification "plip" "plop" 5000 mbug-new-mail-icon)
 
 (defun mbug-desktop-notification (summary body timeout icon)
-  "call notification-daemon method METHOD with ARGS over dbus"
-  (dbus-call-method
-    :session                        ; use the session (not system) bus
-    "org.freedesktop.Notifications" ; service name
-    "/org/freedesktop/Notifications"   ; path name
-    "org.freedesktop.Notifications" "Notify" ; Method
-    "emacs"
-    0
-    icon
-    summary
-    body
-    '(:array)
-    '(:array :signature "{sv}")
-    ':int32 timeout)
+  (if (and (require 'dbus nil t)
+           (dbus-ping :session "org.freedesktop.Notifications"))
+      "call notification-daemon method METHOD with ARGS over dbus"
+    (dbus-call-method
+     :session                        ; use the session (not system) bus
+     "org.freedesktop.Notifications" ; service name
+     "/org/freedesktop/Notifications"   ; path name
+     "org.freedesktop.Notifications" "Notify" ; Method
+     "emacs"
+     0
+     icon
+     summary
+     body
+     '(:array)
+     '(:array :signature "{sv}")
+     ':int32 timeout)
+    (message "New mail!"))
   (if mbug-new-mail-sound
       (play-sound-file mbug-new-mail-sound)))
 
