@@ -130,8 +130,39 @@
   :type '(string)
   :group 'mail-bug)
 
+;; Notification
+(defcustom mail-bug-icon
+  (when (image-type-available-p 'xpm)
+    '(image :type xpm
+            :file "~/.emacs.d/lisp/mail-bug/greenbug.xpm"
+            :ascent center))
+  "Icon for the first account.
+Must be an XPM (use Gimp)."
+  :group 'mail-bug)
+
+(defconst mail-bug-logo
+  (if (and window-system
+           mail-bug-icon)
+      (apply 'propertize " " `(display ,mail-bug-icon))
+    mbug-host-name))
+
+(defcustom mbug-new-mail-icon "/usr/share/icons/oxygen/128x128/actions/configure.png"
+  "Icon for new mail notification.
+PNG works."
+  :type 'string
+  :group 'mail-bug-account-1)
+
+(defcustom mbug-new-mail-sound "/usr/share/sounds/alsa/Front_Center.wav"
+  "Sound for new mail notification.
+Wav only."
+  :type 'string
+  :group 'mail-bug)
+
+(defvar mbug-advertised-mails '())
+(defvar mbug-to-be-advertised-mails '())
 
 ;; Customization for Faces.
+
 (defgroup mail-bug-faces nil
   "Faces for the IMAP user agent."
   :group 'mail-bug)
@@ -219,6 +250,33 @@
   "Basic face for deleted mails."
   :group 'mail-bug-faces)
 
+(defvar hide-region-before-string "[(h)eaders"
+  "String to mark the beginning of an invisible region. This string is
+not really placed in the text, it is just shown in the overlay")
+
+(defvar hide-region-after-string "]"
+  "String to mark the end of an invisible region. This string is
+not really placed in the text, it is just shown in the overlay")
+
+(defvar hide-region-propertize-markers t
+  "If non-nil, add text properties to the region markers.")
+
+(defface hide-region-before-string-face
+  '((t (:inherit region)))
+  "Face for the header-hiding string.")
+
+(defface hide-region-after-string-face
+  '((t (:inherit region)))
+  "Face for the after string.")
+
+(defface mail-bug-toggle-headers-face
+  '((t (:inherit region)))
+  "Face for the header-hiding string.")
+
+
+(defvar hide-region-overlays nil
+  "Variable to store the regions we put an overlay on.")
+
 
 ;; The server used for IMAP
 (defvar mbug-host nil
@@ -265,76 +323,15 @@
   "the buffer being used.")
 
 
+(defvar mbug-unread-mails nil)
+(defvar this-mail nil)
+
+(defvar openingp '())
+(defvar init 't)
+
 (setq mm-text-html-renderer 'w3m)
 (setq mm-inline-text-html-with-images t)
 (setq mm-inline-text-html-with-w3m-keymap nil)
-
-
-(defun mbug-article-view-part (&optional n)
-  "View MIME part N, which is the numerical prefix.
-If the part is already shown, hide the part.  If N is nil, view
-all parts."
-  (interactive "P")
-  (with-current-buffer (current-buffer)
-    (or (numberp n) (setq n (gnus-article-mime-match-handle-first
-                             gnus-article-mime-match-handle-function)))
-    (when (> n (length gnus-article-mime-handle-alist))
-      (error "No such part"))
-    (let ((handle (cdr (assq n gnus-article-mime-handle-alist))))
-      (when (gnus-article-goto-part n)
-        (if (equal (car handle) "multipart/alternative")
-            (progn
-              (beginning-of-line) ;; Make it toggle subparts
-              (gnus-article-press-button))
-          (when (eq (gnus-mm-display-part handle) 'internal)
-            (gnus-set-window-start)))))))
-
-
-(defvar entities-latin
-  '(("=\n" "")
-		("--=20\n" "")
-		("=C2=AB" "«")
-		("=C2=BB" "»")
-		("=E2=80=99" "’")
-    ("=C3=80" "À")
-    ("=C3=A2" "â")
-    ("=C3=A0" "à")
-    ("=C3=A7" "ç")
-    ("=C3=87" "Ç")
-		("=E9" "é")
-    ("=EA" "ê")
-		("=C3=A9" "é")
-    ("=C3=A8" "è")
-    ("=C3=AA" "ê")
-    ("=C3=89" "É")
-    ("=C3=88" "È")
-    ("=C3=8A" "Ê")
-    ("=C3=8B" "Ë")
-    ("=C3=AB" "ë")
-    ("=C5=93" "œ")
-    ("=C5=84" "ń")
-    ("=C3=AE" "î")
-    ("=C3=B4" "ô")
-    ("=C3=B9" "ù")
-    ("=C3=99" "Ù")
-    ("=C3=BB" "û")
-    ("=C3=9B" "Û")
-    ("=C3=BC" "ü")
-    ("=C3=9C" "Ü"))
-  "The list of entities.")
-
-(defun mbug-px-decode-string (string entities)
-  "decode a string against a list of entities / chars pairs."
-  (setq i 0)
-  (while (< i (length entities))
-    (setq my-pair (car (nthcdr i entities)))
-    (setq my-regexp (format "%s" (car (car (nthcdr i entities)))))
-    (setq my-char (format "%s" (car (cdr (car (nthcdr i entities))))))
-    (setq string (replace-regexp-in-string my-regexp my-char string 't))
-    (setq i (1+ i))
-    )
-  (format "%s" string))
-
 
 ;; SMTP configs.
 
@@ -383,12 +380,6 @@ all parts."
 ;; SMTP port: 587
 ;; SMTP settings: STARTTLS
 
-;; Imap logging management. Very useful for debug.
-
-;; Imap debugging is another GNUs IMAP library feature:
-;; (setq imap-debug (get-buffer-create "imap-debug"))
-;; It isn't so generally useful.
-
 (setq imap-log t)
 
 (defun mbug-toggle-imap-logging ()
@@ -397,7 +388,7 @@ all parts."
       (setq imap-log nil)
     (setq imap-log (get-buffer-create "mbug-log"))))
 
-(mbug-toggle-imap-logging)
+;; (mbug-toggle-imap-logging)
 
 ;; This is a function pinched from gnus-sum
 (defun mbug-trim (str)
@@ -461,11 +452,6 @@ all parts."
 (defun mbug-refresh-folder-list ()
   "Refresh the list of folders available from the imap server."
   (imap-mailbox-list "*" "" "." mbug-connection)
-  ;; (setq mbug-folder-list
-  ;;       (sort
-  ;;        (imap-mailbox-map
-  ;;         (lambda (folder-name)
-  ;;           folder-name)  mbug-connection) 'string<))
 
   (setq mbug-sorted-raw-folder-list
         (sort
@@ -474,21 +460,14 @@ all parts."
             folder-name)  mbug-connection) 'string<))
 
   ;; pX:
-  ;; New folder list, looks like this
+  ;; New folder name/path alist, looks like this
   ;; (("One" . "Top/One")
   ;;  ("INBOX" . "INBOX"))
   (setq mbug-smart-folder-list
         (mapcar
          (lambda (folder-name)
-           (cons (replace-regexp-in-string ".*/" "" folder-name) folder-name))  mbug-sorted-raw-folder-list)))
-
-  ;; (setq mbug-smart-folder-list
-  ;;       (mapcar
-  ;;        (lambda (folder-name)
-  ;;          (cons
-  ;;           (replace-regexp-in-string ".*/" "" folder-name)
-  ;;           folder-name
-  ;;           (mbug-count-occurrences "/" "" folder-name)))  mbug-sorted-raw-folder-list))
+           (cons (replace-regexp-in-string ".*/" "" folder-name) folder-name))
+         mbug-sorted-raw-folder-list)))
 
 
 ;; Other IMAP specific utility functions.
@@ -577,7 +556,7 @@ The timezone package is used to parse the string."
         (funcall seenp flag-list seenp))))
 
 (defun mbug-answeredp (uid)
-  "Return true if the flag list contains the \\Seen flag."
+  "Return true if the flag list contains the \\Answered flag."
   (if uid
       (let ((flag-list (imap-message-get uid 'FLAGS mbug-connection))
             (seenp
@@ -717,7 +696,7 @@ An malist is a Multi Association LIST: a list of alists."
   (interactive)
   (message "thunderbirds are GO")
   (setq mbug-timer (run-with-timer 15
-                                   300
+                                   60
                                    'mbug-recount)))
 
 (defun mbug-timer-kill ()
@@ -762,14 +741,7 @@ This means you can have multiple mbug sessions in one emacs session."
                 (make-local-variable 'mbug-host)
                 (setq mbug-host host-name)
                 (make-local-variable 'mbug-port)
-                (setq mbug-port tcp-port)))
-
-
-          ;; Are we connected yet?
-          (if (eq window-system 'x)
-              (mbug-timer-start))
-
-          ))
+                (setq mbug-port tcp-port)))))
     (mbug-redraw)
     (beginning-of-buffer))
   ;; t
@@ -1528,9 +1500,7 @@ This ensures that deleted messages are removed from the obarray."
     (if pt
         (goto-char pt))
       (let ((folder-name (get-text-property (point) 'help-echo)))
-    folder-name
-    ;; (message "folder-name: %s" folder-name)
-    )))
+    folder-name)))
 
 (defun mbug-create-folder (new-folder-name)
   "create a new folder under the specified parent folder."
@@ -1564,12 +1534,15 @@ This ensures that deleted messages are removed from the obarray."
       (imap-close mbug-connection))
   (setq mbug-connection nil))
 
-(defvar openingp '())
-
 (defun mbug-redraw ()
   "redraw the buffer based on the imap state.
 Opened folders have their messages re-read and re-drawn."
   (interactive)
+
+  ;; Are we connected yet?
+  (if init
+      (progn (mbug-timer-start)
+             (setq init ())))
 
   ;; (setq stored-pos (point))
   (defun insert-with-prop (text prop-list)
@@ -1601,15 +1574,10 @@ Opened folders have their messages re-read and re-drawn."
                (setq folder-icon "▾")
              (setq folder-icon "▸"))
 
-           ;; (if (imap-mailbox-get 'OPENED folder-path mbug-connection)
-           ;;     (setq opening-folder-p 't))
-
-           ;; (insert-image (create-image "~/.emacs.d/lisp/mail-bug/folder.gif"))
            (insert (propertize (concat
                                 (mbug-string-repeat " " folder-depth)
                                 folder-icon " " folder-name) 'face 'mbug-px-face-folder))
            (put-text-property (line-beginning-position) (+ 1 (line-beginning-position)) 'help-echo folder-path)
-
 
            (insert " \n")
            (if (imap-mailbox-get 'OPENED (cdr folder-cell) mbug-connection)
@@ -1654,10 +1622,7 @@ Opened folders have their messages re-read and re-drawn."
                (previous-line)))
     ;; (message "openingp: %s" openingp)
 
-    (setq openingp 'nil)
-    ;; pX: Go to last mail in this folder
-    ;; (message "mbug-redraw OUT")
-))
+    (setq openingp 'nil)))
 
 (defun mbug-get-msg-redraw-func (folder-name)
   'mbug-msg-redraw)
@@ -1710,15 +1675,6 @@ msg is a dotted pair such that:
 						(delete-region (line-beginning-position) (line-end-position))
 						(delete-char 1)))
 
-      ;; Put in the new line.
-      ;; (insert
-      ;;  (propertize
-      ;;   (concat
-      ;;    "  " (mbug-field-format 20 date)
-      ;;    "  " (mbug-field-format 30 from-addr)
-      ;;    "  " subject "\n")
-      ;;   'face message-face))
-
       (insert
        " " (mbug-field-format 20 date)
        " " (mbug-field-format 25 from-addr)
@@ -1728,22 +1684,7 @@ msg is a dotted pair such that:
        ;; pX: decode the subject
        " " (rfc2047-decode-string subject) "\n")
       (add-text-properties line-start (point)
-													 `(UID ,uid FOLDER ,folder-name face ,message-face))
-
-      ;; (insert
-      ;;  "  " (mbug-field-format 20 date)
-      ;;  "  " (mbug-field-format 30 from-addr)
-      ;;  "  " subject "\n")
-      ;; (add-text-properties line-start (point)
-			;; 										 `(UID ,uid FOLDER ,folder-name
-			;; 													 face (foreground-color . ,color)))
-      )))
-
-
-;; COUNT
-;; pX:
-
-(defvar mbug-unread-mails nil)
+													 `(UID ,uid FOLDER ,folder-name face ,message-face)))))
 
 (defun mbug-recount ()
   "recount 'INBOX' based on the imap state."
@@ -1789,12 +1730,12 @@ msg is a dotted pair such that:
   ;; Refresh the modeline
   (progn (setq global-mode-string ())
          (add-to-list 'global-mode-string
-                      (mbug-mode-line mbug-unread-mails))))
+                      (mbug-mode-line mbug-unread-mails))
+         ;; Bug the user
+         (mbug-desktop-notify-smart)))
 
 (defun mbug-get-msg-recount-func (folder-name)
   'mbug-msg-recount)
-
-(defvar this-mail nil)
 
 
 (defun mbug-msg-recount (display-buffer folder-name msg)
@@ -1820,9 +1761,8 @@ msg is a dotted pair such that:
             (cond
              ((mbug-deletedp uid) 'mbug-status-deleted)
              ((not (mbug-seenp uid)) 'mbug-status-unread)
-             (t 'mbug-status-normal)
-             ))
-           )
+             (t 'mbug-status-normal))))
+
       (setq this-mail ())
       (push msg this-mail)
       (push subject this-mail)
@@ -1832,11 +1772,7 @@ msg is a dotted pair such that:
       (if (eq mbug-status 'mbug-status-unread)
           (progn
             (add-to-list 'mbug-unread-mails this-mail)
-            (mbug-redraw))
-        )
-      ;; (message "mbug-msg-recount OUT status: %s" mbug-status)
-      ))
-  )
+            (mbug-redraw))))))
 
 
 ;; END COUNT
@@ -1854,18 +1790,8 @@ msg is a dotted pair such that:
 
 (ad-activate 'message-reply)
 
-(defadvice view-echo-area-messages (after view-echo-area-messages-in-help-mode)
-  "Toggle `help-mode' to use the keys (mostly 'q' to quit)."
-  (help-mode))
-
-(ad-activate 'view-echo-area-messages)
-
-;; (view-echo-area-messages)
-
-
 
 ;; Hide headers
-
 (defun mbug-toggle-headers ()
   "Toggle headers."
   (interactive)
@@ -1875,10 +1801,7 @@ msg is a dotted pair such that:
         ;; (toggle-read-only)
         (mbug-show-headers)
         (beginning-of-buffer)
-        (setq hide-region-overlays ())
-        ;; (setq buffer-read-only 't)
-        ;; (set-buffer-modified-p nil)
-        )
+        (setq hide-region-overlays ()))
     (progn
       (message "hidden")
       (beginning-of-buffer)
@@ -1891,38 +1814,8 @@ msg is a dotted pair such that:
       (push-mark)
       (forward-paragraph)
       (mbug-hide-headers)
-      (deactivate-mark)
-      ;; (toggle-read-only)
-      )))
+      (deactivate-mark))))
 
-
-(defvar hide-region-before-string "[(h)eaders"
-  "String to mark the beginning of an invisible region. This string is
-not really placed in the text, it is just shown in the overlay")
-
-(defvar hide-region-after-string "]"
-  "String to mark the end of an invisible region. This string is
-not really placed in the text, it is just shown in the overlay")
-
-(defvar hide-region-propertize-markers t
-  "If non-nil, add text properties to the region markers.")
-
-(defface hide-region-before-string-face
-  '((t (:inherit region)))
-  "Face for the header-hiding string.")
-
-(defface hide-region-after-string-face
-  '((t (:inherit region)))
-  "Face for the after string.")
-
-
-(defface mail-bug-toggle-headers-face
-  '((t (:inherit region)))
-  "Face for the header-hiding string.")
-
-
-(defvar hide-region-overlays nil
-  "Variable to store the regions we put an overlay on.")
 
 (defun mbug-show-headers ()
   "Unhide a region at a time, starting with the last one hidden and
@@ -1959,34 +1852,6 @@ overlay on the hide-region-overlays \"ring\""
       (message "folder: props %s" (text-properties-at (point)))
     (message "dunno: props %s" (text-properties-at (point)))))
 
-
-(defcustom mail-bug-icon
-  (when (image-type-available-p 'xpm)
-    '(image :type xpm
-            :file "~/.emacs.d/lisp/mail-bug/greenbug.xpm"
-            :ascent center))
-  "Icon for the first account.
-Must be an XPM (use Gimp)."
-  :group 'mail-bug)
-
-(defconst mail-bug-logo
-  (if (and window-system
-           mail-bug-icon)
-      (apply 'propertize " " `(display ,mail-bug-icon))
-    mbug-host-name))
-
-(defcustom mbug-new-mail-icon "/usr/share/icons/oxygen/128x128/actions/configure.png"
-  "Icon for new mail notification.
-PNG works."
-  :type 'string
-  :group 'mail-bug-account-1)
-
-(defcustom mbug-new-mail-sound "/usr/share/sounds/alsa/Front_Center.wav"
-  "Sound for new mail notification.
-Wav only."
-  :type 'string
-  :group 'mail-bug)
-
 (setq nice-uri (replace-regexp-in-string "^.*?\\." "" mbug-host-name 't))
 
 (defun mbug-mode-line (mbug-unseen-mails)
@@ -2019,9 +1884,6 @@ mouse-2: View on %s" (mbug-tooltip) url))
                            s)
       (concat mail-bug-logo ":" s))))
 
-(defvar mbug-advertised-mails '())
-
-
 (defun mbug-desktop-notify ()
   "Loop through the unread mails and advertise them one by one."
   (mapcar
@@ -2035,8 +1897,6 @@ mouse-2: View on %s" (mbug-tooltip) url))
            (add-to-list 'mbug-advertised-mails x))))
    mbug-unread-mails))
 
-(defvar mbug-to-be-advertised-mails '())
-
 (defun newmails (mail-list)
   (mbug-desktop-notification
    (concat "New mail" (if (> (length mail-list) 1) "s" ""))
@@ -2045,7 +1905,7 @@ mouse-2: View on %s" (mbug-tooltip) url))
       (mapconcat
        (lambda (xxx)
          (format "%s" xxx))
-       xx "\n"))
+       (butlast xx) "\n"))
     mail-list "\n\n")
    5000 mbug-new-mail-icon)
   (setq mbug-to-be-advertised-mails ()))
@@ -2079,31 +1939,25 @@ mouse-2: View on %s" (mbug-tooltip) url))
            (message (format "Error: %s - No dbus notifications capabilities" ex))))
         retval)))
 
-;; (if (dbus-capable)
-;;     (message "yep")
-;;   (message "nop"))
-
 (defun mbug-desktop-notification (summary body timeout icon)
+  "call notification-daemon method METHOD with ARGS over dbus"
   (if (dbus-capable)
-      "call notification-daemon method METHOD with ARGS over dbus"
-    (dbus-call-method
-     :session                        ; use the session (not system) bus
-     "org.freedesktop.Notifications" ; service name
-     "/org/freedesktop/Notifications"   ; path name
-     "org.freedesktop.Notifications" "Notify" ; Method
-     "emacs"
-     0
-     icon
-     summary
-     body
-     '(:array)
-     '(:array :signature "{sv}")
-     ':int32 timeout)
+      (dbus-call-method
+       :session                        ; use the session (not system) bus
+       "org.freedesktop.Notifications" ; service name
+       "/org/freedesktop/Notifications"   ; path name
+       "org.freedesktop.Notifications" "Notify" ; Method
+       "emacs"
+       0
+       icon
+       summary
+       body
+       '(:array)
+       '(:array :signature "{sv}")
+       ':int32 timeout)
     (message "New mail!"))
   (if mbug-new-mail-sound
       (play-sound-file mbug-new-mail-sound)))
-
-
 
 (defun mbug-tooltip ()
   "Loop through the mail headers and build the hover tooltip"
