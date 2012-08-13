@@ -2073,16 +2073,14 @@ mouse-2: View on %s" (mbug-tooltip) url))
     (dbus-ping :session "org.freedesktop.Notifications")
   (insert "hi"))
 
+(defun dbus-capable ()
 (unwind-protect
     (let (retval)
       (condition-case ex
           (setq retval (dbus-ping :session "org.freedesktop.Notifications"))
         ('error
-         (progn (message (format "Caught exception: [%s] - Your system maybe lacking dbus notifications capabilities" ex))
-                (message "plop")
-                )))
-        retval)
-  (message "Cleaning up..."))
+         (message (format "Caught exception: [%s] - Your system maybe lacking dbus notifications capabilities" ex))))
+      retval)))
 
 (defmacro safe-wrap (fn &rest clean-up)
   `(unwind-protect
@@ -2095,9 +2093,9 @@ mouse-2: View on %s" (mbug-tooltip) url))
          retval)
      ,@clean-up))
 
-(if (safe-wrap (dbus-ping :session "org.freedesktop.Notifications"))
-    (message "nop")
-  (message "yep"))
+(if (dbus-capable)
+    (message "yep")
+  (message "nop"))
 
 (defun mbug-desktop-notification (summary body timeout icon)
   (if (and (require 'dbus nil t)
