@@ -3,7 +3,6 @@
 ;; Copyright (C) 2001, 2002 Tapsell-Ferrier Limited
 ;; Copyright (C) 2012 Philippe Coatmeur-Marin
 
-
 ;; Author: Nic Ferrier <nferrier@tapsellferrier.co.uk>
 ;; Author: Philippe CM http://stackoverflow.com/users/539797/philippe-cm
 ;; Keywords: mail
