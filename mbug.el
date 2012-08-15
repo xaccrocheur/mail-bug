@@ -352,7 +352,12 @@ not really placed in the text, it is just shown in the overlay")
   (defvar mailcap-viewer)
   (defvar buffer)
   (defvar mbug-px-face-marked)
-  )
+  (defvar atom-list)
+  (defvar text-chars)
+  (defvar text-trans)
+  (defvar folder-icon)
+  (defvar newmail)
+)
 
 ;; SMTP configs.
 
@@ -632,11 +637,13 @@ message, for example 'type  is the mime type.  Multipart messages
 are coded exactly  the same except they have  each subpart in the
 alist  as well.  Each subpart  is  keyed by  it's part  id (as  a
 string)."
+
   (defun part-num-to-str (super-part part)
     "Convert a part number to a compound string"
     (if super-part
         (format "%s.%s" super-part part)
       (format "%s" part)))
+
   (defun ext-parse (bs lst)
     "Parse the extension data."
     (unless (eq 'NIL (elt lst 0))
@@ -676,9 +683,11 @@ string)."
 A part list is a flat list of all mime types, which are
 alists. The part id is made an entry in the mime type with the
 key: 'partnum"
+
   (defun part-spec-p (str)
     "Is str a valid IMAP part specifier?"
     (and (stringp str) (string-match "[0-9][0-9.]*" str)))
+
   (let ((parts (list '())))
     (defun iterator (lst)
       (mapc (lambda (item)
@@ -989,7 +998,6 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
 (defun mbug-message-open (folder-name uid)
   (interactive "Mfolder-name:\nnUid:")
 
-
   (defun lookup (key lst) ; This function is used via dynamic scope in some funcs called from here
     "Find the value following the key, eg:
  (lookup 'nic '(bob 12 fred 73 mike 18 nic 34 jim 22))
@@ -1260,11 +1268,6 @@ buffer. Programs can pass the imap-con in directly though."
             (mailcap-ext-pattern-all (mailcap-mime-info mimetype-str "all"))
             )
 
-        ;; Simple replace function.
-        (defun string-replace (re replace string)
-          (string-match re string)
-          (replace-match replace nil nil string))
-
         ;; Display in the viewer.
         (if mailcap-viewer
             (progn
@@ -1303,10 +1306,11 @@ buffer. Programs can pass the imap-con in directly though."
         (enc (cadr (assoc 'transfer-encoding part)))
         (fname (if mailcap-ext-pattern
                    (progn
-                     (message "Yes, mailcap-ext-pattern and it is %s " mailcap-ext-pattern)
-                     (string-replace "%" (make-temp-file "mbug") mailcap-ext-pattern))
+                     ;; This never happens - it used to be a custom replace function
+                     ;; (message "Yes, mailcap-ext-pattern and it is %s " mailcap-ext-pattern)
+                     (make-temp-file (concat "mbug-" mailcap-ext-pattern)))
                  (progn
-                   (message "Nope, no mailcap-ext-pattern")
+                   ;; (message "Nope, no mailcap-ext-pattern")
                    ;; (message "WTF no %s" (string-replace "%" (format-time-string "%A" (current-time)) name))
                    (make-temp-file (concat "mbug-" name))
                    ;; (concat "." (make-temp-file "mbug") name)
@@ -1341,29 +1345,21 @@ buffer. Programs can pass the imap-con in directly though."
 
 
       ;; We need a unix process
-      (progn
-        (message "Called from: %s, fname is %s and mailcap-viewer is %s" px-calling-buffer fname mailcap-viewer)
+      ;; (message "Called from: %s, fname is %s and mailcap-viewer is %s" px-calling-buffer fname mailcap-viewer)
 
-				;; (message "mimetype: %s" mimetype)
-
-
-				;; (if (string= "IMAGE" mimetype)
-				;; 		(message "Hey this is an image yeah?"))
-
-				;; pX:
-				(if (and mbug-inline-images
-								 (string= "IMAGE" mimetype))
-						(progn
-							(switch-to-buffer px-calling-buffer)
-							(setq inhibit-read-only 't)
-							(insert "\n")
-							(insert-image (create-image fname)))
-					(let* ((proc-buf (generate-new-buffer "*mbug-attachment*"))
-								 (proc (apply 'start-process-shell-command
-															`("*mbug-detachment*" ,proc-buf
-																,@(split-string (format mailcap-viewer fname)) )) ))
-						(set-process-sentinel proc 'mbug-attachment-sentinel)))
-        ))))
+      ;; pX:
+      (if (and mbug-inline-images
+               (string= "IMAGE" mimetype))
+          (progn
+            (switch-to-buffer px-calling-buffer)
+            (setq inhibit-read-only 't)
+            (insert "\n")
+            (insert-image (create-image fname)))
+        (let* ((proc-buf (generate-new-buffer "*mbug-attachment*"))
+               (proc (apply 'start-process-shell-command
+                            `("*mbug-detachment*" ,proc-buf
+                              ,@(split-string (format mailcap-viewer fname)) )) ))
+          (set-process-sentinel proc 'mbug-attachment-sentinel))))))
 
 (defun mbug-attachment-sentinel (process event)
   "Sentinel monitors attachement processes"
@@ -1374,11 +1370,26 @@ buffer. Programs can pass the imap-con in directly though."
              (not (eq state 'stop))
              (< (buffer-size buf) 1))
         (progn
-          ;; pX:
-          (if (kill-buffer buf)
-              (progn (message "buffer dead")
-                     (kill-matching-buffers "mbug-attachment.*"))))
-      (switch-to-buffer buf))))
+          (message "-- buffer dead")
+          (with-current-buffer buf
+            ;; pX:
+            (set-buffer-modified-p nil)
+            (kill-buffer buf)
+            )
+          ;; (if (kill-buffer buf)
+          ;;     (progn (message "buffer dead")
+          ;;            (kill-matching-buffers "mbug-attachment.*")))
+          )
+      (progn
+        (message "-- buffer alive")
+        (switch-to-buffer buf))))
+  (message "
+SENTINEL
+process %s
+event %s
+buffer %s
+" process event buf)
+  )
 
 (defun mbug-decode-string (content transfer-encoding char-encoding)
   "Decode the specified content string."
