@@ -924,6 +924,27 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
       (mbug-message-open folder-path uid))))
 
 
+(defun extract-first (list)
+  "Return the first atom of LIST that is a list"
+  (if (listp list)
+      (progn
+        (setq atom-list list)
+        (if (listp (car list))
+            (progn
+              (setq atom-list (car list))
+              (if (listp (caar list))
+                  (progn
+                    (setq atom-list (caar list))
+                    (if (listp (caaar list))
+                        (progn
+                          (setq atom-list (caaar list))
+                          (if (listp (caaaar list))
+                              (progn
+                                (setq atom-list (caaaar list))
+                                ))))))))))
+  atom-list)
+
+
 (defun mbug-message-open (folder-name uid)
   (interactive "Mfolder-name:\nnUid:")
 
@@ -950,6 +971,12 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
          (text-part (if parts
                         (mbug-part-list-assoc 'type '(("text" . "plain")) parts)
                       bs)))
+
+
+    (setq text-chars (cadr (third (extract-first bs-def))))
+
+    (setq text-trans (sixth (extract-first bs-def)))
+
 
     (setq message-header-format-alist
           `(
@@ -997,7 +1024,7 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
 
       ;; Now insert the first text part we have
       (when text-part
-        (mbug-message-fill-text uid (if text-part text-part bs) buf))
+        (mbug-message-fill-text uid (if text-part text-part bs) buf text-chars text-trans))
 
       ;; Now switch to buffer wether we're in modal mode or not
       ;; (sleep-for 0.5)
@@ -1068,18 +1095,19 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
       (setq list-of-keys (cdr list-of-keys)))
     data))
 
-(defun mbug-message-fill-text (uid text-part buffer)
+(defun mbug-message-fill-text (uid text-part buffer charset transfer-encoding)
   "Insert the text-part for the specified uid in the buffer provided."
-
+  (message "called!")
   ;; Main function.
   (imap-fetch uid
               (format "(BODY[%s])" (or (cdr (assoc 'partnum text-part)) "1"))
               't nil mbug-connection)
-  (let* ((charset (cadr (or (cadr (assoc 'body text-part))
-                            (cadr (assoc 'body (cadr text-part))))))
-         (transfer-encoding (if (listp (lookup 'transfer-encoding (list-query '(transfer-encoding) (car text-part))))
-                                (lookup 'transfer-encoding (list-query '(transfer-encoding) (cadr text-part)))
-                              (lookup 'transfer-encoding (list-query '(transfer-encoding) (car text-part)))))
+  (let* (
+         ;; (charset (cadr (or (cadr (assoc 'body text-part))
+         ;;                    (cadr (assoc 'body (cadr text-part))))))
+         ;; (transfer-encoding (if (listp (lookup 'transfer-encoding (list-query '(transfer-encoding) (car text-part))))
+         ;;                        (lookup 'transfer-encoding (list-query '(transfer-encoding) (cadr text-part)))
+         ;;                      (lookup 'transfer-encoding (list-query '(transfer-encoding) (car text-part)))))
          (start-of-body 0)
          (body (elt (car (imap-message-get uid 'BODYDETAIL mbug-connection)) 2)))
 
@@ -1312,7 +1340,10 @@ buffer. Programs can pass the imap-con in directly though."
 (defun mbug-decode-string (content transfer-encoding char-encoding)
   "Decode the specified content string."
 
-  ;; (message "char-enc: %s transfer-enc: %s\nString: " char-encoding transfer-encoding content)
+  (message "--
+char-enc: %s
+transfer-enc: %s" char-encoding transfer-encoding)
+
   (let* ((transfer-enc (if transfer-encoding
                            (upcase transfer-encoding)
                          'NONE))
