@@ -411,7 +411,9 @@ not really placed in the text, it is just shown in the overlay")
 
 (defun mbug-kill-buffer-hook ()
   "ensure the IMAP connection is logged out when the buffer dies"
-  (mbug-logout))
+  (mbug-logout)
+  (global-unset-key [menu-bar mbug-menu])
+  (setq init 't))
 
 
 (defun mbug-ensure-connected ()
@@ -764,11 +766,25 @@ If you want to know about updates this is the function to use."
                  (if mbug-connection
                      (setq mbug-connection nil)))))))))
 
-(defun mbug-click ()
-  "Click!"
-  (interactive)
-  (sleep-for 0.5)
-  (mbug-open))
+
+(defun mbug-menu ()
+  "Create the Mail-bug menu"
+  (define-key-after
+    global-map
+    [menu-bar mbug-menu]
+    (cons "Mail-bug" (make-sparse-keymap "hoot hoot"))
+    'tools )
+
+  (define-key
+    global-map
+    [menu-bar mbug-menu prefs]
+    '("Prefs" . (lambda () (interactive) (customize-group 'mail-bug))))
+
+  (define-key
+    global-map
+    [menu-bar mbug-menu help]
+    '("Help" . (lambda () (interactive) (describe-mode (get-buffer "mail-bug"))))))
+
 
 ;; pX: : line hilite
 (add-hook 'mbug-mode-hook
@@ -783,11 +799,15 @@ If you want to know about updates this is the function to use."
 
 
 (defun mbug-mode ()
-  "A mail user agent based on IMAP folders.
-You can open many folders and messages simultaneously. Folders can be
-expanded and contracted.
+  "
+         .' '.
+-        .   .            \\\\       Mail-bug
+ `.        .         .  -{{{:}     A lightweight Mail User Agent for GNU Emacs.
+   ' .  . ' ' .  . '      //
 
-The keys defined are:
+Type \\[customize-group] mail-bug (or use the menu)  to set it up.
+
+Here are the keys to control Mail-bug.
  \\{mbug-mode-map}"
   (interactive)
   (kill-all-local-variables)
@@ -1571,9 +1591,14 @@ Opened folders have their messages re-read and re-drawn."
   (interactive)
 
   ;; Are we connected yet?
+
   (if init
-      (progn (mbug-timer-start)
-             (setq init ())))
+      (progn
+        (if mbug-bug
+            (mbug-timer-start))
+        (mbug-menu)
+        (setq init ())))
+
 
   ;; (setq stored-pos (point))
   (defun insert-with-prop (text prop-list)
