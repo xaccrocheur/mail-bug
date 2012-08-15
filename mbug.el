@@ -458,7 +458,7 @@ not really placed in the text, it is just shown in the overlay")
       (setq mbug-connection (imap-open mbug-host mbug-port 'ssl))
       (assert mbug-connection nil "the imap connection could not be opened")
       ;; Use the default username and password if they're set
-      (if (and 
+      (if (and
 	   (string= "" mbug-username)
 	   (not mbug-password))
           (progn
@@ -758,7 +758,7 @@ This means you can have multiple mbug sessions in one emacs session."
                    "localhost"
                  (match-string 1 host-str))
                (if (not (match-string 2 host-str))
-                   143
+                   993
                  (string-to-number (match-string 2 host-str)))))))
 
   ;; Setup buffer.
@@ -1281,7 +1281,7 @@ buffer. Programs can pass the imap-con in directly though."
         (if mailcap-viewer
             (progn
               ;; pX:
-              (message "yes, mailcap-viewer and it is %s " mailcap-viewer)
+              (message "-- yes, mailcap-viewer: %s and mimetype: %s " mailcap-viewer mimetype-str)
               (mbug-attachment-emacs-handle msg-buffer mimetype-px)
               (setq buffer-read-only 't)
               (set-buffer-modified-p nil)
@@ -1291,14 +1291,16 @@ buffer. Programs can pass the imap-con in directly though."
           ;; else we don't have a mailcap viewer
           ;;  --- FIXME: - sure this could be integrated with viewer stuff above
           ;;  --- ask for a viewer?
-          (insert (mbug-decode-string
-                   ;; This gets the body and can be expensive
-                   (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
-                   (cadr (assoc 'transfer-encoding part))
-                   (lookup "charset" (cadr (assoc 'body part)))))
-          ;; pX:
-          ;; (normal-mode)
-          (goto-char (point-min)))))))
+(progn
+  (message "-- no mailcap-viewer: %s for mimetype: %s " mailcap-viewer mimetype-str)
+  (insert (mbug-decode-string
+           ;; This gets the body and can be expensive
+           (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
+           (cadr (assoc 'transfer-encoding part))
+           (lookup "charset" (cadr (assoc 'body part))))))
+;; pX:
+;; (normal-mode)
+(goto-char (point-min)))))))
 
 
 (defun mbug-attachment-emacs-handle (px-calling-buffer mimetype)
