@@ -8,7 +8,6 @@
 ;; Keywords: mail
 ;; Version 0.6b
 
-
 ;; This file is NOT part of GNU Emacs.
 
 ;; This program is free software; you can redistribute it and/or modify
