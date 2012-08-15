@@ -53,11 +53,11 @@
 (require 'qp)
 (require 'timezone)
 (require 'message)
-;; (require 'cl)
+(require 'cl)
 (require 'dbus)
 
 ;; Test Customization
-(defcustom mbug-host-name "imap.gmx.com"
+(defcustom mbug-host-name ""
   "The name of server to connect to"
   :type '(string)
   :group 'mail-bug)
@@ -67,8 +67,10 @@
   "the imap server port")
 
 ;; The cached username
-(defvar mbug-username "philcm@gmx.com"
-  "the user's name")
+(defcustom mbug-username ""
+  "the user's name"
+  :type '(string)
+  :group 'mail-bug)
 
 ;; The cached password
 (defvar mbug-password nil
@@ -456,12 +458,19 @@ not really placed in the text, it is just shown in the overlay")
       (setq mbug-connection (imap-open mbug-host mbug-port 'ssl))
       (assert mbug-connection nil "the imap connection could not be opened")
       ;; Use the default username and password if they're set
-      (if (not (and mbug-username mbug-password))
+      (if (and 
+	   (string= "" mbug-username)
+	   (not mbug-password))
           (progn
-            (if (not mbug-username)
-                (setq mbug-username (read-from-minibuffer "username: ")))
+            (message "oops username")
+            (if (string= "" mbug-username)
+                (progn
+                  (message "-- oops username")
+                  (setq mbug-username (read-from-minibuffer "username: "))))
             (if (not mbug-password)
-                (setq mbug-password (read-passwd "password: ")))))
+                (progn
+                  (message "-- oops password")
+                  (setq mbug-password (read-passwd "password: "))))))
       (condition-case nil
           (progn
             ;; Initialize the connection by listing all mailboxes.
