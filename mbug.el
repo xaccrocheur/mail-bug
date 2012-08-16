@@ -94,7 +94,15 @@ The faces inherit from emacs defult faces, so it's OK if you do nothing here."
   :group 'mail-bug)
 
 (defcustom mbug-modal 't
+  "Should the message open in a preview windowpane?
+NOTE: This is only relevant in windowed (ie not console) mode."
+  :type '(boolean)
+  :group 'mail-bug-interface)
+
+(defcustom mbug-dedicated nil
   "Should the message open in a dedicated windowpane?
+Dedicated windows are intangible.
+NOTE: tabbar don't show in dedicated windows.
 NOTE: This is only relevant in windowed (ie not console) mode."
   :type '(boolean)
   :group 'mail-bug-interface)
@@ -973,13 +981,13 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
       ;; pX:
       (if (and mbug-modal (eq window-system 'x))
           (progn
-            ;; (setq w (selected-window))
-            (set-window-dedicated-p (selected-window) (not current-prefix-arg))
-
-            ;; (setq window-lines (fourth (window-edges)))
-            ;; (setq one-third (/ window-lines 3))
             (when (= (length (window-list)) 1)
-              (split-window (selected-window) (/ (fourth (window-edges)) 3)))))
+              (when mbug-dedicated
+                (set-window-dedicated-p (selected-window) (not current-prefix-arg)))
+              (split-window-vertically 15)
+              (other-window 1)
+              ;; (split-window (selected-window) (/ (fourth (window-edges)) 3))
+              )))
       (mbug-message-open folder-path uid))))
 
 
