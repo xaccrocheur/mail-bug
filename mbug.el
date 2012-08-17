@@ -886,10 +886,10 @@ Here are the keys to control Mail-bug.
     (define-key mbug-mode-map "h" 'mbug-toggle-headers)
     (define-key mbug-mode-map "K" 'mbug-kill-folder)
     ;; (define-key mbug-mode-map "r" 'mbug-reply-to)
-    (define-key mbug-mode-map "n" 'next-line)
+    ;; (define-key mbug-mode-map "n" 'next-line)
     (define-key mbug-mode-map "m" 'mbug-move)
     ;; (define-key mbug-mode-map "p" 'previous-line)
-    (define-key mbug-mode-map "s" 'mbug-send-mail)
+    (define-key mbug-mode-map "n" 'mbug-new-mail)
     (define-key mbug-mode-map "S" 'mbug-show-structure)
     (define-key mbug-mode-map "u" 'mbug-undelete)
     (define-key mbug-mode-map "x" 'mbug-expunge)
@@ -921,14 +921,7 @@ Here are the keys to control Mail-bug.
   ;;run the mode hooks
   (run-hooks 'mbug-mode-hook))
 
-;; pX:
-(defun mbug-kill-buffer ()
-  (interactive)
-  (kill-buffer (current-buffer))
-  ;; (sleep-for 0.5)
-  ;; (mbug-redraw)
-  ;; (mbug-recount)
-  (delete-window))
+(define-key message-mode-map "<C-return>" 'mbug-send-mail)
 
 (define-derived-mode mbug-message-mode message-mode "Mbug Message" "Mbug Msg \\{mbug-message-mode-map}"
   (unless mbug-message-keymap-initializedp
@@ -936,6 +929,7 @@ Here are the keys to control Mail-bug.
     ;;(define-key mbug-message-mode-map "s" 'mbug-message-save-attachment)
     ;;(define-key mbug-message-mode-map "d" 'mbug-message-dump-attachment)
     (define-key mbug-message-mode-map "a" 'message-wide-reply)
+    (define-key mbug-message-mode-map "i" 'message-insert-or-toggle-importance)
     (define-key mbug-message-mode-map "r" 'message-reply)
     (setq mbug-message-keymap-initializedp 't))
   ;;set the mode as a non-editor mode
@@ -952,6 +946,15 @@ Here are the keys to control Mail-bug.
 ;; pX:
 (define-key mbug-message-mode-map "q" 'mbug-kill-buffer)
 (define-key mbug-message-mode-map "h" 'mbug-toggle-headers)
+
+;; pX:
+(defun mbug-kill-buffer ()
+  (interactive)
+  (kill-buffer (current-buffer))
+  ;; (sleep-for 0.5)
+  ;; (mbug-redraw)
+  ;; (mbug-recount)
+  (delete-window))
 
 
 (defun mbug-show-structure (folder-name uid)
@@ -1001,6 +1004,10 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
                 (set-window-dedicated-p (selected-window) (not current-prefix-arg)))
               (split-window-vertically 15)
               (other-window 1)
+              ;; (beginning-of-line)
+              ;; (widen)
+              ;; (goto-char (point-min))
+              (message "ploop!")
               ;; (split-window (selected-window) (/ (fourth (window-edges)) 3))
               )))
       (mbug-message-open folder-path uid))))
@@ -1125,9 +1132,10 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
             (setq hide-region-overlays ())
             (mbug-toggle-headers)))
       ;; (previous-line)
-      (forward-line -1)
+      ;; (forward-line -1)
       ;; (next-line 3)
-      (forward-line 3)
+      ;; (forward-line 3)
+      (goto-char (point-min))
       (set-buffer-modified-p nil)
       (mbug-message-mode)
 
@@ -1485,13 +1493,18 @@ transfer-enc: %s" char-encoding transfer-encoding)
 Broadly this is: date time from subject")
 
 
-(defun mbug-send-mail ()
-  "send a mail.
-The mail is BCCed to the sender if the option:
-  mbug-bcc-to-sender
-is set to true."
+(defun mbug-new-mail ()
+  "Compose a new mail.
+The mail is BCCed to the sender if the variable
+`mbug-bcc-to-sender' is set to true."
   (interactive)
   (message-mail))
+
+(defun mbug-send-mail ()
+  "send a mail."
+  (interactive)
+  (message-send)
+  (mbug-kill-buffer))
 
 
 (defun mbug-mark-regex (regex)
@@ -1893,8 +1906,10 @@ msg is a dotted pair such that:
              (message-replace-header "Reply-To" "Philippe Coatmeur-Marin <philcm@gnu.org>" "AFTER" "FORCE")))
   (message-yank-original)
   (message-sort-headers)
+  (message-goto-body)
+  (newline)
+  (next-line -1)
   (set-buffer-modified-p nil)
-  (message-goto-subject)
   )
 
 (ad-activate 'message-reply)
@@ -1951,7 +1966,8 @@ deleting the overlay from the hide-region-overlays \"ring\"."
   "Hides a region by making an invisible overlay over it and save the
 overlay on the hide-region-overlays \"ring\""
   (interactive)
-  (let ((new-overlay (make-overlay (mark) (point))))
+  (let ((start (point))
+        (new-overlay (make-overlay (mark) (point))))
     (push new-overlay hide-region-overlays)
     (overlay-put new-overlay 'invisible t)
     (overlay-put new-overlay 'intangible t)
@@ -1964,7 +1980,9 @@ overlay on the hide-region-overlays \"ring\""
                  (if hide-region-propertize-markers
                      (propertize hide-region-after-string
                                  'font-lock-face 'mail-bug-toggle-headers-face)
-                   hide-region-after-string))))
+                   hide-region-after-string))
+    ;; (goto-char start)
+    ))
 
 (defun readprop ()
   (interactive)
