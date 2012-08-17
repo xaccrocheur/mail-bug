@@ -1,4 +1,4 @@
-;; mbug.el --- a purely IMAP based email client for EMACS
+; mbug.el --- a purely IMAP based email client for EMACS
 
 ;; Copyright (C) 2001, 2002 Tapsell-Ferrier Limited
 ;; Copyright (C) 2012 Philippe Coatmeur-Marin
@@ -374,8 +374,8 @@ not really placed in the text, it is just shown in the overlay")
 (require 'smtpmail)
 (require 'starttls)
 
-
 (setq smtpmail-default-smtp-server "mail.gmx.com")
+;; (setq smtpmail-default-smtp-server "fencepost.gnu.org")
 (load-library "smtpmail")
 
 (setq
@@ -391,7 +391,7 @@ not really placed in the text, it is just shown in the overlay")
 ;; (setq
 ;;  starttls-use-gnutls t
 ;;  starttls-gnutls-program "gnutls-cli"
-;;  ;; starttls-extra-arguments '("--insecure")
+;;  starttls-extra-arguments '("--insecure")
 ;; )
 
 ;;  ;; smtpmail-auth-credentials '(("mail.gmx.com" "philcm@gmx.com" 465 "Amiga260."))
@@ -400,6 +400,7 @@ not really placed in the text, it is just shown in the overlay")
 
 
 ;; this works but I have to use a reply-to :/
+
 (setq
  smtpmail-smtp-server "mail.gmx.com"
  smtpmail-smtp-service 465
@@ -409,7 +410,8 @@ not really placed in the text, it is just shown in the overlay")
 ;; (setq
 ;;  smtpmail-smtp-server "fencepost.gnu.org"
 ;;  smtpmail-smtp-service 587
-;;  smtpmail-stream-type 'starttls
+;;  ;; smtpmail-stream-type 'starttls
+;;  smtpmail-stream-type 'ssl
 ;;  )
 
 ;; SMTP server: fencepost.gnu.org
@@ -1870,20 +1872,32 @@ msg is a dotted pair such that:
       (if message-unread
           (add-to-list 'mbug-unread-mails message-unread)))))
 
-;; Auto-BCC
+;; REPLY Auto-BCC + Yank
 (defadvice message-reply (after mbug-message-reply-yank-original)
-  "Quote original when replying."
+  "BCC to sender. Quote original."
   (if mbug-bcc-to-sender
       (progn (message-replace-header "BCC" user-mail-address "AFTER" "FORCE")
              (message-replace-header "Reply-To" "Philippe Coatmeur-Marin <philcm@gnu.org>" "AFTER" "FORCE")))
   (message-yank-original)
-  (message "advised")
   (message-sort-headers)
   (set-buffer-modified-p nil)
-  ;; (kill-line)
+  (message-goto-subject)
   )
 
 (ad-activate 'message-reply)
+
+
+;; SEND Auto-BCC + Yank
+(defadvice message-mail (after mbug-message-mail-bcc)
+  "BCC to sender."
+  (message-replace-header "BCC" user-mail-address "AFTER" "FORCE")
+  (message-replace-header "Reply-To" "Philippe Coatmeur-Marin <philcm@gnu.org>" "AFTER" "FORCE")
+  (message-sort-headers)
+  (set-buffer-modified-p nil)
+  (message-goto-to)
+  )
+
+(ad-activate 'message-mail)
 
 
 ;; Hide headers
