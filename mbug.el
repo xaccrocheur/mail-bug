@@ -56,6 +56,28 @@
 (require 'cl)
 (require 'dbus)
 
+;; SMTP configs.
+
+(require 'smtpmail)
+(require 'starttls)
+(load-library "smtpmail")
+
+ (setq send-mail-function 'smtpmail-send-it
+       message-send-mail-function 'smtpmail-send-it
+       starttls-use-gnutls t
+       starttls-gnutls-program "gnutls-cli"
+       starttls-extra-arguments nil
+       smtpmail-gnutls-credentials
+       '(("smtp.gmx.com" 465 nil nil))
+       smtpmail-starttls-credentials
+       '(("smtp.gmx.com" 465 "philcm@gmx.com" nil))
+       smtpmail-default-smtp-server "smtp.gmx.com"
+       smtpmail-smtp-server "smtp.gmx.com"
+       smtpmail-smtp-service 465
+       smtpmail-debug-info t
+       smtpmail-stream-type 'ssl
+)
+
 ;; Test Customization
 (defcustom mbug-host-name ""
   "The name of server to connect to"
@@ -369,21 +391,12 @@ not really placed in the text, it is just shown in the overlay")
   (defvar newmail)
 )
 
-;; SMTP configs.
-
-(require 'smtpmail)
-(require 'starttls)
-
-(setq smtpmail-default-smtp-server "mail.gmx.com")
-;; (setq smtpmail-default-smtp-server "fencepost.gnu.org")
-(load-library "smtpmail")
-
-(setq
- auth-source-debug 'trivia
- send-mail-function 'smtpmail-send-it
- message-send-mail-function 'smtpmail-send-it
- smtpmail-debug-info t
- smtpmail-debug-verb t)
+;; (setq
+;;  auth-source-debug 'trivia
+;;  send-mail-function 'smtpmail-send-it
+;;  message-send-mail-function 'smtpmail-send-it
+;;  smtpmail-debug-info t
+;;  smtpmail-debug-verb t)
 
 ;; (setq user-full-name "Phil CM")
 ;; (setq user-mail-address "philcm@gmx.com")
@@ -401,11 +414,11 @@ not really placed in the text, it is just shown in the overlay")
 
 ;; this works but I have to use a reply-to :/
 
-(setq
- smtpmail-smtp-server "mail.gmx.com"
- smtpmail-smtp-service 465
- smtpmail-stream-type 'ssl
- )
+;; (setq
+;;  ;; smtpmail-smtp-server "mail.gmx.com"
+;;  ;; smtpmail-smtp-service 465
+;;  smtpmail-stream-type 'ssl
+;;  )
 
 ;; (setq
 ;;  smtpmail-smtp-server "fencepost.gnu.org"
@@ -1981,17 +1994,32 @@ overlay on the hide-region-overlays \"ring\""
            (interactive "e")
            (browse-url ,url)))
 
-      (add-text-properties 0 (length s)
-                           `(local-map
-                             ,map mouse-face mode-line-highlight uri
-                             ,url help-echo
-                             ,(format "
+      ;;       (add-text-properties 0 (length s)
+      ;;                            `(local-map ,map mouse-face mode-line-highlight
+      ;;                                        uri ,url
+      ;;                                        help-echo ,(format "
+      ;; %s
+      ;; ______________________________________
+      ;; mouse-1: View in mail-bug
+      ;; mouse-2: View on %s" (mbug-tooltip) url))
+      ;;                            s)
+      (concat (apply 'propertize " " `(display ,mail-bug-icon
+                                               local-map ,map mouse-face mode-line-highlight
+                                               uri ,url
+                                               help-echo ,(format "
 %s
 ______________________________________
 mouse-1: View in mail-bug
-mouse-2: View on %s" (mbug-tooltip) url))
-                           s)
-      (concat mail-bug-logo ":" s))))
+mouse-2: View on %s" (mbug-tooltip) url))) ":" s))))
+
+;; (add-to-list 'global-mode-string (create-image "~/.emacs.d/lisp/mail-bug/greenbug.xpm"))
+
+
+;; (add-to-list 'global-mode-string ())
+
+(create-image "~/.emacs.d/lisp/mail-bug/greenbug.xpm")
+
+;; (apply 'propertize " " `(display ,mail-bug-icon))
 
 (defun newmails (mail-list)
   (mbug-desktop-notification
