@@ -101,12 +101,9 @@
 
 ;; Customizations (Don't touch it, M-x customize-group "mail-bug" RET instead)
 (defgroup mail-bug nil
-  "Mail-bug
-
-         .' '.
--        .   .            \\\\
- `.        .         .  -{{{:}     A lightweight Mail User Agent for GNU Emacs.
-   ' .  . ' ' .  . '      //"
+  "Mail-bug - A lightweight Mail User Agent for GNU Emacs.
+Customize `user-mail-address' for a lucky SMTP
+"
 
   :group 'applications)
 
@@ -861,6 +858,19 @@ If you want to know about updates this is the function to use."
             (goto-address-mode t)))
 
 
+(defun mbug-click ()
+  (interactive)
+  (message "yuu! point: %s" (point))
+  ;; (push-mark)
+  ;; (forward-line O)
+
+(let ((my-pos (point)))
+  (save-excursion
+    (mbug-open)
+    ))
+  ;; (goto-char (- 9 (point)))
+)
+
 (defun mbug-mode ()
   "
          .' '.
@@ -876,12 +886,14 @@ Here are the keys to control Mail-bug.
   (kill-all-local-variables)
   (unless mbug-mode-map
     (setq mbug-mode-map (make-sparse-keymap))
+    (define-key mbug-mode-map [down-mouse-1] 'mbug-click)
     ;; (define-key mbug-mode-map [down-mouse-1] '(lambda (e)
     ;;                                             (interactive "e")
-    ;;                                             (push-mark)
-    ;;                                             'mbug-open
-    ;;                                             (push-mark)
+    ;;                                             'mbug-click
     ;;                                             ))
+
+    (define-key mbug-mode-map [down-mouse-1] 'mbug-click)
+
     (define-key mbug-mode-map "\r" 'mbug-open)
     (define-key mbug-mode-map "+" 'mbug-create-folder)
     (define-key mbug-mode-map "/" 'isearch-forward-regexp)
@@ -978,6 +990,7 @@ Here, various info about the structure of the message"
   (imap-fetch uid "(BODYSTRUCTURE)" 't nil mbug-connection)
   (print (imap-message-get uid 'BODYSTRUCTURE mbug-connection))
   )
+
 
 (defun mbug-open ()
   "expand/contract the folder or open the message that point is on.
@@ -1916,7 +1929,8 @@ msg is a dotted pair such that:
   "BCC to sender. Quote original."
   (if mbug-bcc-to-sender
       (progn (message-replace-header "BCC" user-mail-address "AFTER" "FORCE")
-             (message-replace-header "Reply-To" "Philippe Coatmeur-Marin <philcm@gnu.org>" "AFTER" "FORCE")))
+             (message-replace-header "Reply-To" "Philippe Coatmeur-Marin <philcm@gnu.org>" "AFTER" "FORCE")
+             ))
   (message-yank-original)
   (message-sort-headers)
   (message-goto-body)
