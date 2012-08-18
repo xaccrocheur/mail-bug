@@ -876,7 +876,12 @@ Here are the keys to control Mail-bug.
   (kill-all-local-variables)
   (unless mbug-mode-map
     (setq mbug-mode-map (make-sparse-keymap))
-		(define-key mbug-mode-map [down-mouse-1] 'mbug-open)
+    ;; (define-key mbug-mode-map [down-mouse-1] '(lambda (e)
+    ;;                                             (interactive "e")
+    ;;                                             (push-mark)
+    ;;                                             'mbug-open
+    ;;                                             (push-mark)
+    ;;                                             ))
     (define-key mbug-mode-map "\r" 'mbug-open)
     (define-key mbug-mode-map "+" 'mbug-create-folder)
     (define-key mbug-mode-map "/" 'isearch-forward-regexp)
@@ -928,7 +933,11 @@ Here are the keys to control Mail-bug.
     ;;(define-key mbug-message-mode-map "s" 'mbug-message-save-attachment)
     ;;(define-key mbug-message-mode-map "d" 'mbug-message-dump-attachment)
     (define-key mbug-message-mode-map "a" 'message-wide-reply)
-    (define-key mbug-message-mode-map "i" 'message-insert-or-toggle-importance)
+    (define-key mbug-message-mode-map "h" 'mbug-toggle-headers)
+    (define-key mbug-message-mode-map "s-i" 'message-insert-or-toggle-importance)
+
+    (define-key mbug-message-mode-map "q" 'mbug-kill-buffer)
+
     (define-key mbug-message-mode-map "r" 'message-reply)
     (setq mbug-message-keymap-initializedp 't))
   ;;set the mode as a non-editor mode
@@ -1010,7 +1019,9 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
               ;; (beginning-of-line)
               ;; (widen)
               ;; (goto-char (point-min))
-              (message "ploop!")
+              (set-buffer-modified-p nil)
+              (message "plooyp!")
+
               ;; (split-window (selected-window) (/ (fourth (window-edges)) 3))
               )))
       (mbug-message-open folder-path uid))))
@@ -1140,6 +1151,7 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
       ;; (forward-line 3)
       (goto-char (point-min))
       (set-buffer-modified-p nil)
+      (message "message mode!")
       (mbug-message-mode)
 
       ;; (kill-paragraph 5)
@@ -1378,7 +1390,6 @@ buffer. Programs can pass the imap-con in directly though."
 
     (setq buffer-file-name fname)
 
-
     ;; Now decide what sort of viewer came out of mailcap - unix process or elisp function?
     (if (functionp mailcap-viewer)
         ;; An emacs function... if it's a mode function then we just run it on the current buffer
@@ -1387,7 +1398,6 @@ buffer. Programs can pass the imap-con in directly though."
               (funcall mailcap-viewer))
           ;; Else we run it passing it the buffer
           (funcall mailcap-viewer buffer))
-
 
       ;; We need a unix process
       ;; (message "Called from: %s, fname is %s and mailcap-viewer is %s" px-calling-buffer fname mailcap-viewer)
