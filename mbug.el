@@ -921,7 +921,6 @@ Here are the keys to control Mail-bug.
   ;;run the mode hooks
   (run-hooks 'mbug-mode-hook))
 
-(define-key message-mode-map "<C-return>" 'mbug-send-mail)
 
 (define-derived-mode mbug-message-mode message-mode "Mbug Message" "Mbug Msg \\{mbug-message-mode-map}"
   (unless mbug-message-keymap-initializedp
@@ -943,9 +942,13 @@ Here are the keys to control Mail-bug.
   ;;run the mode hooks
   (run-hooks 'mbug-message-mode-hook))
 
-;; pX:
-(define-key mbug-message-mode-map "q" 'mbug-kill-buffer)
-(define-key mbug-message-mode-map "h" 'mbug-toggle-headers)
+(add-hook
+ 'message-mode-hook
+ (lambda ()
+   (define-key message-mode-map (kbd "C-<return>")
+     (lambda ()
+       (interactive)
+       (mbug-send-mail)))))
 
 ;; pX:
 (defun mbug-kill-buffer ()
