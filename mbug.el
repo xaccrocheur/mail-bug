@@ -1298,12 +1298,12 @@ buffer. Programs can pass the imap-con in directly though."
 
            (start-of-body 0)
            (mimetype-str (concat (car mimetype) "/" (cdr mimetype)))
-					 (mimetype-px (car mimetype))
+           (mimetype-px (car mimetype))
            ;; (buffer (get-buffer-create "*attached*"))
            (buffer (get-buffer-create (concat "*attached-" name "*"))
                    ))
 
-			;; pX: This was a swith-to-buffer
+      ;; pX: This was a swith-to-buffer
       (set-buffer buffer)
 
       (setq start-of-body (point))
@@ -1326,7 +1326,7 @@ buffer. Programs can pass the imap-con in directly though."
                    )
                ;; pX:
                (progn (mailcap-mime-info mimetype-str)
-                      ;; (message "wow! %s" mimetype-str)
+                      (message "-- mimetype-str: %s" mimetype-str)
                       )))
 
             ;; (if (equal mimetype-str "APPLICATION/x-gzip")
@@ -1350,29 +1350,28 @@ buffer. Programs can pass the imap-con in directly though."
           ;; else we don't have a mailcap viewer
           ;;  --- FIXME: - sure this could be integrated with viewer stuff above
           ;;  --- ask for a viewer?
-(progn
-  (message "-- no mailcap-viewer: %s for mimetype: %s " mailcap-viewer mimetype-str)
-  (insert (mbug-decode-string
-           ;; This gets the body and can be expensive
-           (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
-           (cadr (assoc 'transfer-encoding part))
-           (lookup "charset" (cadr (assoc 'body part))))))
-;; pX:
-;; (normal-mode)
-(goto-char (point-min)))))))
+          (progn
+            (message "-- no mailcap-viewer: %s for mimetype: %s " mailcap-viewer mimetype-str)
+            (insert (mbug-decode-string
+                     ;; This gets the body and can be expensive
+                     (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
+                     (cadr (assoc 'transfer-encoding part))
+                     (lookup "charset" (cadr (assoc 'body part))))))
+          ;; pX:
+          ;; (normal-mode)
+          (goto-char (point-min)))))))
 
 
 (defun mbug-attachment-emacs-handle (px-calling-buffer mimetype)
   "Handle an attachment with some inline emacs viewer"
   ;; Extract the part and shove it in a buffer
-  (message "entering mbug-attachment-emacs-handle")
+  (message "-- entering mbug-attachment-emacs-handle")
   (let ((charset (or (lookup "charset" (cadr (assoc 'body part)))
                      (progn (set-buffer-multibyte nil)
                             'no-conversion)))
 
         ;; pX:
         (name (lookup "name" (cadr (assoc 'body part))))
-
         (enc (cadr (assoc 'transfer-encoding part)))
         (fname (if mailcap-ext-pattern
                    (progn
@@ -1406,11 +1405,17 @@ buffer. Programs can pass the imap-con in directly though."
     ;; Now decide what sort of viewer came out of mailcap - unix process or elisp function?
     (if (functionp mailcap-viewer)
         ;; An emacs function... if it's a mode function then we just run it on the current buffer
-        (if (string-match "[a-zA-Z0-9-]+-mode$" (symbol-name mailcap-viewer))
-            (with-current-buffer buffer
-              (funcall mailcap-viewer))
-          ;; Else we run it passing it the buffer
-          (funcall mailcap-viewer buffer))
+        (progn
+          (message "-- mailcap-viewer: %s " mailcap-viewer)
+          (if (string-match "[a-zA-Z0-9-]+-mode$" (symbol-name mailcap-viewer))
+              (progn
+                (message "-- match")
+                (with-current-buffer buffer
+                  (funcall mailcap-viewer)))
+            ;; Else we run it passing it the buffer
+            (progn
+                (message "-- no match")
+                (funcall mailcap-viewer buffer))))
 
       ;; We need a unix process
       ;; (message "Called from: %s, fname is %s and mailcap-viewer is %s" px-calling-buffer fname mailcap-viewer)
@@ -2024,7 +2029,7 @@ overlay on the hide-region-overlays \"ring\""
 (defun mbug-mode-line (mbug-unseen-mails)
   "Construct an emacs modeline object."
   (if (null mbug-unseen-mails)
-      (concat mail-bug-logo " ")
+      " "
     (let ((s (format "%d" (length mbug-unseen-mails)))
           (map (make-sparse-keymap))
           (url (concat "http://" nice-uri)))
@@ -2048,14 +2053,17 @@ overlay on the hide-region-overlays \"ring\""
       ;; mouse-1: View in mail-bug
       ;; mouse-2: View on %s" (mbug-tooltip) url))
       ;;                            s)
-      (concat (apply 'propertize " " `(display ,mail-bug-icon
-                                               local-map ,map mouse-face mode-line-highlight
-                                               uri ,url
-                                               help-echo ,(format "
+      (add-text-properties 0 (length s)
+                           `(local-map
+                             ,map mouse-face mode-line-highlight uri
+                             ,url help-echo
+                             ,(format "
 %s
 ______________________________________
 mouse-1: View in mail-bug
-mouse-2: View on %s" (mbug-tooltip) url))) ":" s))))
+mouse-2: View on %s" (mbug-tooltip) url))
+                           s)
+      (concat mail-bug-logo ":" s))))
 
 ;; (add-to-list 'global-mode-string (create-image "~/.emacs.d/lisp/mail-bug/greenbug.xpm"))
 
