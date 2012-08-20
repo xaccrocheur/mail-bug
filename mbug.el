@@ -2016,6 +2016,7 @@ overlay on the hide-region-overlays \"ring\""
     ;; (goto-char start)
     ))
 
+
 (defun readprop ()
   (interactive)
   ;; (message "props %s" (text-properties-at (point)))
