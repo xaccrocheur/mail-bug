@@ -1940,7 +1940,7 @@ msg is a dotted pair such that:
   (message-sort-headers)
   (message-goto-body)
   (newline)
-  (next-line -1)
+  (forward-line -1)
   (set-buffer-modified-p nil)
   )
 
@@ -2002,7 +2002,7 @@ overlay on the hide-region-overlays \"ring\""
         (new-overlay (make-overlay (mark) (point))))
     (push new-overlay hide-region-overlays)
     (overlay-put new-overlay 'invisible t)
-    (overlay-put new-overlay 'intangible t)
+    ;; (overlay-put new-overlay 'intangible t)
     (overlay-put new-overlay 'before-string
                  (if hide-region-propertize-markers
                      (propertize hide-region-before-string
