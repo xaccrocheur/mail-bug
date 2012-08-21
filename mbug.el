@@ -1,5 +1,6 @@
 ; mbug.el --- a purely IMAP based email client for EMACS
 
+
 ;; Copyright (C) 2001, 2002 Tapsell-Ferrier Limited
 ;; Copyright (C) 2012 Philippe Coatmeur-Marin
 
