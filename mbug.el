@@ -1,5 +1,4 @@
-; mbug.el --- a purely IMAP based email client for EMACS
-
+;; mbug.el --- a purely IMAP based email client for EMACS
 
 ;; Copyright (C) 2001, 2002 Tapsell-Ferrier Limited
 ;; Copyright (C) 2012 Philippe Coatmeur-Marin
@@ -49,7 +48,6 @@
 
 ;;; Code:
 
-
 (require 'imap)
 (require 'qp)
 (require 'timezone)
@@ -59,25 +57,84 @@
 
 ;; SMTP configs.
 
-(require 'smtpmail)
+;; (require 'smtpmail)
 (require 'starttls)
 (load-library "smtpmail")
 
- (setq send-mail-function 'smtpmail-send-it
-       message-send-mail-function 'smtpmail-send-it
-       starttls-use-gnutls t
-       starttls-gnutls-program "gnutls-cli"
-       starttls-extra-arguments nil
-       smtpmail-gnutls-credentials
-       '(("smtp.gmx.com" 465 nil nil))
-       smtpmail-starttls-credentials
-       '(("smtp.gmx.com" 465 "philcm@gmx.com" nil))
-       smtpmail-default-smtp-server "smtp.gmx.com"
-       smtpmail-smtp-server "smtp.gmx.com"
-       smtpmail-smtp-service 465
-       smtpmail-debug-info t
-       smtpmail-stream-type 'ssl
-)
+(setq smtpmail-debug-info t)
+
+;; (setq
+;;   send-mail-function 'smtpmail-send-it
+;;   message-send-mail-function 'smtpmail-send-it
+;;   smtpmail-default-smtp-server "smtp.menara.ma"
+;;   smtpmail-smtp-server "smtp.menara.ma"
+;;   smtpmail-smtp-service 25
+;;   smtpmail-stream-type 'plain
+;;   )
+
+(setq send-mail-function 'smtpmail-send-it
+      message-send-mail-function 'smtpmail-send-it
+      smtpmail-starttls-credentials
+      '(("smtp.gmail.com" 587 nil nil))
+      smtpmail-auth-credentials
+      (expand-file-name "~/.authinfo.gpg")
+      smtpmail-default-smtp-server "smtp.gmail.com"
+      smtpmail-smtp-server "smtp.gmail.com"
+      smtpmail-smtp-service 587
+      )
+;; (require 'smtpmail)
+
+(setq send-mail-function 'smtpmail-send-it
+      message-send-mail-function 'smtpmail-send-it
+      smtpmail-starttls-credentials
+      '(("smtp.googlemail.com" 587 nil nil))
+      smtpmail-auth-credentials
+      (expand-file-name "~/.authinfo.gpg")
+      smtpmail-default-smtp-server "smtp.googlemail.com"
+      smtpmail-smtp-server "smtp.googlemail.com"
+      smtpmail-smtp-service 587
+      )
+(require 'smtpmail)
+
+(defun mbug-eval-smtp ()
+  smtpmail-starttls-credentials
+  '((mbug-smtp 587 nil nil))
+  smtpmail-auth-credentials
+  (expand-file-name "~/.authinfo.gpg")
+  smtpmail-default-smtp-server mbug-smtp
+  smtpmail-smtp-server mbug-smtp
+  )
+
+
+(defun mbug-smtp-googlemail ()
+  "switch the two google smtp when behind a national FW"
+  (interactive)
+  (setq mbug-smtp "smtp.googlemail.com")
+  (mbug-eval-smtp)
+  )
+
+(defun mbug-smtp-gmail ()
+  "switch the two google smtp when behind a national FW"
+  (interactive)
+  (setq mbug-smtp "smtp.gmail.com")
+  (mbug-eval-smtp)
+  )
+
+
+;;  (setq send-mail-function 'smtpmail-send-it
+;;        message-send-mail-function 'smtpmail-send-it
+;;        starttls-use-gnutls t
+;;        starttls-gnutls-program "gnutls-cli"
+;;        starttls-extra-arguments nil
+;;        smtpmail-gnutls-credentials
+;;        '(("smtp.gmx.com" 465 nil nil))
+;;        smtpmail-starttls-credentials
+;;        '(("smtp.gmx.com" 465 "philcm@gmx.com" nil))
+;;        smtpmail-default-smtp-server "smtp.gmx.com"
+;;        smtpmail-smtp-server "smtp.gmx.com"
+;;        smtpmail-smtp-service 465
+;;        smtpmail-stream-type 'ssl
+;; )
 
 ;; Test Customization
 (defcustom mbug-host-name ""
@@ -319,7 +376,6 @@ not really placed in the text, it is just shown in the overlay")
 (defvar hide-region-overlays nil
   "Variable to store the regions we put an overlay on.")
 
-
 ;; The server used for IMAP
 (defvar mbug-host nil
   "the imap server")
@@ -387,7 +443,9 @@ not really placed in the text, it is just shown in the overlay")
   (defvar text-trans)
   (defvar folder-icon)
   (defvar newmail)
-)
+  )
+
+(add-to-list 'auto-mode-alist '("*message*" . message-mode))
 
 ;; (setq
 ;;  auth-source-debug 'trivia
@@ -617,7 +675,7 @@ The timezone package is used to parse the string."
   "Return true if the flag list contains the \\Answered flag."
   (if uid
       (let ((flag-list (imap-message-get uid 'FLAGS mbug-connection))
-            (seenp
+            (answeredp
              (lambda (flag-list fn)
                (if (listp flag-list)
                    (let ((flag (car flag-list)))
@@ -628,7 +686,7 @@ The timezone package is used to parse the string."
                          nil)))
                  nil))))
         ;; (message "mbug flag list for uid %s: %s" uid (list flag-list))
-        (funcall seenp flag-list seenp))))
+        (funcall answeredp flag-list answeredp))))
 
 
 (defun mbug-deletedp (uid)
@@ -865,12 +923,12 @@ If you want to know about updates this is the function to use."
   ;; (push-mark)
   ;; (forward-line O)
 
-(let ((my-pos (point)))
-  (save-excursion
-    (mbug-open)
-    ))
+  (let ((my-pos (point)))
+    (save-excursion
+      (mbug-open)
+      ))
   ;; (goto-char (- 9 (point)))
-)
+  )
 
 (defun mbug-mode ()
   "
@@ -940,7 +998,11 @@ Here are the keys to control Mail-bug.
   (run-hooks 'mbug-mode-hook))
 
 
-(define-derived-mode mbug-message-mode message-mode "Mbug Message" "Mbug Msg \\{mbug-message-mode-map}"
+(define-derived-mode mbug-message-mode message-mode "Mbug Message" "Mbug Msg \\{mbug-message-mode-map}
+
+plop
+\\{mml-mode-map}
+"
   (unless mbug-message-keymap-initializedp
     (define-key mbug-message-mode-map "\r" 'mbug-message-open-attachment)
     ;;(define-key mbug-message-mode-map "s" 'mbug-message-save-attachment)
@@ -983,7 +1045,7 @@ Here are the keys to control Mail-bug.
 
 
 (defun mbug-show-structure (folder-name uid)
-"Read info hidden in the text by means of `add-text-properties'.
+  "Read info hidden in the text by means of `add-text-properties'.
 Here, various info about the structure of the message"
   (interactive (list (get-text-property (point) 'FOLDER)
                      (get-text-property (point) 'UID)))
@@ -1236,7 +1298,7 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
       (setq start-of-body (point))
 
 
-			(message "\n
+      (message "\n
 -------------------
 \nTransfer-encoding: %s \n\ncharset: %s \n\ntext-part: %s\n\n
 -------------------\n" transfer-encoding charset text-part)
@@ -1250,7 +1312,7 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
                 (charset charset)
                 ('t 'emacs-mule))))
 
-			(insert "\n--end body--\n")
+      ;; (insert "\n--end body--\n")
 
       )))
 
@@ -1327,15 +1389,19 @@ buffer. Programs can pass the imap-con in directly though."
                    )
                ;; pX:
                (progn (mailcap-mime-info mimetype-str)
-                      (message "-- mimetype-str: %s" mimetype-str)
                       )))
 
             ;; (if (equal mimetype-str "APPLICATION/x-gzip")
             ;;    (setq mbug-px-attachment-extension ".gz"))
 
+
+
             (mailcap-ext-pattern (mailcap-mime-info mimetype-str "nametemplate"))
             (mailcap-ext-pattern-all (mailcap-mime-info mimetype-str "all"))
             )
+
+        (message "-- mimetype-str: %s" mimetype-str)
+
 
         ;; Display in the viewer.
         (if mailcap-viewer
@@ -1415,8 +1481,8 @@ buffer. Programs can pass the imap-con in directly though."
                   (funcall mailcap-viewer)))
             ;; Else we run it passing it the buffer
             (progn
-                (message "-- no match")
-                (funcall mailcap-viewer buffer))))
+              (message "-- no match")
+              (funcall mailcap-viewer buffer))))
 
       ;; We need a unix process
       ;; (message "Called from: %s, fname is %s and mailcap-viewer is %s" px-calling-buffer fname mailcap-viewer)
@@ -1663,8 +1729,8 @@ This ensures that deleted messages are removed from the obarray."
   (save-excursion
     (if pt
         (goto-char pt))
-      (let ((folder-name (get-text-property (point) 'help-echo)))
-    folder-name)))
+    (let ((folder-name (get-text-property (point) 'help-echo)))
+      folder-name)))
 
 (defun mbug-create-folder (new-folder-name)
   "create a new folder under the specified parent folder."
@@ -1723,8 +1789,8 @@ Opened folders have their messages re-read and re-drawn."
   (mbug-ensure-connected)
   (let (
         (stored-pos (point))
-				(inhibit-read-only 't)
-				(display-buffer (current-buffer)))
+        (inhibit-read-only 't)
+        (display-buffer (current-buffer)))
     (delete-region (point-min) (point-max))
     (mbug-refresh-folder-list)
 
@@ -1808,52 +1874,70 @@ msg is a dotted pair such that:
   ;; (message "mbug-msg-redraw IN, mbug-connection: %s" mbug-connection)
   (with-current-buffer display-buffer
     (let* ((inhibit-read-only 't)
-					 (uid (car msg))
-					 (date (mbug-date-format (imap-message-envelope-date uid mbug-connection)))
-					 ;; (date (cdr msg))
-					 (from-addr
-						(mbug-from-format
-						 (let ((env-from (imap-message-envelope-from uid mbug-connection)))
-							 (if (consp env-from)
-									 (car env-from)
-								 ;; Make up an address
-								 `("-" "unknown email" "-" "-")))))
-					 (subject
-						(mbug-field-format 1 (imap-message-envelope-subject uid mbug-connection) 't))
-					 (line-start (point))
+           (uid (car msg))
+           (date (mbug-date-format (imap-message-envelope-date uid mbug-connection)))
+           ;; (date (cdr msg))
+           (from-addr
+            (mbug-from-format
+             (let ((env-from (imap-message-envelope-from uid mbug-connection)))
+               (if (consp env-from)
+                   (car env-from)
+                 ;; Make up an address
+                 `("-" "unknown email" "-" "-")))))
+           (to-addr
+            (mbug-from-format
+             (let ((env-to (imap-message-envelope-to uid mbug-connection)))
+               (if (consp env-to)
+                   (car env-to)
+                 ;; Make up an address
+                 `("-" "unknown email" "-" "-")))))
+           (subject
+            (mbug-field-format 1 (imap-message-envelope-subject uid mbug-connection) 't))
+           (line-start (point))
 
            (message-ans
             (cond
              ((mbug-answeredp uid) (format "answered: %s" uid))
              (t "plip")))
 
-					 (message-face
+           (message-face
             (cond
              ((mbug-deletedp uid) 'mbug-px-face-deleted)
              ((mbug-answeredp uid) 'mbug-px-face-answered)
              ((not (mbug-seenp uid)) 'mbug-px-face-unread)
              (t 'mbug-px-face-message))))
 
-      ;; (message "-\n%s-\n" message-ans)
+      ;; (message "-\n%s-\n" to-addr)
+
+      (if (string-match "Sent" folder-name)
+          (message "-\nSent!-\n")
+        )
+
       ;; (message "display-buffer: %s folder-name: %s msg: %s" display-buffer folder-name msg)
 
       (beginning-of-line)
       (if (> (- (line-end-position) (point)) 0)
-					(progn
-						;; Ensure the current line is deleted
-						(delete-region (line-beginning-position) (line-end-position))
-						(delete-char 1)))
+          (progn
+            ;; Ensure the current line is deleted
+            (delete-region (line-beginning-position) (line-end-position))
+            (delete-char 1)))
 
       (insert
        " " (mbug-field-format 20 date)
-       " " (mbug-field-format 25 from-addr)
+       " "
 
- ;; ▎ ▉ ▊ ▋  │ ▕ ▏ ┃ ┆ ┇ ┊ ╎ ┋ ╿ ╽
+      (if (string-match "Sent" folder-name)
+          (mbug-field-format 25 to-addr)
+        (mbug-field-format 25 from-addr)
+        )
+
+
+       ;; ▎ ▉ ▊ ▋  │ ▕ ▏ ┃ ┆ ┇ ┊ ╎ ┋ ╿ ╽
 
        ;; pX: decode the subject
        " " (rfc2047-decode-string subject) "\n")
       (add-text-properties line-start (point)
-													 `(UID ,uid FOLDER ,folder-name face ,message-face)))))
+                           `(UID ,uid FOLDER ,folder-name face ,message-face)))))
 
 (defun mbug-recount ()
   "recount 'INBOX' based on the imap state."
@@ -1911,14 +1995,14 @@ msg is a dotted pair such that:
   "Recount a single message line."
   (with-current-buffer display-buffer
     (let* ((uid (car msg))
-					 (date (mbug-date-format (imap-message-envelope-date uid mbug-connection)))
-					 (from-addr
-						(mbug-from-format
-						 (let ((env-from (imap-message-envelope-from uid mbug-connection)))
-							 (if (consp env-from)
-									 (car env-from)
-								 `("-" "unknown email" "-" "-")))))
-					 (subject
+           (date (mbug-date-format (imap-message-envelope-date uid mbug-connection)))
+           (from-addr
+            (mbug-from-format
+             (let ((env-from (imap-message-envelope-from uid mbug-connection)))
+               (if (consp env-from)
+                   (car env-from)
+                 `("-" "unknown email" "-" "-")))))
+           (subject
             (imap-message-envelope-subject uid mbug-connection))
 
            (message-unread
@@ -1934,8 +2018,8 @@ msg is a dotted pair such that:
 (defadvice message-reply (after mbug-message-reply-yank-original)
   "BCC to sender. Quote original."
   (if mbug-bcc-to-sender
-      (progn (message-replace-header "BCC" user-mail-address "AFTER" "FORCE")
-             (message-replace-header "Reply-To" "Philippe Coatmeur-Marin <philcm@gnu.org>" "AFTER" "FORCE")
+      (progn (message-replace-header "BCC" "philcm@gmx.com" "AFTER" "FORCE")
+             ;; (message-replace-header "Reply-To" "Philippe Coatmeur-Marin <philcm@gnu.org>" "AFTER" "FORCE")
              ))
   (message-yank-original)
   (message-sort-headers)
@@ -2083,12 +2167,12 @@ mouse-2: View on %s" (mbug-tooltip) url))
   (mbug-desktop-notification
    (concat "New mail" (if (> (length mail-list) 1) "s" ""))
    (rfc2047-decode-string (mapconcat
-    (lambda (xx)
-      (mapconcat
-       (lambda (xxx)
-         (format "%s" xxx))
-       (butlast xx) "\n"))
-    mail-list "\n\n"))
+                           (lambda (xx)
+                             (mapconcat
+                              (lambda (xxx)
+                                (format "%s" xxx))
+                              (butlast xx) "\n"))
+                           mail-list "\n\n"))
    5000 mbug-new-mail-icon)
   (setq mbug-to-be-advertised-mails ()))
 
@@ -2156,5 +2240,46 @@ mouse-2: View on %s" (mbug-tooltip) url))
 
 ;; Boot strap stuff
 (add-hook 'kill-emacs (lambda () (mbug-logout)))
+
+(defun mbug-mark-selected ()
+  "mark several mails"
+  (interactive)
+
+  (let (lines (count-lines-region))      ; otherwise a value is a void variable
+    (dotimes (number 3 lines)
+      (message "wow %s lines" lines)))
+
+  ;; (save-excursion
+  ;;   (goto-char (region-beginning))
+  ;;   (call-interactively 'mbug-delete)
+  ;;   (forward-line))
+
+)
+
+
+
+;; ;; other vars
+;; (setq splitPos 0) ;; cursor position of split, for each line
+;; (setq moreLines t ) ;; whether there are more lines to parse
+
+;; (while moreLines
+;;   (search-forward "(")
+
+;;   (setq splitPos (1- (point)))
+;;   (forward-line)
+
+;;   (setq moreLines (= 0 (forward-line 1)))
+;; )
+
+
+(defun my-region ()
+  "Comment or uncomment the current line or text selection."
+  (interactive)
+
+  (let (p1 p2)
+    (if (region-active-p)
+        (save-excursion
+          (setq p1 (region-beginning) p2 (region-end))
+          (goto-char p1)))))
 
 (provide 'mbug)
