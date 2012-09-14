@@ -86,7 +86,6 @@
   (setq
    smtpmail-smtp-service 587 ;; inoperant
    smtpmail-starttls-credentials '((mbug-smtp 587 nil nil))
-   smtpmail-starttls-credentials '((mbug-smtp 587 nil nil))
    smtpmail-auth-credentials (expand-file-name "~/.authinfo.gpg")
    smtpmail-default-smtp-server mbug-smtp
    smtpmail-smtp-server mbug-smtp
