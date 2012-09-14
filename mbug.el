@@ -73,39 +73,40 @@
 ;;   smtpmail-stream-type 'plain
 ;;   )
 
-(setq send-mail-function 'smtpmail-send-it
-      message-send-mail-function 'smtpmail-send-it
-      smtpmail-starttls-credentials
-      '(("smtp.gmail.com" 587 nil nil))
-      smtpmail-auth-credentials
-      (expand-file-name "~/.authinfo.gpg")
-      smtpmail-default-smtp-server "smtp.gmail.com"
-      smtpmail-smtp-server "smtp.gmail.com"
-      smtpmail-smtp-service 587
-      )
+;; (setq send-mail-function 'smtpmail-send-it
+;;       message-send-mail-function 'smtpmail-send-it
+;;       smtpmail-starttls-credentials
+;;       '(("smtp.gmail.com" 587 nil nil))
+;;       smtpmail-auth-credentials
+;;       (expand-file-name "~/.authinfo.gpg")
+;;       smtpmail-default-smtp-server "smtp.gmail.com"
+;;       smtpmail-smtp-server "smtp.gmail.com"
+;;       smtpmail-smtp-service 587
+;;       )
 ;; (require 'smtpmail)
 
-(setq send-mail-function 'smtpmail-send-it
-      message-send-mail-function 'smtpmail-send-it
-      smtpmail-starttls-credentials
-      '(("smtp.googlemail.com" 587 nil nil))
-      smtpmail-auth-credentials
-      (expand-file-name "~/.authinfo.gpg")
-      smtpmail-default-smtp-server "smtp.googlemail.com"
-      smtpmail-smtp-server "smtp.googlemail.com"
-      smtpmail-smtp-service 587
-      )
-(require 'smtpmail)
+;; (setq send-mail-function 'smtpmail-send-it
+;;       message-send-mail-function 'smtpmail-send-it
+;;       smtpmail-starttls-credentials
+;;       '(("smtp.googlemail.com" 587 nil nil))
+;;       smtpmail-auth-credentials
+;;       (expand-file-name "~/.authinfo.gpg")
+;;       smtpmail-default-smtp-server "smtp.googlemail.com"
+;;       smtpmail-smtp-server "smtp.googlemail.com"
+;;       smtpmail-smtp-service 587
+;;       )
+;; (require 'smtpmail)
 
 (defun mbug-eval-smtp ()
-  smtpmail-starttls-credentials
-  '((mbug-smtp 587 nil nil))
-  smtpmail-auth-credentials
-  (expand-file-name "~/.authinfo.gpg")
-  smtpmail-default-smtp-server mbug-smtp
-  smtpmail-smtp-server mbug-smtp
-  )
-
+  (message "plop")
+  (setq
+   smtpmail-smtp-service 587 ;; inoperant
+   smtpmail-starttls-credentials '((mbug-smtp 587 nil nil))
+   smtpmail-starttls-credentials '((mbug-smtp 587 nil nil))
+   smtpmail-auth-credentials (expand-file-name "~/.authinfo.gpg")
+   smtpmail-default-smtp-server mbug-smtp
+   smtpmail-smtp-server mbug-smtp
+   ))
 
 (defun mbug-smtp-googlemail ()
   "switch the two google smtp when behind a national FW"
@@ -1647,8 +1648,8 @@ The mail is BCCed to the sender if the variable
                   (mbug-msg-redraw (current-buffer) folder-name msg)))))))))
 
 
-(defun mbug-undelete (folder-name uid)
-  "undelete a message.
+(defun mbug-undelete-message (folder-name uid)
+  "Undelete a message.
 When called interactively the folder-name and uid are obtained from
 the text properties of whatever is at (point)."
   (interactive (list (get-text-property (point) 'FOLDER)
@@ -1663,8 +1664,33 @@ the text properties of whatever is at (point)."
     (mbug-msg-redraw (current-buffer) folder-name msg)))
 
 
-(defun mbug-delete (folder-name uid)
-  "delete a message.
+(defun mbug-delete ()
+  "Delete one more message(s)."
+  (interactive)
+  (if (and transient-mark-mode mark-active)
+      (mbug-mark-region 'mbug-delete-message)
+    (call-interactively 'mbug-delete-message)))
+
+(defun mbug-undelete ()
+  "Undelete one more message(s)."
+  (interactive)
+  (if (and transient-mark-mode mark-active)
+      (mbug-mark-region 'mbug-undelete-message)
+    (call-interactively 'mbug-undelete-message)))
+
+(defun mbug-mark-region (function)
+  "Mark several messages and execute FUNCTION upon them."
+  (save-excursion
+    (let ((lines))
+      (setq lines (count-lines (region-beginning) (region-end)))
+      (message "Mbug - Marking %s messages" lines)
+      (goto-char (region-beginning))
+      (dotimes (number lines)
+        (call-interactively function))
+      (message "Done."))))
+
+(defun mbug-delete-message (folder-name uid)
+  "Delete a message.
 When called interactively the folder-name and uid are obtained from
 the text properties of whatever is at (point)."
   (interactive (list (get-text-property (point) 'FOLDER)
@@ -1707,7 +1733,7 @@ which can be customized."
   (imap-mailbox-select folder-name nil mbug-connection)
   (imap-fetch uid "(ENVELOPE)" 't nil mbug-connection)
   (imap-message-copy (number-to-string uid) to-folder 't 't mbug-connection)
-  (mbug-delete folder-name uid))
+  (mbug-delete-message folder-name uid))
 
 ;; (folder-name (car folder-cell))
 
@@ -2242,20 +2268,6 @@ mouse-2: View on %s" (mbug-tooltip) url))
 ;; Boot strap stuff
 (add-hook 'kill-emacs (lambda () (mbug-logout)))
 
-(defun mbug-mark-selected ()
-  "mark several mails"
-  (interactive)
-
-  (let (lines (count-lines-region))      ; otherwise a value is a void variable
-    (dotimes (number 3 lines)
-      (message "wow %s lines" lines)))
-
-  ;; (save-excursion
-  ;;   (goto-char (region-beginning))
-  ;;   (call-interactively 'mbug-delete)
-  ;;   (forward-line))
-
-)
 
 
 
