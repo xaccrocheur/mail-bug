@@ -300,6 +300,19 @@ Wav only."
   "Basic face."
   :group 'mail-bug-faces)
 
+(defface mbug-px-face-sent
+  `((((class color) (background dark))
+     (:inherit custom-comment-tag))
+    (((class color) (background light))
+     (:inherit custom-comment-tag))
+    (((type tty) (class color))
+     (:inherit custom-comment-tag))
+    (((type tty) (class mono))
+     (:inherit custom-comment-tag))
+    (t (:inherit custom-comment-tag)))
+  "Sent face."
+  :group 'mail-bug-faces)
+
 (defface mbug-px-face-unread
   `((((class color) (background dark))
      (:inherit 'font-lock-doc-face :weight bold))
@@ -1933,6 +1946,7 @@ msg is a dotted pair such that:
              ((mbug-deletedp uid) 'mbug-px-face-deleted)
              ((mbug-answeredp uid) 'mbug-px-face-answered)
              ((not (mbug-seenp uid)) 'mbug-px-face-unread)
+             ((string-match "Sent" folder-name) 'mbug-px-face-sent)
              (t 'mbug-px-face-message))))
 
       ;; (message "-\n%s-\n" to-addr)
