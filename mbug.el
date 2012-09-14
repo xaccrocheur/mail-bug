@@ -531,7 +531,8 @@ not really placed in the text, it is just shown in the overlay")
       (if (not mbug-host)
           (if (not (equal mbug-host-name ""))
               (setq mbug-host mbug-host-name)
-            (setq mbug-host (read-from-minibuffer "host: "))))
+            (setq mbug-host (read-from-minibuffer "Host: "))))
+      (setq mbug-password (read-from-minibuffer "Password: "))
       ;; FIXME:!!! this is a new feature of GNUS imap, you can specify different connect mechanisms
       (setq mbug-connection (imap-open mbug-host mbug-port 'ssl))
       (assert mbug-connection nil "the imap connection could not be opened")
@@ -552,6 +553,7 @@ not really placed in the text, it is just shown in the overlay")
       (condition-case nil
           (progn
             ;; Initialize the connection by listing all mailboxes.
+
             (imap-authenticate mbug-username mbug-password mbug-connection)
             (imap-mailbox-list "*" "" "." mbug-connection))
         (error nil)))))
@@ -808,7 +810,7 @@ An malist is a Multi Association LIST: a list of alists."
 (defun mbug-timer-start ()
   "Init"
   (interactive)
-  (message "thunderbirds are GO")
+  (message "Mbug-timer started (stop it with `mbug-timer-kill')")
   (setq mbug-timer (run-with-timer 15
                                    mbug-timer-seconds
                                    'mbug-recount)))

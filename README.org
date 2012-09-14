@@ -1,7 +1,7 @@
 * mail-bug.el
 
 Mail-bug is a fork of imapua.el (www.emacswiki.org/emacs/imapua.el)
-It is NOT READY for production. You have been warned.
+It is almost ready for production. You have been warned.
 
 ** INSTALLATION
 Put the file/directory in your load-path, and this in your
