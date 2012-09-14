@@ -1394,13 +1394,9 @@ buffer. Programs can pass the imap-con in directly though."
             ;;    (setq mbug-px-attachment-extension ".gz"))
 
 
-
             (mailcap-ext-pattern (mailcap-mime-info mimetype-str "nametemplate"))
             (mailcap-ext-pattern-all (mailcap-mime-info mimetype-str "all"))
             )
-
-        (message "-- mimetype-str: %s" mimetype-str)
-
 
         ;; Display in the viewer.
         (if mailcap-viewer
@@ -1442,12 +1438,12 @@ buffer. Programs can pass the imap-con in directly though."
         (fname (if mailcap-ext-pattern
                    (progn
                      ;; This never happens - it used to be a custom replace function
-                     ;; (message "Yes, mailcap-ext-pattern and it is %s " mailcap-ext-pattern)
+                     (message "Yyyes, mailcap-ext-pattern and it is %s " mailcap-ext-pattern)
                      (make-temp-file (concat "mbug-" mailcap-ext-pattern)))
                  (progn
                    (message "_extension: %s" (file-name-extension name))
                    ;; (message "WTF no %s" (string-replace "%" (format-time-string "%A" (current-time)) name))
-                   (make-temp-file (concat "mbug-" name "." (file-name-extension name)))
+                   (make-temp-file (concat "mbug-" name ".") nil (concat "." (file-name-extension name)))
                    ;; (concat "." (make-temp-file "mbug") name)
                    ))))
 
