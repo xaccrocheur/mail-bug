@@ -83,7 +83,6 @@
 ;; (require 'smtpmail)
 
 (defun mbug-eval-smtp ()
-  (message "plop")
   (setq
    smtpmail-smtp-service 587 ;; inoperant
    smtpmail-starttls-credentials '((mbug-smtp 587 nil nil))
@@ -287,14 +286,14 @@ Wav only."
 
 (defface mbug-px-face-sent
   `((((class color) (background dark))
-     (:inherit custom-comment-tag))
+     (:foreground "dark gray"))
     (((class color) (background light))
-     (:inherit custom-comment-tag))
+     (:foreground "dark gray"))
     (((type tty) (class color))
-     (:inherit custom-comment-tag))
+     (:foreground "dark gray"))
     (((type tty) (class mono))
-     (:inherit custom-comment-tag))
-    (t (:inherit custom-comment-tag)))
+     (:foreground "dark gray"))
+    (t (:foreground "dark gray")))
   "Sent face."
   :group 'mail-bug-faces)
 
@@ -1358,8 +1357,7 @@ buffer. Programs can pass the imap-con in directly though."
            (mimetype-str (concat (car mimetype) "/" (cdr mimetype)))
            (mimetype-px (car mimetype))
            ;; (buffer (get-buffer-create "*attached*"))
-           (buffer (get-buffer-create (concat "*attached-" name "*"))
-                   ))
+           (buffer (get-buffer-create (concat "*attached-" name "*"))))
 
       ;; pX: This was a swith-to-buffer
       (set-buffer buffer)
@@ -1369,22 +1367,28 @@ buffer. Programs can pass the imap-con in directly though."
       ;; Do a mailcap view if we have a viewer
       (mailcap-parse-mailcaps)
       (let (
-            (mailcap-viewer
-             ;; emacs mailcap has some odd defaults; override them here
-             (if (equal mimetype-str "application/octet-stream")
-                 (progn
-                   ;; pX:
-                   ;; (setq extension ".gz")
-                   ;; (concat (read-from-minibuffer
-                   ;;           (format "Open %s (%s) with: " name mimetype-str))
-                   ;;          " %s" extension)
-                   (concat (read-from-minibuffer
-                            (format "Open %s (%s) with: " name mimetype-str))
-                           " %s")
-                   )
-               ;; pX:
-               (progn (mailcap-mime-info mimetype-str)
-                      )))
+            ;; (mailcap-viewer
+            ;;  ;; emacs mailcap has some odd defaults; override them here
+            ;;  (if (equal mimetype-str "application/octet-stream")
+            ;;      (progn
+            ;;        ;; pX:
+            ;;        ;; (setq extension ".gz")
+            ;;        ;; (concat (read-from-minibuffer
+            ;;        ;;           (format "Open %s (%s) with: " name mimetype-str))
+            ;;        ;;          " %s" extension)
+            ;;        (concat (read-from-minibuffer
+            ;;                 (format "Open %s (%s) with: " name mimetype-str))
+            ;;                " %s")
+            ;;        )
+            ;;    ;; pX:
+            ;;    (progn (mailcap-mime-info mimetype-str)
+            ;;           )))
+
+            (mailcap-viewer (if (mailcap-mime-info mimetype-str)
+                                (mailcap-mime-info mimetype-str)
+                              (concat (read-from-minibuffer
+                                       (format "Wow! Open %s (%s) with: " name mimetype-str))
+                                      " %s")))
 
             ;; (if (equal mimetype-str "APPLICATION/x-gzip")
             ;;    (setq mbug-px-attachment-extension ".gz"))
@@ -1441,11 +1445,13 @@ buffer. Programs can pass the imap-con in directly though."
                      ;; (message "Yes, mailcap-ext-pattern and it is %s " mailcap-ext-pattern)
                      (make-temp-file (concat "mbug-" mailcap-ext-pattern)))
                  (progn
-                   ;; (message "Nope, no mailcap-ext-pattern")
+                   (message "_extension: %s" (file-name-extension name))
                    ;; (message "WTF no %s" (string-replace "%" (format-time-string "%A" (current-time)) name))
-                   (make-temp-file (concat "mbug-" name))
+                   (make-temp-file (concat "mbug-" name "." (file-name-extension name)))
                    ;; (concat "." (make-temp-file "mbug") name)
                    ))))
+
+    (message "--fname: %s" fname)
 
     ;; Function to split a string into a car / cdr
     (defun split-string-into-cons (str)
