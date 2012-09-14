@@ -715,8 +715,6 @@ The timezone package is used to parse the string."
     nil))
 
 
-;; New bodystructure handling tools
-
 (defun mbug-parse-bs (lst &optional super-part)
   "Turn a mime structure into an alist.
 The  keys  of the  alist  are tags  for  different  parts of  the
@@ -797,15 +795,12 @@ An malist is a Multi Association LIST: a list of alists."
                              (throw 'found alist))) malist))))
     found))
 
-
-;; pX:
 (defun mbug-string-repeat (str n)
   "Repeat string STR N times."
   (let ((retval ""))
     (dotimes (i n)
       (setq retval (concat retval str)))
     retval))
-
 
 (defun mbug-splash-it ()
   (animate-string "mail-bug 0.1.2β "  (/ (fourth (window-edges)) 2) (- (/ (third (window-edges)) 2) 15)))
@@ -903,8 +898,6 @@ If you want to know about updates this is the function to use."
     [menu-bar mbug-menu help]
     '("Help" . (lambda () (interactive) (describe-mode (get-buffer "mail-bug"))))))
 
-
-;; pX: : line hilite
 (add-hook 'mbug-mode-hook
           (lambda ()
             (toggle-truncate-lines 1)
@@ -938,7 +931,7 @@ If you want to know about updates this is the function to use."
 
 Type \\[customize-group] mail-bug (or use the menu)  to set it up.
 
-Here are the keys to control Mail-bug.
+Available commands in summary (list) buffer:
  \\{mbug-mode-map}"
   (interactive)
   (kill-all-local-variables)
@@ -991,9 +984,12 @@ Here are the keys to control Mail-bug.
   (run-hooks 'mbug-mode-hook))
 
 
-(define-derived-mode mbug-message-mode message-mode "Mbug Message" "Mbug Msg \\{mbug-message-mode-map}
+(define-derived-mode mbug-message-mode message-mode "Mbug Message" "
+Available commands in message composition buffer:
 
-plop
+ \\{mbug-message-mode-map}
+
+Also available in message composition buffer:
 \\{mml-mode-map}
 "
   (unless mbug-message-keymap-initializedp
