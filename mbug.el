@@ -55,6 +55,7 @@
 (require 'message)
 (require 'cl)
 (require 'dbus)
+;; (require 'w3m)
 
 ;; SMTP configs.
 
@@ -961,7 +962,7 @@ Here are the keys to control Mail-bug.
     (define-key mbug-mode-map "B" 'bury-buffer)
     (define-key mbug-mode-map "d" 'mbug-delete)
     (define-key mbug-mode-map "g" 'mbug-redraw)
-    (define-key mbug-mode-map "h" 'mbug-toggle-headers)
+    ;; (define-key mbug-mode-map "h" 'mbug-toggle-headers)
     (define-key mbug-mode-map "K" 'mbug-kill-folder)
     ;; (define-key mbug-mode-map "r" 'mbug-reply-to)
     ;; (define-key mbug-mode-map "n" 'next-line)
@@ -1011,6 +1012,7 @@ plop
     ;;(define-key mbug-message-mode-map "d" 'mbug-message-dump-attachment)
     (define-key mbug-message-mode-map "a" 'message-wide-reply)
     (define-key mbug-message-mode-map "h" 'mbug-toggle-headers)
+    (define-key mbug-message-mode-map "H" 'mbug-wash-html)
     (define-key mbug-message-mode-map "s-i" 'message-insert-or-toggle-importance)
 
     (define-key mbug-message-mode-map "q" 'mbug-kill-buffer)
@@ -1098,7 +1100,6 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
               ;; (widen)
               ;; (goto-char (point-min))
               (set-buffer-modified-p nil)
-              (message "plooyp!")
 
               ;; (split-window (selected-window) (/ (fourth (window-edges)) 3))
               )))
@@ -2268,31 +2269,46 @@ mouse-2: View on %s" (mbug-tooltip) url))
 ;; Boot strap stuff
 (add-hook 'kill-emacs (lambda () (mbug-logout)))
 
+;; (defun mbug-wash-html ()
+;;   "Format an HTML article."
+;;   (interactive)
+;;   (let ((handles nil)
+;; 	(buffer-read-only nil))
+;;     (with-current-buffer (current-buffer)
+;;       (setq handles (mm-dissect-buffer t t)))
+;;     (message-goto-body)
+;;     (delete-region (point) (point-max))
+;;     (mm-enable-multibyte)
+;;     (mm-inline-text-html handles)))
 
-
-
-;; ;; other vars
-;; (setq splitPos 0) ;; cursor position of split, for each line
-;; (setq moreLines t ) ;; whether there are more lines to parse
-
-;; (while moreLines
-;;   (search-forward "(")
-
-;;   (setq splitPos (1- (point)))
-;;   (forward-line)
-
-;;   (setq moreLines (= 0 (forward-line 1)))
-;; )
-
-
-(defun my-region ()
-  "Comment or uncomment the current line or text selection."
+(defun mbug-wash-html ()
   (interactive)
+  (setq buffer-read-only nil)
+  (message-goto-body)
+  (posix-search-forward "<html>")
+  (left-word 1)
+  (left-char 1)
+  (set-mark-command nil)
+  (posix-search-forward "</html>")
+  (setq deactivate-mark nil)
+  (w3m-region (region-beginning) (region-end))
+  (set-buffer-modified-p nil))
 
-  (let (p1 p2)
-    (if (region-active-p)
-        (save-excursion
-          (setq p1 (region-beginning) p2 (region-end))
-          (goto-char p1)))))
+;; <html>plop
+;; <br>plop
+;; </html>
+
+
+(defun my-select-current-line ()
+  (interactive)
+  (setq buffer-read-only 't)
+  (word-search-forward "<html>")
+  (left-word)
+  (left-char)
+  (set-mark-command nil)
+  (word-search-forward "</html>")
+  (setq deactivate-mark nil)
+  (set-buffer-modified-p nil))
+
 
 (provide 'mbug)
