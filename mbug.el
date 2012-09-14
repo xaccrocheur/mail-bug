@@ -1,8 +1,7 @@
 ;; mbug.el --- a purely IMAP based email client for EMACS
 
-
 ;; Copyright (C) 2001, 2002 Tapsell-Ferrier Limited
-;; Copyright (C) 2012 Philippe Coatmeur-Marin
+;; Copyright (C) 2012 Philippe Coatmeur
 
 ;; Author: Nic Ferrier <nferrier@tapsellferrier.co.uk>
 ;; Author: Philippe CM http://stackoverflow.com/users/539797/philippe-cm
@@ -32,21 +31,6 @@
 ;; It offers a UI which might be more intuitive to regular IMAP users than
 ;; the GNUs UI.
 ;;
-;; Most things that you want to do with a mailer are pretty much there but most
-;; need more polishing. Here's a brief feature list:
-;;
-;; - folder creation
-;; - folder deletion
-;; - open a message
-;; - delete a message
-;; - purge a folder
-;; - move a message
-;;
-;; If you have any comments or requests please send them to Nic Ferrier by
-;; emailing: nferrier@tapsellferrier.co.uk
-
-;; Install libnotify-bin to get desktop notifications
-
 ;;; Code:
 
 (require 'imap)
@@ -1949,14 +1933,6 @@ msg is a dotted pair such that:
              ((string-match "Sent" folder-name) 'mbug-px-face-sent)
              (t 'mbug-px-face-message))))
 
-      ;; (message "-\n%s-\n" to-addr)
-
-      (if (string-match "Sent" folder-name)
-          (message "-\nSent!-\n")
-        )
-
-      ;; (message "display-buffer: %s folder-name: %s msg: %s" display-buffer folder-name msg)
-
       (beginning-of-line)
       (if (> (- (line-end-position) (point)) 0)
           (progn
@@ -1970,8 +1946,7 @@ msg is a dotted pair such that:
 
       (if (string-match "Sent" folder-name)
           (mbug-field-format 25 to-addr)
-        (mbug-field-format 25 from-addr)
-        )
+        (mbug-field-format 25 from-addr))
 
 
        ;; ▎ ▉ ▊ ▋  │ ▕ ▏ ┃ ┆ ┇ ┊ ╎ ┋ ╿ ╽
@@ -2143,10 +2118,6 @@ overlay on the hide-region-overlays \"ring\""
     ;; (goto-char start)
     ))
 
-
-
-
-
 (defun readprop ()
   (interactive)
   ;; (message "props %s" (text-properties-at (point)))
@@ -2283,18 +2254,6 @@ mouse-2: View on %s" (mbug-tooltip) url))
 ;; Boot strap stuff
 (add-hook 'kill-emacs (lambda () (mbug-logout)))
 
-;; (defun mbug-wash-html ()
-;;   "Format an HTML article."
-;;   (interactive)
-;;   (let ((handles nil)
-;; 	(buffer-read-only nil))
-;;     (with-current-buffer (current-buffer)
-;;       (setq handles (mm-dissect-buffer t t)))
-;;     (message-goto-body)
-;;     (delete-region (point) (point-max))
-;;     (mm-enable-multibyte)
-;;     (mm-inline-text-html handles)))
-
 (defun mbug-wash-html ()
   (interactive)
   (setq buffer-read-only nil)
@@ -2307,22 +2266,5 @@ mouse-2: View on %s" (mbug-tooltip) url))
   (setq deactivate-mark nil)
   (w3m-region (region-beginning) (region-end))
   (set-buffer-modified-p nil))
-
-;; <html>plop
-;; <br>plop
-;; </html>
-
-
-(defun my-select-current-line ()
-  (interactive)
-  (setq buffer-read-only 't)
-  (word-search-forward "<html>")
-  (left-word)
-  (left-char)
-  (set-mark-command nil)
-  (word-search-forward "</html>")
-  (setq deactivate-mark nil)
-  (set-buffer-modified-p nil))
-
 
 (provide 'mbug)
