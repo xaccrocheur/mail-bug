@@ -107,6 +107,7 @@
   (mbug-eval-smtp)
   )
 
+(mbug-smtp-googlemail)
 
 ;;  (setq send-mail-function 'smtpmail-send-it
 ;;        message-send-mail-function 'smtpmail-send-it
@@ -945,13 +946,7 @@ Here are the keys to control Mail-bug.
   (kill-all-local-variables)
   (unless mbug-mode-map
     (setq mbug-mode-map (make-sparse-keymap))
-    (define-key mbug-mode-map [down-mouse-1] 'mbug-click)
-    ;; (define-key mbug-mode-map [down-mouse-1] '(lambda (e)
-    ;;                                             (interactive "e")
-    ;;                                             'mbug-click
-    ;;                                             ))
-
-    (define-key mbug-mode-map [down-mouse-1] 'mbug-click)
+    ;; (define-key mbug-mode-map [down-mouse-1] 'mbug-click)
 
     (define-key mbug-mode-map "\r" 'mbug-open)
     (define-key mbug-mode-map "+" 'mbug-create-folder)
