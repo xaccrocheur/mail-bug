@@ -1363,37 +1363,14 @@ buffer. Programs can pass the imap-con in directly though."
 
       ;; Do a mailcap view if we have a viewer
       (mailcap-parse-mailcaps)
-      (let (
-            ;; (mailcap-viewer
-            ;;  ;; emacs mailcap has some odd defaults; override them here
-            ;;  (if (equal mimetype-str "application/octet-stream")
-            ;;      (progn
-            ;;        ;; pX:
-            ;;        ;; (setq extension ".gz")
-            ;;        ;; (concat (read-from-minibuffer
-            ;;        ;;           (format "Open %s (%s) with: " name mimetype-str))
-            ;;        ;;          " %s" extension)
-            ;;        (concat (read-from-minibuffer
-            ;;                 (format "Open %s (%s) with: " name mimetype-str))
-            ;;                " %s")
-            ;;        )
-            ;;    ;; pX:
-            ;;    (progn (mailcap-mime-info mimetype-str)
-            ;;           )))
-
-            (mailcap-viewer (if (mailcap-mime-info mimetype-str)
+      (let ((mailcap-viewer (if (mailcap-mime-info mimetype-str)
                                 (mailcap-mime-info mimetype-str)
                               (concat (read-from-minibuffer
-                                       (format "Wow! Open %s (%s) with: " name mimetype-str))
+                                       (format "No %s in ~/.mailcap, open `%s' with: " mimetype-str name))
                                       " %s")))
 
-            ;; (if (equal mimetype-str "APPLICATION/x-gzip")
-            ;;    (setq mbug-px-attachment-extension ".gz"))
-
-
             (mailcap-ext-pattern (mailcap-mime-info mimetype-str "nametemplate"))
-            (mailcap-ext-pattern-all (mailcap-mime-info mimetype-str "all"))
-            )
+            (mailcap-ext-pattern-all (mailcap-mime-info mimetype-str "all")))
 
         ;; Display in the viewer.
         (if mailcap-viewer
@@ -1434,16 +1411,13 @@ buffer. Programs can pass the imap-con in directly though."
         (enc (cadr (assoc 'transfer-encoding part)))
         (fname (if mailcap-ext-pattern
                    (progn
-                     ;; This never happens - it used to be a custom replace function
-                     (message "Yyyes, mailcap-ext-pattern and it is %s " mailcap-ext-pattern)
-                     (make-temp-file (concat "mbug-" mailcap-ext-pattern)))
+                     ;; (make-temp-file (concat "mbug-" mailcap-ext-pattern))
+                     (make-temp-file "mbug-" nil (file-name-extension mailcap-ext-pattern t)))
                  (progn
-                   (message "_extension: %s" (file-name-extension name))
-                   ;; (message "WTF no %s" (string-replace "%" (format-time-string "%A" (current-time)) name))
-                   (make-temp-file (concat "mbug-" name ".") nil (concat "." (file-name-extension name)))
+                   (make-temp-file (concat "mbug-" name) nil (file-name-extension name t))
                    ;; (concat "." (make-temp-file "mbug") name)
                    ))))
-
+    (message "--name: %s" name)
     (message "--fname: %s" fname)
 
     ;; Function to split a string into a car / cdr
@@ -1493,10 +1467,12 @@ buffer. Programs can pass the imap-con in directly though."
                (proc (apply 'start-process-shell-command
                             `("*mbug-detachment*" ,proc-buf
                               ,@(split-string (format mailcap-viewer fname)) )) ))
-          (set-process-sentinel proc 'mbug-attachment-sentinel))))))
+          (set-process-sentinel proc 'mbug-attachment-sentinel)
+          (message "-- attached!"))))))
 
 (defun mbug-attachment-sentinel (process event)
   "Sentinel monitors attachement processes"
+  (message "-- enter sentinel")
   (let ((buf (process-buffer process))
         (state (process-status process)))
 
