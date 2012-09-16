@@ -41,114 +41,55 @@
 (require 'dbus)
 ;; (require 'w3m)
 
-;; SMTP configs.
-
-;; (require 'smtpmail)
 (require 'starttls)
 (load-library "smtpmail")
 
-(setq smtpmail-debug-info t)
-
-;; (setq
-;;   send-mail-function 'smtpmail-send-it
-;;   message-send-mail-function 'smtpmail-send-it
-;;   smtpmail-default-smtp-server "smtp.menara.ma"
-;;   smtpmail-smtp-server "smtp.menara.ma"
-;;   smtpmail-smtp-service 25
-;;   smtpmail-stream-type 'plain
-;;   )
-
-;; (setq send-mail-function 'smtpmail-send-it
-;;       message-send-mail-function 'smtpmail-send-it
-;;       smtpmail-starttls-credentials
-;;       '(("smtp.gmail.com" 587 nil nil))
-;;       smtpmail-auth-credentials
-;;       (expand-file-name "~/.authinfo.gpg")
-;;       smtpmail-default-smtp-server "smtp.gmail.com"
-;;       smtpmail-smtp-server "smtp.gmail.com"
-;;       smtpmail-smtp-service 587
-;;       )
-;; (require 'smtpmail)
-
-;; (setq send-mail-function 'smtpmail-send-it
-;;       message-send-mail-function 'smtpmail-send-it
-;;       smtpmail-starttls-credentials
-;;       '(("smtp.googlemail.com" 587 nil nil))
-;;       smtpmail-auth-credentials
-;;       (expand-file-name "~/.authinfo.gpg")
-;;       smtpmail-default-smtp-server "smtp.googlemail.com"
-;;       smtpmail-smtp-server "smtp.googlemail.com"
-;;       smtpmail-smtp-service 587
-;;       )
-;; (require 'smtpmail)
 
 (defun mbug-eval-smtp ()
   (setq
+   smtpmail-debug-info t
    smtpmail-smtp-service 587 ;; inoperant
    smtpmail-starttls-credentials '((mbug-smtp 587 nil nil))
    smtpmail-auth-credentials (expand-file-name "~/.authinfo.gpg")
    smtpmail-default-smtp-server mbug-smtp
-   smtpmail-smtp-server mbug-smtp
-   ))
+   smtpmail-smtp-server mbug-smtp))
+
 
 (defun mbug-smtp-googlemail ()
   "switch the two google smtp when behind a national FW"
   (interactive)
   (setq mbug-smtp "smtp.googlemail.com")
-  (mbug-eval-smtp)
-  )
+  (mbug-eval-smtp))
+
 
 (defun mbug-smtp-gmail ()
   "switch the two google smtp when behind a national FW"
   (interactive)
   (setq mbug-smtp "smtp.gmail.com")
-  (mbug-eval-smtp)
-  )
+  (mbug-eval-smtp))
 
 (mbug-smtp-googlemail)
 
-;;  (setq send-mail-function 'smtpmail-send-it
-;;        message-send-mail-function 'smtpmail-send-it
-;;        starttls-use-gnutls t
-;;        starttls-gnutls-program "gnutls-cli"
-;;        starttls-extra-arguments nil
-;;        smtpmail-gnutls-credentials
-;;        '(("smtp.gmx.com" 465 nil nil))
-;;        smtpmail-starttls-credentials
-;;        '(("smtp.gmx.com" 465 "philcm@gmx.com" nil))
-;;        smtpmail-default-smtp-server "smtp.gmx.com"
-;;        smtpmail-smtp-server "smtp.gmx.com"
-;;        smtpmail-smtp-service 465
-;;        smtpmail-stream-type 'ssl
-;; )
-
-;; Test Customization
 (defcustom mbug-host-name ""
   "The name of server to connect to"
   :type '(string)
   :group 'mail-bug)
 
-;; The port for the IMAP server
 (defvar mbug-port 993
-  "the imap server port")
+  "The imap server port")
 
-;; The cached username
 (defcustom mbug-username ""
-  "the user's name"
+  "The username (login)"
   :type '(string)
   :group 'mail-bug)
 
-;; The cached password
 (defvar mbug-password nil
-  "the user's password")
+  "The user's password")
 
-
-;; Customizations (Don't touch it, M-x customize-group "mail-bug" RET instead)
+;; Customizations (Don't touch this, M-x customize-group "mail-bug" RET instead)
 (defgroup mail-bug nil
   "Mail-bug - A lightweight Mail User Agent for GNU Emacs.
-Customize `user-mail-address' for a lucky SMTP
-"
-
+Customize `user-mail-address' for a lucky SMTP"
   :group 'applications)
 
 (defgroup mail-bug-interface nil
@@ -182,7 +123,7 @@ NOTE: This is only relevant in windowed (ie not console) mode."
 
 (defcustom mbug-bug 't
   "Should the user be bugged with new msgs?
-This can be is somewhat blocking on slow imap servers/connections"
+This can be somewhat blocking on slow imap servers/connections"
   :type '(boolean)
   :group 'mail-bug-interface)
 
@@ -353,8 +294,7 @@ Wav only."
 not really placed in the text, it is just shown in the overlay")
 
 (defvar hide-region-after-string "]"
-  "String to mark the end of an invisible region. This string is
-not really placed in the text, it is just shown in the overlay")
+  "String to mark the end of an invisible region.")
 
 (defvar hide-region-propertize-markers t
   "If non-nil, add text properties to the region markers.")
@@ -371,57 +311,40 @@ not really placed in the text, it is just shown in the overlay")
   '((t (:inherit region)))
   "Face for the header-hiding string.")
 
-
 (defvar hide-region-overlays nil
   "Variable to store the regions we put an overlay on.")
 
-;; The server used for IMAP
 (defvar mbug-host nil
-  "the imap server")
+  "The imap server")
 
-;; The buffer used for the IMAP process
 (defvar mbug-connection nil
-  "the imap connection is a process bound buffer")
+  "The imap connection is a process bound buffer")
 
-;; Is the mbug mode initialized?
 (defvar mbug-mode-initialized-p nil
-  "is the mode initialized already?")
+  "Is the mode initialized already?")
 
-;; Hooks for the mode
 (defvar mbug-mode-hook nil
-  "the mode hooks")
+  "The mode hooks")
 
-;; The keymap for the mode
 (defvar mbug-mode-map nil
-  "the mode map")
+  "The mode keymap")
 
-;; The keymap for the message view mode
 (defvar mbug-message-keymap-initializedp nil
-  "is the message view mode map initialized yet?")
+  "Is the message view mode map initialized yet?")
 
-;; Hooks for the message mode
 (defvar mbug-message-mode-hook nil
-  "the mode hooks")
+  "The mode hooks")
 
-;; The cached list of folders
 (defvar mbug-folder-list nil
-  "the cached list of folders.")
+  "The cached list of folders.")
 
-;; The cached list of folders
 (defvar mbug-smart-folder-list nil
-  "the cached alist (NAME . PATH) of folders.")
+  "The cached alist (NAME . PATH) of folders.")
 
-;; The history list for the message moves.
 (defvar mbug-folder-history nil
-  "the history of folder names.")
-
-;; This is useful for debugging - but might not be useful for prod.
-(defvar mbug-buffer nil
-  "the buffer being used.")
-
+  "The history list for the message moves.")
 
 (defvar mbug-unread-mails nil)
-(defvar this-mail nil)
 
 (with-no-warnings
   (defvar openingp ())
@@ -441,50 +364,10 @@ not really placed in the text, it is just shown in the overlay")
   (defvar text-chars)
   (defvar text-trans)
   (defvar folder-icon)
-  (defvar newmail)
-  )
+  (defvar newmail))
 
+;; Draft and rogue message buffers
 (add-to-list 'auto-mode-alist '("*message*" . message-mode))
-
-;; (setq
-;;  auth-source-debug 'trivia
-;;  send-mail-function 'smtpmail-send-it
-;;  message-send-mail-function 'smtpmail-send-it
-;;  smtpmail-debug-info t
-;;  smtpmail-debug-verb t)
-
-;; (setq user-full-name "Phil CM")
-;; (setq user-mail-address "philcm@gmx.com")
-
-;; (setq
-;;  starttls-use-gnutls t
-;;  starttls-gnutls-program "gnutls-cli"
-;;  starttls-extra-arguments '("--insecure")
-;; )
-
-;;  ;; smtpmail-auth-credentials '(("mail.gmx.com" "philcm@gmx.com" 465 "Amiga260."))
-;;  ;; smtpmail-auth-credentials '(("mail.gmx.com" 465 "philcm@gmx.com" "Amiga260."))
-;;  ;; smtpmail-starttls-credentials '(("mail.gmx.com" 465 nil nil)))
-
-
-;; this works but I have to use a reply-to :/
-
-;; (setq
-;;  ;; smtpmail-smtp-server "mail.gmx.com"
-;;  ;; smtpmail-smtp-service 465
-;;  smtpmail-stream-type 'ssl
-;;  )
-
-;; (setq
-;;  smtpmail-smtp-server "fencepost.gnu.org"
-;;  smtpmail-smtp-service 587
-;;  ;; smtpmail-stream-type 'starttls
-;;  smtpmail-stream-type 'ssl
-;;  )
-
-;; SMTP server: fencepost.gnu.org
-;; SMTP port: 587
-;; SMTP settings: STARTTLS
 
 (setq imap-log t)
 
@@ -494,7 +377,6 @@ not really placed in the text, it is just shown in the overlay")
       (setq imap-log nil)
     (setq imap-log (get-buffer-create "mbug-log"))))
 
-;; (mbug-toggle-imap-logging)
 
 ;; This is a function pinched from gnus-sum
 (defun mbug-trim (str)
@@ -553,7 +435,6 @@ not really placed in the text, it is just shown in the overlay")
       (condition-case nil
           (progn
             ;; Initialize the connection by listing all mailboxes.
-
             (imap-authenticate mbug-username mbug-password mbug-connection)
             (imap-mailbox-list "*" "" "." mbug-connection))
         (error nil)))))
@@ -637,6 +518,21 @@ The timezone package is used to parse the string."
      (elt date-struct 3) " ")))
 
 
+(defun mbug-wash-html ()
+"Format/render the HTML code in a message"
+  (interactive)
+  (setq buffer-read-only nil)
+  (message-goto-body)
+  (posix-search-forward "<html>")
+  (left-word 1)
+  (left-char 1)
+  (set-mark-command nil)
+  (posix-search-forward "</html>")
+  (setq deactivate-mark nil)
+  (w3m-region (region-beginning) (region-end))
+  (set-buffer-modified-p nil))
+
+
 (defun mbug-recentp (uid)
   "Return true if the flag list contains the \\Recent flag."
   (if uid
@@ -669,8 +565,8 @@ The timezone package is used to parse the string."
                            (funcall fn (cdr flag-list) fn)
                          nil)))
                  nil))))
-        ;; (message "mbug flag list for uid %s: %s" uid (list flag-list))
         (funcall seenp flag-list seenp))))
+
 
 (defun mbug-answeredp (uid)
   "Return true if the flag list contains the \\Answered flag."
@@ -686,7 +582,6 @@ The timezone package is used to parse the string."
                            (funcall fn (cdr flag-list) fn)
                          nil)))
                  nil))))
-        ;; (message "mbug flag list for uid %s: %s" uid (list flag-list))
         (funcall answeredp flag-list answeredp))))
 
 
@@ -741,6 +636,7 @@ string)."
       (nconc bs (list (cons 'transfer-encoding (list (elt lst 3))))))
     ;; We need more statements here to put all the extension data into the alist
     bs)
+
   ;; Main func.
   (let ((bs (list '()))
         (part 1)
@@ -797,6 +693,7 @@ An malist is a Multi Association LIST: a list of alists."
                              (throw 'found alist))) malist))))
     found))
 
+
 (defun mbug-string-repeat (str n)
   "Repeat string STR N times."
   (let ((retval ""))
@@ -804,8 +701,10 @@ An malist is a Multi Association LIST: a list of alists."
       (setq retval (concat retval str)))
     retval))
 
+
 (defun mbug-splash-it ()
   (animate-string "mail-bug 0.1.2β "  (/ (fourth (window-edges)) 2) (- (/ (third (window-edges)) 2) 15)))
+
 
 (defun mbug-timer-start ()
   "Init"
@@ -815,9 +714,11 @@ An malist is a Multi Association LIST: a list of alists."
                                    mbug-timer-seconds
                                    'mbug-recount)))
 
+
 (defun mbug-timer-kill ()
   (interactive)
   (cancel-timer mbug-timer))
+
 
 ;; The intializing proc.
 ;;;###autoload
@@ -864,23 +765,6 @@ This means you can have multiple mbug sessions in one emacs session."
   ;; t
   )
 
-(defun mbug-check-mail ()
-  "Set this to be the 'display-time-mail-function'.
-If you want to know about updates this is the function to use."
-  (interactive)
-  (save-excursion
-    (if (get-buffer "mail-bug")
-        (with-current-buffer (get-buffer "mail-bug")
-          (if mbug-connection
-              (condition-case cause
-                  (progn
-                    (message "cause: %s" cause)
-                    (mbug-refresh-folder-list)
-                    (mbug-has-recent-p "INBOX"))
-                (error
-                 (if mbug-connection
-                     (setq mbug-connection nil)))))))))
-
 
 (defun mbug-menu ()
   "Create the Mail-bug menu"
@@ -911,19 +795,6 @@ If you want to know about updates this is the function to use."
             (goto-address-mode t)))
 
 
-(defun mbug-click ()
-  (interactive)
-  (message "yuu! point: %s" (point))
-  ;; (push-mark)
-  ;; (forward-line O)
-
-  (let ((my-pos (point)))
-    (save-excursion
-      (mbug-open)
-      ))
-  ;; (goto-char (- 9 (point)))
-  )
-
 (defun mbug-mode ()
   "
          .' '.
@@ -939,7 +810,6 @@ Available commands in summary (list) buffer:
   (kill-all-local-variables)
   (unless mbug-mode-map
     (setq mbug-mode-map (make-sparse-keymap))
-    ;; (define-key mbug-mode-map [down-mouse-1] 'mbug-click)
 
     (define-key mbug-mode-map "\r" 'mbug-open)
     (define-key mbug-mode-map "+" 'mbug-create-folder)
@@ -1026,13 +896,10 @@ Also available in message composition buffer:
        (interactive)
        (mbug-send-mail)))))
 
-;; pX:
+
 (defun mbug-kill-buffer ()
   (interactive)
   (kill-buffer (current-buffer))
-  ;; (sleep-for 0.5)
-  ;; (mbug-redraw)
-  ;; (mbug-recount)
   (delete-window))
 
 
@@ -1043,8 +910,7 @@ Here, various info about the structure of the message"
                      (get-text-property (point) 'UID)))
   (imap-mailbox-select folder-name nil mbug-connection)
   (imap-fetch uid "(BODYSTRUCTURE)" 't nil mbug-connection)
-  (print (imap-message-get uid 'BODYSTRUCTURE mbug-connection))
-  )
+  (print (imap-message-get uid 'BODYSTRUCTURE mbug-connection)))
 
 
 (defun mbug-open ()
@@ -1076,7 +942,6 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
                            (imap-message-envelope-date uid mbug-connection))))
       (imap-message-flags-add (number-to-string uid) "\\Seen" nil mbug-connection)
 
-      ;; pX:
       (if (and mbug-modal (eq window-system 'x))
           (progn
             (when (= (length (window-list)) 1)
@@ -1084,13 +949,7 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
                 (set-window-dedicated-p (selected-window) (not current-prefix-arg)))
               (split-window-vertically 15)
               (other-window 1)
-              ;; (beginning-of-line)
-              ;; (widen)
-              ;; (goto-char (point-min))
-              (set-buffer-modified-p nil)
-
-              ;; (split-window (selected-window) (/ (fourth (window-edges)) 3))
-              )))
+              (set-buffer-modified-p nil))))
       (mbug-message-open folder-path uid))))
 
 
@@ -1141,7 +1000,6 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
                         (mbug-part-list-assoc 'type '(("text" . "plain")) parts)
                       bs)))
 
-
     (setq text-chars (cadr (third (extract-first bs-def))))
 
     (setq text-trans (sixth (extract-first bs-def)))
@@ -1173,7 +1031,6 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
       (with-current-buffer buf
 
         (insert (rfc2047-decode-string hdr))
-        ;; (insert hdr)
 
         ;; Do SMTP transport decoding on the message header.
         (subst-char-in-region (point-min) (point-max) ?\r ?\ )
@@ -1183,31 +1040,16 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
 
         (put 'mbug-message-text-end-of-headers 'permanent-local 't)
 
-        (insert (concat (mbug-string-repeat "-" (- (third (window-edges)) 10))) "\n\n")
-        ;; (insert "---------------------------------------------\n\n")
-        ))
-
+        (insert (concat (mbug-string-repeat "-" (- (third (window-edges)) 10))) "\n\n")))
 
     (save-excursion
-      ;; (message "buffer is %s" buf)
-
       ;; Now insert the first text part we have
       (when text-part
         (mbug-message-fill-text uid (if text-part text-part bs) buf text-chars text-trans))
 
       ;; Now switch to buffer wether we're in modal mode or not
-      ;; (sleep-for 0.5)
-
       (switch-to-buffer buf)
 
-      ;; (beginning-of-buffer)
-      ;; (if mbug-init
-      ;;        (progn
-      ;;            (enlarge-window 10)
-      ;;            (setq mbug-init nil)))
-
-
-      ;; pX:
       (if mbug-short-headers
           (progn
             (setq hide-region-overlays ())
@@ -1219,10 +1061,7 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
       (goto-char (point-min))
       (set-buffer-modified-p nil)
       (message "message mode!")
-      (mbug-message-mode)
-
-      ;; (kill-paragraph 5)
-      )
+      (mbug-message-mode))
 
     ;; Display the list of other parts (if there are any) here
     (mbug-part-list-display mbug-connection folder-name uid buf parts)))
@@ -1268,6 +1107,7 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
       (setq list-of-keys (cdr list-of-keys)))
     data))
 
+
 (defun mbug-message-fill-text (uid text-part buffer charset transfer-encoding)
   "Insert the text-part for the specified uid in the buffer provided."
 
@@ -1288,7 +1128,6 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
       (switch-to-buffer buffer)
       (setq start-of-body (point))
 
-
       (message "\n
 -------------------
 \nTransfer-encoding: %s \n\ncharset: %s \n\ntext-part: %s\n\n
@@ -1301,12 +1140,7 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
                 ((and (equal charset "us-ascii")
                       (equal transfer-encoding "8bit")) 'utf-8)
                 (charset charset)
-                ('t 'emacs-mule))))
-
-      ;; (insert "\n--end body--\n")
-
-      )))
-
+                ('t 'emacs-mule)))))))
 
 
 ;; Sub-part handling
@@ -1330,9 +1164,6 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
 ;; I think we should pass the function to handle the part in and have this call it
 (defun mbug-message-open-part (folder-name uid partnum &optional imap-con)
   "open the specified part.
-This may have a problem with non-multipart parts but it's not
-really for them. MBUG uses it to open attachments from
-multipart messages.
 
 In MBUG the imap connection is obtained through the
 buffer. Programs can pass the imap-con in directly though."
@@ -1361,7 +1192,7 @@ buffer. Programs can pass the imap-con in directly though."
 
       (setq start-of-body (point))
 
-      ;; Do a mailcap view if we have a viewer
+      ;; Do a mailcap view if we have a viewer, otherwise ask for a program
       (mailcap-parse-mailcaps)
       (let ((mailcap-viewer (if (mailcap-mime-info mimetype-str)
                                 (mailcap-mime-info mimetype-str)
@@ -1375,13 +1206,9 @@ buffer. Programs can pass the imap-con in directly though."
         ;; Display in the viewer.
         (if mailcap-viewer
             (progn
-              ;; pX:
-              (message "-- yes, mailcap-viewer: %s and mimetype: %s " mailcap-viewer mimetype-str)
               (mbug-attachment-emacs-handle msg-buffer mimetype-px)
               (setq buffer-read-only 't)
-              (set-buffer-modified-p nil)
-              ;; (kill-buffer buffer)
-              )
+              (set-buffer-modified-p nil))
 
           ;; else we don't have a mailcap viewer
           ;;  --- FIXME: - sure this could be integrated with viewer stuff above
@@ -1393,7 +1220,6 @@ buffer. Programs can pass the imap-con in directly though."
                      (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
                      (cadr (assoc 'transfer-encoding part))
                      (lookup "charset" (cadr (assoc 'body part))))))
-          ;; pX:
           ;; (normal-mode)
           (goto-char (point-min)))))))
 
@@ -1406,17 +1232,12 @@ buffer. Programs can pass the imap-con in directly though."
                      (progn (set-buffer-multibyte nil)
                             'no-conversion)))
 
-        ;; pX:
         (name (lookup "name" (cadr (assoc 'body part))))
         (enc (cadr (assoc 'transfer-encoding part)))
         (fname (if mailcap-ext-pattern
-                   (progn
-                     ;; (make-temp-file (concat "mbug-" mailcap-ext-pattern))
-                     (make-temp-file "mbug-" nil (file-name-extension mailcap-ext-pattern t)))
-                 (progn
-                   (make-temp-file (concat "mbug-" name) nil (file-name-extension name t))
-                   ;; (concat "." (make-temp-file "mbug") name)
-                   ))))
+                   (make-temp-file "mbug-" nil (file-name-extension mailcap-ext-pattern t))
+                 (make-temp-file (concat "mbug-" name) nil (file-name-extension name t)))))
+
     (message "--name: %s" name)
     (message "--fname: %s" fname)
 
@@ -1435,8 +1256,6 @@ buffer. Programs can pass the imap-con in directly though."
 
     (write-region (point-min) (point-max) fname)
 
-    (setq buffer-file-name fname)
-
     ;; Now decide what sort of viewer came out of mailcap - unix process or elisp function?
     (if (functionp mailcap-viewer)
         ;; An emacs function... if it's a mode function then we just run it on the current buffer
@@ -1452,10 +1271,6 @@ buffer. Programs can pass the imap-con in directly though."
               (message "-- no match")
               (funcall mailcap-viewer buffer))))
 
-      ;; We need a unix process
-      ;; (message "Called from: %s, fname is %s and mailcap-viewer is %s" px-calling-buffer fname mailcap-viewer)
-
-      ;; pX:
       (if (and mbug-inline-images
                (string= "IMAGE" mimetype))
           (progn
@@ -1470,6 +1285,7 @@ buffer. Programs can pass the imap-con in directly though."
           (set-process-sentinel proc 'mbug-attachment-sentinel)
           (message "-- attached!"))))))
 
+
 (defun mbug-attachment-sentinel (process event)
   "Sentinel monitors attachement processes"
   (message "-- enter sentinel")
@@ -1482,31 +1298,15 @@ buffer. Programs can pass the imap-con in directly though."
         (progn
           (message "-- buffer dead")
           (with-current-buffer buf
-            ;; pX:
             (set-buffer-modified-p nil)
-            (kill-buffer buf)
-            )
-          ;; (if (kill-buffer buf)
-          ;;     (progn (message "buffer dead")
-          ;;            (kill-matching-buffers "mbug-attachment.*")))
-          )
+            (kill-buffer buf)))
       (progn
         (message "-- buffer alive")
-        (switch-to-buffer buf))))
-  (message "
-SENTINEL
-process %s
-event %s
-buffer %s
-" process event buf)
-  )
+        (switch-to-buffer buf)))))
+
 
 (defun mbug-decode-string (content transfer-encoding char-encoding)
   "Decode the specified content string."
-
-  (message "--
-char-enc: %s
-transfer-enc: %s" char-encoding transfer-encoding)
 
   (let* ((transfer-enc (if transfer-encoding
                            (upcase transfer-encoding)
@@ -1639,12 +1439,14 @@ the text properties of whatever is at (point)."
       (mbug-mark-region 'mbug-delete-message)
     (call-interactively 'mbug-delete-message)))
 
+
 (defun mbug-undelete ()
   "Undelete one more message(s)."
   (interactive)
   (if (and transient-mark-mode mark-active)
       (mbug-mark-region 'mbug-undelete-message)
     (call-interactively 'mbug-undelete-message)))
+
 
 (defun mbug-mark-region (function)
   "Mark several messages and execute FUNCTION upon them."
@@ -1656,6 +1458,7 @@ the text properties of whatever is at (point)."
       (dotimes (number lines)
         (call-interactively function))
       (message "Done."))))
+
 
 (defun mbug-delete-message (folder-name uid)
   "Delete a message.
@@ -1703,7 +1506,6 @@ which can be customized."
   (imap-message-copy (number-to-string uid) to-folder 't 't mbug-connection)
   (mbug-delete-message folder-name uid))
 
-;; (folder-name (car folder-cell))
 
 (defun mbug-expunge (folder-name doit)
   "expunges the current folder.
@@ -1720,12 +1522,12 @@ This ensures that deleted messages are removed from the obarray."
 
 (defun mbug-extract-folder-name (&optional pt)
   "Extract the folder-name from the current line."
-
   (save-excursion
     (if pt
         (goto-char pt))
     (let ((folder-name (get-text-property (point) 'help-echo)))
       folder-name)))
+
 
 (defun mbug-create-folder (new-folder-name)
   "create a new folder under the specified parent folder."
@@ -1759,12 +1561,11 @@ This ensures that deleted messages are removed from the obarray."
       (imap-close mbug-connection))
   (setq mbug-connection nil))
 
+
 (defun mbug-redraw ()
   "redraw the buffer based on the imap state.
 Opened folders have their messages re-read and re-drawn."
   (interactive)
-
-  ;; Are we connected yet?
 
   (if init
       (progn
@@ -1772,7 +1573,6 @@ Opened folders have their messages re-read and re-drawn."
             (mbug-timer-start))
         (mbug-menu)
         (setq init ())))
-
 
   ;; (setq stored-pos (point))
   (defun insert-with-prop (text prop-list)
@@ -1798,8 +1598,6 @@ Opened folders have their messages re-read and re-drawn."
                (folder-path (cdr folder-cell))
                (folder-depth (mbug-count-occurrences "/" (cdr folder-cell))))
 
-           ;;  ▴ ▾ ◂ ▸ ▵ ▿ ◃ ▹
-
            (if (imap-mailbox-get 'OPENED folder-path mbug-connection)
                (setq folder-icon "▾")
              (setq folder-icon "▸"))
@@ -1819,7 +1617,6 @@ Opened folders have their messages re-read and re-drawn."
                       (existing (imap-mailbox-get 'exists (cdr folder-cell) mbug-connection))
                       (message-range (concat "1:" (number-to-string existing))))
                  (imap-fetch message-range "(UID FLAGS ENVELOPE)" nil 't mbug-connection)
-
 
                  (setq openingp 't)
                  ;; Map the message redraw over each message in the folder.
@@ -1850,23 +1647,20 @@ Opened folders have their messages re-read and re-drawn."
     (if openingp
         (progn (search-forward-regexp "^$")
                (forward-line -1)))
-    ;; (message "openingp: %s" openingp)
-
     (setq openingp 'nil)))
+
 
 (defun mbug-get-msg-redraw-func (folder-name)
   'mbug-msg-redraw)
 
+
 (defun mbug-msg-redraw (display-buffer folder-name msg)
-  "redraw a single message line.
-msg is a dotted pair such that:
-   ( uid . msg-date )"
+  "redraw a single message line. Msg is a dotted pair such that: ( uid . msg-date )"
   ;; The passing of the (uid . msg-date) could be improved...
   ;; it's done like that so mbug-redraw can sort and map the
   ;; messages all in one... but it means multiple calls to
   ;; mbug-date-format which is perhaps slow.
 
-  ;; (message "mbug-msg-redraw IN, mbug-connection: %s" mbug-connection)
   (with-current-buffer display-buffer
     (let* ((inhibit-read-only 't)
            (uid (car msg))
@@ -1890,11 +1684,6 @@ msg is a dotted pair such that:
             (mbug-field-format 1 (imap-message-envelope-subject uid mbug-connection) 't))
            (line-start (point))
 
-           (message-ans
-            (cond
-             ((mbug-answeredp uid) (format "answered: %s" uid))
-             (t "plip")))
-
            (message-face
             (cond
              ((mbug-deletedp uid) 'mbug-px-face-deleted)
@@ -1913,18 +1702,13 @@ msg is a dotted pair such that:
       (insert
        " " (mbug-field-format 20 date)
        " "
-
       (if (string-match "Sent" folder-name)
           (mbug-field-format 25 to-addr)
         (mbug-field-format 25 from-addr))
-
-
-       ;; ▎ ▉ ▊ ▋  │ ▕ ▏ ┃ ┆ ┇ ┊ ╎ ┋ ╿ ╽
-
-       ;; pX: decode the subject
        " " (rfc2047-decode-string subject) "\n")
       (add-text-properties line-start (point)
                            `(UID ,uid FOLDER ,folder-name face ,message-face)))))
+
 
 (defun mbug-recount ()
   "recount 'INBOX' based on the imap state."
@@ -2001,6 +1785,7 @@ msg is a dotted pair such that:
       (if message-unread
           (add-to-list 'mbug-unread-mails message-unread)))))
 
+
 ;; REPLY Auto-BCC + Yank
 (defadvice message-reply (after mbug-message-reply-yank-original)
   "BCC to sender. Quote original."
@@ -2013,8 +1798,7 @@ msg is a dotted pair such that:
   (message-goto-body)
   (newline)
   (forward-line -1)
-  (set-buffer-modified-p nil)
-  )
+  (set-buffer-modified-p nil))
 
 (ad-activate 'message-reply)
 
@@ -2023,11 +1807,10 @@ msg is a dotted pair such that:
 (defadvice message-mail (after mbug-message-mail-bcc)
   "BCC to sender."
   (message-replace-header "BCC" user-mail-address "AFTER" "FORCE")
-  (message-replace-header "Reply-To" "Philippe Coatmeur-Marin <philcm@gnu.org>" "AFTER" "FORCE")
+  ;; (message-replace-header "Reply-To" "Philippe Coatmeur-Marin <philcm@gnu.org>" "AFTER" "FORCE")
   (message-sort-headers)
   (set-buffer-modified-p nil)
-  (message-goto-to)
-  )
+  (message-goto-to))
 
 (ad-activate 'message-mail)
 
@@ -2038,10 +1821,7 @@ msg is a dotted pair such that:
   (interactive)
   (if (car hide-region-overlays)
       (progn
-        (message "shown")
-        ;; (toggle-read-only)
         (mbug-show-headers)
-
         (goto-char 0)
         (setq hide-region-overlays ()))
     (progn
@@ -2066,6 +1846,7 @@ deleting the overlay from the hide-region-overlays \"ring\"."
     (delete-overlay (car hide-region-overlays))
     (setq hide-region-overlays (cdr hide-region-overlays))))
 
+
 (defun mbug-hide-headers ()
   "Hides a region by making an invisible overlay over it and save the
 overlay on the hide-region-overlays \"ring\""
@@ -2084,22 +1865,19 @@ overlay on the hide-region-overlays \"ring\""
                  (if hide-region-propertize-markers
                      (propertize hide-region-after-string
                                  'font-lock-face 'mail-bug-toggle-headers-face)
-                   hide-region-after-string))
-    ;; (goto-char start)
-    ))
+                   hide-region-after-string))))
+
 
 (defun readprop ()
   (interactive)
-  ;; (message "props %s" (text-properties-at (point)))
-
   (if (get-text-property (point) 'help-echo)
       (message "folder: props %s" (text-properties-at (point)))
     (message "dunno: props %s" (text-properties-at (point)))))
 
-(setq nice-uri (replace-regexp-in-string "^.*?\\." "" mbug-host-name 't))
 
 (defun mbug-mode-line (mbug-unseen-mails)
   "Construct an emacs modeline object."
+  (setq nice-uri (replace-regexp-in-string "^.*?\\." "" mbug-host-name 't))
   (if (null mbug-unseen-mails)
       " "
     (let ((s (format "%d" (length mbug-unseen-mails)))
@@ -2116,15 +1894,6 @@ overlay on the hide-region-overlays \"ring\""
            (interactive "e")
            (browse-url ,url)))
 
-      ;;       (add-text-properties 0 (length s)
-      ;;                            `(local-map ,map mouse-face mode-line-highlight
-      ;;                                        uri ,url
-      ;;                                        help-echo ,(format "
-      ;; %s
-      ;; ______________________________________
-      ;; mouse-1: View in mail-bug
-      ;; mouse-2: View on %s" (mbug-tooltip) url))
-      ;;                            s)
       (add-text-properties 0 (length s)
                            `(local-map
                              ,map mouse-face mode-line-highlight uri
@@ -2137,14 +1906,6 @@ mouse-2: View on %s" (mbug-tooltip) url))
                            s)
       (concat mail-bug-logo ":" s))))
 
-;; (add-to-list 'global-mode-string (create-image "~/.emacs.d/lisp/mail-bug/greenbug.xpm"))
-
-
-;; (add-to-list 'global-mode-string ())
-
-(create-image "~/.emacs.d/lisp/mail-bug/greenbug.xpm")
-
-;; (apply 'propertize " " `(display ,mail-bug-icon))
 
 (defun newmails (mail-list)
   (mbug-desktop-notification
@@ -2159,6 +1920,7 @@ mouse-2: View on %s" (mbug-tooltip) url))
    5000 mbug-new-mail-icon)
   (setq mbug-to-be-advertised-mails ()))
 
+
 (defun mbug-desktop-notify-smart ()
   "Loop through the unread mails and advertise them in bulk if there are >1."
   (mapc
@@ -2171,10 +1933,6 @@ mouse-2: View on %s" (mbug-tooltip) url))
    mbug-unread-mails)
   (if mbug-to-be-advertised-mails (newmails mbug-to-be-advertised-mails)))
 
-;; (setq mbug-advertised-mails ())
-;; (mbug-desktop-notify)
-;; (setq mbug-unread-mails ())
-;; (mbug-desktop-notification "plip" "plop" 5000 "/usr/share/yelp/icons/hicolor/16x16/status/yelp-page-video.png")
 
 (defun dbus-capable ()
   "Check if dbus is available"
@@ -2185,6 +1943,7 @@ mouse-2: View on %s" (mbug-tooltip) url))
           ('error
            (message (format "Error: %s - No dbus notifications capabilities" ex))))
         retval)))
+
 
 (defun mbug-desktop-notification (summary body timeout icon)
   "call notification-daemon method METHOD with ARGS over dbus"
@@ -2206,6 +1965,7 @@ mouse-2: View on %s" (mbug-tooltip) url))
   (if mbug-new-mail-sound
       (play-sound-file mbug-new-mail-sound)))
 
+
 (defun mbug-tooltip ()
   "Loop through the mail headers and build the hover tooltip"
   (rfc2047-decode-string
@@ -2224,17 +1984,9 @@ mouse-2: View on %s" (mbug-tooltip) url))
 ;; Boot strap stuff
 (add-hook 'kill-emacs (lambda () (mbug-logout)))
 
-(defun mbug-wash-html ()
-  (interactive)
-  (setq buffer-read-only nil)
-  (message-goto-body)
-  (posix-search-forward "<html>")
-  (left-word 1)
-  (left-char 1)
-  (set-mark-command nil)
-  (posix-search-forward "</html>")
-  (setq deactivate-mark nil)
-  (w3m-region (region-beginning) (region-end))
-  (set-buffer-modified-p nil))
-
 (provide 'mbug)
+
+;; (setq mbug-advertised-mails ())
+;; (mbug-desktop-notify)
+;; (setq mbug-unread-mails ())
+;; (mbug-desktop-notification "plip" "plop" 5000 "/usr/share/yelp/icons/hicolor/16x16/status/yelp-page-video.png")
