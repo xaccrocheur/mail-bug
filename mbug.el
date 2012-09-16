@@ -414,7 +414,11 @@ not really placed in the text, it is just shown in the overlay")
           (if (not (equal mbug-host-name ""))
               (setq mbug-host mbug-host-name)
             (setq mbug-host (read-from-minibuffer "Host: "))))
+
       (setq mbug-password (read-from-minibuffer "Password: "))
+
+      ;; (setq mbug-password (expand-file-name "~/.authinfo.gpg"))
+
       ;; FIXME:!!! this is a new feature of GNUS imap, you can specify different connect mechanisms
       (setq mbug-connection (imap-open mbug-host mbug-port 'ssl))
       (assert mbug-connection nil "the imap connection could not be opened")
@@ -823,7 +827,7 @@ Available commands in summary (list) buffer:
     ;; (define-key mbug-mode-map "n" 'next-line)
     (define-key mbug-mode-map "m" 'mbug-move)
     ;; (define-key mbug-mode-map "p" 'previous-line)
-    (define-key mbug-mode-map "n" 'mbug-new-mail)
+    (define-key mbug-mode-map "n" 'message-mail)
     (define-key mbug-mode-map "S" 'mbug-show-structure)
     (define-key mbug-mode-map "u" 'mbug-undelete)
     (define-key mbug-mode-map "x" 'mbug-expunge)
@@ -1339,8 +1343,6 @@ buffer. Programs can pass the imap-con in directly though."
         (decode-coding-string content char-enc)))
      )))
 
-;; Other utility methods.
-
 (defvar mbug-message-date-regex
   "[0-9]\\{1,4\\}-[0-9]\\{2\\}-[0-9]\\{2\\} "
   "Regex for matching an mbug message date")
@@ -1361,15 +1363,8 @@ buffer. Programs can pass the imap-con in directly though."
 Broadly this is: date time from subject")
 
 
-(defun mbug-new-mail ()
-  "Compose a new mail.
-The mail is BCCed to the sender if the variable
-`mbug-bcc-to-sender' is set to true."
-  (interactive)
-  (message-mail))
-
 (defun mbug-send-mail ()
-  "send a mail."
+  "Send a mail. Kill 'sent' buffer."
   (interactive)
   (message-send)
   (mbug-kill-buffer))
@@ -1416,10 +1411,26 @@ The mail is BCCed to the sender if the variable
                   (mbug-msg-redraw (current-buffer) folder-name msg)))))))))
 
 
-(defun mbug-undelete-message (folder-name uid)
-  "Undelete a message.
-When called interactively the folder-name and uid are obtained from
+(defun mbug-delete-message (folder-name uid)
+  "Delete a message.
+When called interactively FOLDER-NAME and UID are obtained from
 the text properties of whatever is at (point)."
+  (interactive (list (get-text-property (point) 'FOLDER)
+                     (get-text-property (point) 'UID)))
+  (beginning-of-line)
+  (mbug-ensure-connected)
+  (imap-mailbox-select folder-name nil mbug-connection)
+  (imap-fetch uid "(ENVELOPE)" 't nil mbug-connection)
+  (imap-message-copy (number-to-string uid) mbug-trash-folder-name 't 't mbug-connection) ;; this should be on a switch
+  (imap-message-flags-add (number-to-string uid) "\\Deleted" nil mbug-connection)
+  (let ((msg (cons uid
+                   (mbug-date-format
+                    (imap-message-envelope-date uid mbug-connection)))))
+    (mbug-msg-redraw (current-buffer) folder-name msg)))
+
+
+(defun mbug-undelete-message (folder-name uid)
+  "Undelete a message."
   (interactive (list (get-text-property (point) 'FOLDER)
                      (get-text-property (point) 'UID)))
   (mbug-ensure-connected)
@@ -1458,24 +1469,6 @@ the text properties of whatever is at (point)."
       (dotimes (number lines)
         (call-interactively function))
       (message "Done."))))
-
-
-(defun mbug-delete-message (folder-name uid)
-  "Delete a message.
-When called interactively the folder-name and uid are obtained from
-the text properties of whatever is at (point)."
-  (interactive (list (get-text-property (point) 'FOLDER)
-                     (get-text-property (point) 'UID)))
-  (beginning-of-line)
-  (mbug-ensure-connected)
-  (imap-mailbox-select folder-name nil mbug-connection)
-  (imap-fetch uid "(ENVELOPE)" 't nil mbug-connection)
-  (imap-message-copy (number-to-string uid) mbug-trash-folder-name 't 't mbug-connection) ;; this should be on a switch
-  (imap-message-flags-add (number-to-string uid) "\\Deleted" nil mbug-connection)
-  (let ((msg (cons uid
-                   (mbug-date-format
-                    (imap-message-envelope-date uid mbug-connection)))))
-    (mbug-msg-redraw (current-buffer) folder-name msg)))
 
 
 (defun mbug-spam (folder-name uid)
