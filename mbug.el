@@ -415,7 +415,7 @@ not really placed in the text, it is just shown in the overlay")
               (setq mbug-host mbug-host-name)
             (setq mbug-host (read-from-minibuffer "Host: "))))
 
-      (setq mbug-password (read-from-minibuffer "Password: "))
+      ;; (setq mbug-password (read-from-minibuffer "Password: "))
 
       ;; (setq mbug-password (expand-file-name "~/.authinfo.gpg"))
 
@@ -1064,7 +1064,6 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
       ;; (forward-line 3)
       (goto-char (point-min))
       (set-buffer-modified-p nil)
-      (message "message mode!")
       (mbug-message-mode))
 
     ;; Display the list of other parts (if there are any) here
@@ -1188,8 +1187,9 @@ buffer. Programs can pass the imap-con in directly though."
            (start-of-body 0)
            (mimetype-str (concat (car mimetype) "/" (cdr mimetype)))
            (mimetype-px (car mimetype))
-           ;; (buffer (get-buffer-create "*attached*"))
-           (buffer (get-buffer-create (concat "*attached-" name "*"))))
+           (buffer (get-buffer-create "*mbug-attachment*"))
+           ;; (buffer (get-buffer-create (concat "*attached-" name "*")))
+)
 
       ;; pX: This was a swith-to-buffer
       (set-buffer buffer)
@@ -1218,7 +1218,6 @@ buffer. Programs can pass the imap-con in directly though."
           ;;  --- FIXME: - sure this could be integrated with viewer stuff above
           ;;  --- ask for a viewer?
           (progn
-            (message "-- no mailcap-viewer: %s for mimetype: %s " mailcap-viewer mimetype-str)
             (insert (mbug-decode-string
                      ;; This gets the body and can be expensive
                      (elt (car (imap-message-get uid 'BODYDETAIL imap-con)) 2)
@@ -1231,7 +1230,6 @@ buffer. Programs can pass the imap-con in directly though."
 (defun mbug-attachment-emacs-handle (px-calling-buffer mimetype)
   "Handle an attachment with some inline emacs viewer"
   ;; Extract the part and shove it in a buffer
-  (message "-- entering mbug-attachment-emacs-handle")
   (let ((charset (or (lookup "charset" (cadr (assoc 'body part)))
                      (progn (set-buffer-multibyte nil)
                             'no-conversion)))
@@ -1241,9 +1239,6 @@ buffer. Programs can pass the imap-con in directly though."
         (fname (if mailcap-ext-pattern
                    (make-temp-file "mbug-" nil (file-name-extension mailcap-ext-pattern t))
                  (make-temp-file (concat "mbug-" name) nil (file-name-extension name t)))))
-
-    (message "--name: %s" name)
-    (message "--fname: %s" fname)
 
     ;; Function to split a string into a car / cdr
     (defun split-string-into-cons (str)
@@ -1286,13 +1281,11 @@ buffer. Programs can pass the imap-con in directly though."
                (proc (apply 'start-process-shell-command
                             `("*mbug-detachment*" ,proc-buf
                               ,@(split-string (format mailcap-viewer fname)) )) ))
-          (set-process-sentinel proc 'mbug-attachment-sentinel)
-          (message "-- attached!"))))))
+          (set-process-sentinel proc 'mbug-attachment-sentinel))))))
 
 
 (defun mbug-attachment-sentinel (process event)
   "Sentinel monitors attachement processes"
-  (message "-- enter sentinel")
   (let ((buf (process-buffer process))
         (state (process-status process)))
 
@@ -1300,13 +1293,17 @@ buffer. Programs can pass the imap-con in directly though."
              (not (eq state 'stop))
              (< (buffer-size buf) 1))
         (progn
-          (message "-- buffer dead")
-          (with-current-buffer buf
-            (set-buffer-modified-p nil)
-            (kill-buffer buf)))
+          ;; (message "-- buffer dead")
+          (kill-buffer "*mbug-attachment*")
+          ;; (with-current-buffer buf
+          ;;   (set-buffer-modified-p nil)
+          ;;   (kill-buffer buf))
+          )
       (progn
         (message "-- buffer alive")
-        (switch-to-buffer buf)))))
+        (kill-buffer "*mbug-attachment*")
+;; (switch-to-buffer buf)
+        ))))
 
 
 (defun mbug-decode-string (content transfer-encoding char-encoding)

@@ -1,6 +1,6 @@
 * mail-bug.el
 
-Mail-bug is a fork of imapua.el (www.emacswiki.org/emacs/imapua.el)
+Mail-bug is an IMAP-based mail client.
 It is almost ready for production. You have been warned.
 
 ** INSTALLATION
