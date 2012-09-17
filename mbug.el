@@ -417,8 +417,6 @@ not really placed in the text, it is just shown in the overlay")
 
       ;; (setq mbug-password (read-from-minibuffer "Password: "))
 
-      ;; (setq mbug-password (expand-file-name "~/.authinfo.gpg"))
-
       ;; FIXME:!!! this is a new feature of GNUS imap, you can specify different connect mechanisms
       (setq mbug-connection (imap-open mbug-host mbug-port 'ssl))
       (assert mbug-connection nil "the imap connection could not be opened")
