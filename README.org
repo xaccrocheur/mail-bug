@@ -10,7 +10,7 @@ Put the file/directory in your load-path, and this in your
 (require 'mail-bug)
 
 ** USAGE
-- Use M-x customize-group "mail-bug" to setup your prefs.
+- M-x customize-group "mail-bug"
 - M-x mail-bug
 
 ** NOTES
