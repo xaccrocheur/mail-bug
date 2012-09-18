@@ -47,11 +47,11 @@
 
 (defun mbug-eval-smtp ()
   (setq
+   smtpmail-default-smtp-server mbug-smtp
    smtpmail-debug-info t
    smtpmail-smtp-service 587 ;; inoperant
    smtpmail-starttls-credentials '((mbug-smtp 587 nil nil))
    smtpmail-auth-credentials (expand-file-name "~/.authinfo.gpg")
-   smtpmail-default-smtp-server mbug-smtp
    smtpmail-smtp-server mbug-smtp))
 
 
@@ -68,7 +68,6 @@
   (setq mbug-smtp "smtp.gmail.com")
   (mbug-eval-smtp))
 
-(mbug-smtp-googlemail)
 
 (defcustom mbug-host-name ""
   "The name of server to connect to"
@@ -724,7 +723,7 @@ An malist is a Multi Association LIST: a list of alists."
 
 ;; The intializing proc.
 ;;;###autoload
-(defun mbug (&optional host-name tcp-port)
+(defun mail-bug (&optional host-name tcp-port)
   "Open the imap server and get a folder list.
 With a non-nil prefix argument the imap server host name is requested.
 This means you can have multiple mbug sessions in one emacs session."
@@ -1971,6 +1970,9 @@ mouse-2: View on %s" (mbug-tooltip) url))
 
 ;; Boot strap stuff
 (add-hook 'kill-emacs (lambda () (mbug-logout)))
+
+;; forced, campaign-grade SMTP
+(mbug-smtp-googlemail)
 
 (provide 'mbug)
 
