@@ -10,8 +10,8 @@ Put the file/directory in your load-path, and this in your
 (require 'mail-bug)
 
 ** USAGE
-Use M-x customize-group "mail-bug" to setup your prefs.
-M-x mbug
+- Use M-x customize-group "mail-bug" to setup your prefs.
+- M-x mail-bug
 
 ** NOTES
 This repository is automatically installed by
