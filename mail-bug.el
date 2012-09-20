@@ -1974,7 +1974,7 @@ mouse-2: View on %s" (mbug-tooltip) url))
 ;; forced, campaign-grade SMTP
 (mbug-smtp-googlemail)
 
-(provide 'mbug)
+(provide 'mail-bug)
 
 ;; (setq mbug-advertised-mails ())
 ;; (mbug-desktop-notify)
