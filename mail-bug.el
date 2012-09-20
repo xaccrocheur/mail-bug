@@ -1,7 +1,8 @@
-;; mbug.el --- a purely IMAP based email client for EMACS
+;; mail-bug.el --- a purely IMAP based email client for EMACS
 
 ;; Copyright (C) 2001, 2002 Tapsell-Ferrier Limited
 ;; Copyright (C) 2012 Philippe Coatmeur
+;; URL: https://github.com/xaccrocheur/mail-bug/
 
 ;; Author: Nic Ferrier <nferrier@tapsellferrier.co.uk>
 ;; Author: Philippe CM http://stackoverflow.com/users/539797/philippe-cm
@@ -31,6 +32,15 @@
 ;; It offers a UI which might be more intuitive to regular IMAP users than
 ;; the GNUs UI.
 ;;
+;; It has been improved lately in the area of:
+;; - Subtle ergonomics
+;; - Customization
+;; - Charset decoding
+;; - Attachment handling
+;; - HTML rendering (w3m)
+;; - Replying & sending
+;; - SMTP handling
+
 ;;; Code:
 
 (require 'imap)

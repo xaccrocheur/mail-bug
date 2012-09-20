@@ -10,8 +10,9 @@ Put the file/directory in your load-path, and this in your
 (require 'mail-bug)
 
 ** USAGE
-- M-x customize-group "mail-bug"
+- M-x customize-group <mail-bug>
 - M-x mail-bug
+- C-h m (help about the mode, the keys, etc.)
 
 ** NOTES
 This repository is automatically installed by
