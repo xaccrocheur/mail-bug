@@ -1291,6 +1291,7 @@ buffer. Programs can pass the imap-con in directly though."
           (set-process-sentinel proc 'mbug-attachment-sentinel))))))
 
 
+
 (defun mbug-attachment-sentinel (process event)
   "Sentinel monitors attachement processes"
   (let ((buf (process-buffer process))
