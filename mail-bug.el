@@ -1168,7 +1168,10 @@ the buffer local variable @var{mbug-message-text-end-of-headers}."
   (let ((folder-name (get-text-property (point) 'FOLDER))
         (uid (get-text-property (point) 'UID))
         (partnum (get-text-property (point) 'PARTNUM)))
-    (mbug-message-open-part folder-name uid partnum mbug-connection)))
+    ;; If there is no UID then it's probably not an attachment
+    (if uid
+        (mbug-message-open-part folder-name uid partnum mbug-connection)
+      (goto-address-at-point))))
 
 ;; We need to modularize this so we can have a dump function as well
 ;; I think we should pass the function to handle the part in and have this call it
