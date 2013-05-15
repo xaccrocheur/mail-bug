@@ -49,7 +49,7 @@
 (require 'message)
 (require 'cl)
 (require 'dbus)
-(require 'elid)
+;; (require 'elid)
 
 ;; (require 'w3m)
 
