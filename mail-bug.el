@@ -49,6 +49,8 @@
 (require 'message)
 (require 'cl)
 (require 'dbus)
+(require 'elid)
+
 ;; (require 'w3m)
 
 (require 'starttls)
