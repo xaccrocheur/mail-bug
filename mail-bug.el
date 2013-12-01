@@ -733,7 +733,7 @@ An malist is a Multi Association LIST: a list of alists."
   (cancel-timer mbug-timer))
 
 
-;; The intializing proc.
+;; The initializing proc.
 ;;;###autoload
 (defun mail-bug (&optional host-name tcp-port)
   "Open the imap server and get a folder list.
