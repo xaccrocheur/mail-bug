@@ -184,7 +184,7 @@ Must be an XPM (use Gimp)."
       (apply 'propertize " " `(display ,mail-bug-icon))
     mbug-host-name))
 
-(defcustom mbug-new-mail-icon "/usr/share/icons/oxygen/128x128/actions/configure.png"
+(defcustom mbug-new-mail-icon (concat mbug-dir "new_mail.png")
   "Icon for new mail notification.
 PNG works."
   :type 'string
