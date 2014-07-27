@@ -98,7 +98,7 @@
 (defvar mbug-password nil
   "The user's password")
 
-(defvar mbug-dir (file-name-directory (or load-file-name (buffer-file-name)))
+(defvar mbug-dir (concat (file-name-directory (or load-file-name (buffer-file-name))) "assets/")
   "The mail-bug dir")
 
 ;; Customizations (Don't touch this, M-x customize-group "mail-bug" RET instead)
