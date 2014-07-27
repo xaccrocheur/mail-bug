@@ -15,5 +15,5 @@ Put the file/directory in your load-path, and this in your
 - C-h m (help about the mode, the keys, etc.)
 
 ** NOTES
-This repository is automatically installed by
+This repository is optionally installed by
 https://github.com/xaccrocheur/kituu
