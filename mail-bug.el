@@ -1801,11 +1801,12 @@ Opened folders have their messages re-read and re-drawn."
 
 ;; REPLY Auto-BCC + Yank
 (defadvice message-reply (after mbug-message-reply-yank-original)
-  "BCC to sender. Quote original."
+  "BCC to sender. Quote original. Useful during tests."
   (if mbug-bcc-to-sender
-      (progn (message-replace-header "BCC" "philcm@gmx.com" "AFTER" "FORCE")
-             ;; (message-replace-header "Reply-To" "Philippe Coatmeur-Marin <philcm@gnu.org>" "AFTER" "FORCE")
-             ))
+      (progn
+        (message-replace-header "BCC" "xxx@xxx.com" "AFTER" "FORCE")
+        ;; (message-replace-header "Reply-To" "Philippe CM <xaccrocheur@gmail.com>" "AFTER" "FORCE")
+        ))
   (message-yank-original)
   (message-sort-headers)
   (message-goto-body)
