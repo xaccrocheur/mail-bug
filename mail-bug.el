@@ -51,6 +51,7 @@
 (require 'dbus)
 ;; (require 'elid)
 
+
 ;; (require 'w3m)
 
 (require 'starttls)
@@ -96,6 +97,9 @@
 
 (defvar mbug-password nil
   "The user's password")
+
+(defvar mbug-dir (file-name-directory (or load-file-name (buffer-file-name)))
+  "The mail-bug dir")
 
 ;; Customizations (Don't touch this, M-x customize-group "mail-bug" RET instead)
 (defgroup mail-bug nil
@@ -163,11 +167,12 @@ This can be somewhat blocking on slow imap servers/connections"
   :type '(string)
   :group 'mail-bug)
 
+
 ;; Notification
 (defcustom mail-bug-icon
   (when (image-type-available-p 'xpm)
-    '(image :type xpm
-            :file "~/.emacs.d/lisp/mail-bug/greenbug.xpm"
+    `(image :type xpm
+            :file ,(concat mbug-dir "greenbug.xpm")
             :ascent center))
   "Icon for the first account.
 Must be an XPM (use Gimp)."
@@ -185,11 +190,13 @@ PNG works."
   :type 'string
   :group 'mail-bug-interface)
 
-(defcustom mbug-new-mail-sound "/usr/share/sounds/alsa/Front_Center.wav"
+(defcustom mbug-new-mail-sound (concat mbug-dir "new_mail.wav")
   "Sound for new mail notification.
 Wav only."
   :type 'string
   :group 'mail-bug-interface)
+
+;; (message mbug-new-mail-sound)
 
 (defcustom mbug-timer-seconds 120
   "Interval(in seconds) for mail check."
@@ -760,6 +767,9 @@ This means you can have multiple mbug sessions in one emacs session."
 
     (if mbug-splash
         (mbug-splash-it))
+
+(message "Yo path is now: %s" mbug-dir)
+
 
     ;; (beginning-of-buffer)
     (if (not mbug-mode-initialized-p)
@@ -1989,6 +1999,7 @@ mouse-2: View on %s" (mbug-tooltip) url))
 
 ;; forced, campaign-grade SMTP
 (mbug-smtp-googlemail)
+
 
 (provide 'mail-bug)
 
